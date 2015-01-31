@@ -41,7 +41,8 @@ while (true) {
 	}
 
 	log::info('Connecting to database');
-	$_sql = pg_connect('host=localhost dbname=alex user=alex password=loldongs');
+	$dbpw = get_password('db');
+	$_sql = pg_connect("host=localhost dbname=alex user=alex password=$dbpw");
 	if ($_sql === false) {
 		log::fatal('Failed to connect to database, exiting');
 		exit(1);
