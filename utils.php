@@ -6,6 +6,10 @@ function utimestamp() {
 	return date("D Y.m.d H:i:s.$micro+00:00");
 }
 
+function get_password($name) {
+	return trim(file_get_contents("passwords/$name.password"));
+}
+
 function smart_date_fmt($uts) {
 	$tz = new DateTimeZone(ExtraServ::$output_tz);
 	$dt = new DateTime();

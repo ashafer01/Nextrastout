@@ -15,7 +15,7 @@ function is_admin($nick) {
 
 class ExtraServ {
 	public static $hostname = 'extrastout.defiant.worf.co';
-	public static $password = 'eKryUo90ur7ZM62I7s9yvut2TWdMt15r';
+	public static $password = null;
 	public static $info = 'Extended Services for hybrid (c/o alex)';
 	public static $token = '0ES'; # for hybrid
 
@@ -28,12 +28,15 @@ class ExtraServ {
 	public static $output_tz = 'America/Detroit';
 
 	public static function init() {
+		self::$password = get_password('uplink');
+
 		$c = uplink::connect();
 		if (!$c) {
 			return 1;
 		}
 
-		self::$db = pg_connect('host=localhost dbname=alex user=alex password=loldongs');
+		$dbpw = get_password('db');
+		self::$db = pg_connect("host=localhost dbname=alex user=alex password=$dbpw");
 		if (self::$db === false) {
 			log::fatal('Failed to connect to database, exiting');
 			exit(1);

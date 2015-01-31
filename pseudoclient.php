@@ -13,7 +13,7 @@ class pseudoclient {
 		return $this->params[$key];
 	}
 
-	private function __set($key, $value) {
+	public function __set($key, $value) {
 		$this->params[$key] = $value;
 	}
 
