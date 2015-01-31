@@ -1,0 +1,17 @@
+//<?php
+
+log::trace('entered f::simple_commands()');
+list($_CMD, $_ARG, $_i) = $_ARGV;
+
+switch ($_CMD) {
+	case 'test':
+		log::info('Got !test');
+		$reply = "Hello, {$_i['prefix']}";
+		if ($_ARG != null) {
+			$reply .= " - $_ARG";
+		}
+		$_i['handle']->say($_i['reply_to'], $reply);
+		return f::TRUE;
+	default:
+		return f::FALSE;
+}
