@@ -4,7 +4,6 @@ log::trace('entered f::cmd_logsearch()');
 
 list($command, $params, $_i) = $_ARGV;
 
-$do_offset = false;
 $where = '';
 $rainbow = false;
 $capswhere = " AND message SIMILAR TO '[A-Z][A-Z!,\?\.''\" ]{3,}'";
@@ -12,9 +11,8 @@ switch ($command) {
 	case 'first':
 	case 'f':
 		$orderby = 'ORDER BY uts ASC';
-		$do_offset = true;
 		$limit = 'LIMIT 1';
-		if ($do_offset && (preg_match('/^[+-](\d+)(.*)/', $params, $matches) === 1)) {
+		if (preg_match('/^[+-](\d+)(.*)/', $params, $matches) === 1) {
 			$offset = dbescape($matches[1]);
 			$limit .= " OFFSET $offset";
 			$params = trim($matches[2]);
@@ -23,9 +21,8 @@ switch ($command) {
 	case 'last':
 	case 'l':
 		$orderby = 'ORDER BY uts DESC';
-		$do_offset = true;
 		$limit = 'LIMIT 1';
-		if ($do_offset && (preg_match('/^[+-](\d+)(.*)/', $params, $matches) === 1)) {
+		if (preg_match('/^[+-](\d+)(.*)/', $params, $matches) === 1) {
 			$offset = dbescape($matches[1]);
 			$limit .= " OFFSET $offset";
 			$params = trim($matches[2]);
