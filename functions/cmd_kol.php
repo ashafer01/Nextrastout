@@ -10,8 +10,7 @@ if ($param != null) {
 }
 
 $query = "SELECT COUNT(uts) AS count FROM newlog WHERE $where";
-$lq = color_formatting::escape($query);
-log::debug("total matching rows query >>> $lq");
+log::debug("total matching rows query >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
 	log::error('Query failed');
@@ -25,8 +24,7 @@ if ($q === false) {
 
 	if ($total_count > 0) {
 		$query = "SELECT nick, COUNT(uts) AS count FROM newlog WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 11";
-		$lq = color_formatting::escape($query);
-		log::debug("kol query >>> $lq");
+		log::debug("kol query >>> $query");
 		$q = pg_query(ExtraServ::$db, $query);
 		if ($q === false) {
 			log::error('Query failed');

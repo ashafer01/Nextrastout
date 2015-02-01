@@ -25,6 +25,20 @@ class log {
 		}
 	}
 
+	public static function string_to_level($level) {
+		$level = strtoupper($level);
+		switch ($level) {
+			case 'FATAL': return log::FATAL;
+			case 'ERROR': return log::ERROR;
+			case 'WARNING': return log::WARNING;
+			case 'NOTICE': return log::NOTICE;
+			case 'INFO': return log::INFO;
+			case 'DEBUG': return log::DEBUG;
+			case 'TRACE': return log::TRACE;
+			default: return 1000;
+		}
+	}
+
 	protected static function _do_log($level, $message) {
 		if ($level <= log::$level) {
 			$ts = utimestamp();
@@ -39,31 +53,42 @@ class log {
 		}
 	}
 
+	public static function rawlog($level, $message) {
+		self::_do_log($level, $message);
+	}
+
 	public static function fatal($m) {
+		$m = color_formatting::escape($m);
 		self::_do_log(log::FATAL, "%r$m%0");
 	}
 
 	public static function error($m) {
+		$m = color_formatting::escape($m);
 		self::_do_log(log::ERROR, "%r$m%0");
 	}
 
 	public static function warning($m) {
+		$m = color_formatting::escape($m);
 		self::_do_log(log::WARNING, "%y$m%0");
 	}
 
 	public static function notice($m) {
+		$m = color_formatting::escape($m);
 		self::_do_log(log::NOTICE, "%y$m%0");
 	}
 
 	public static function info($m) {
+		$m = color_formatting::escape($m);
 		self::_do_log(log::INFO, $m);
 	}
 
 	public static function debug($m) {
+		$m = color_formatting::escape($m);
 		self::_do_log(log::DEBUG, "%K$m%0");
 	}
 
 	public static function trace($m) {
+		$m = color_formatting::escape($m);
 		self::_do_log(log::TRACE, "%K$m%0");
 	}
 }

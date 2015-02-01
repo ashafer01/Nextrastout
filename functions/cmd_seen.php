@@ -27,8 +27,7 @@ LIMIT 1
 QUERY
 );
 
-$lq = color_formatting::escape($query);
-log::debug("seen query >>> $lq");
+log::debug("seen query >>> $query");
 
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {

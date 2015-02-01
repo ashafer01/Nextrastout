@@ -22,7 +22,7 @@ date_default_timezone_set('UTC');
 function send($text) {
 	global $_irc;
 	$ltext = color_formatting::escape($text);
-	log::info("%G=> $ltext%0");
+	log::rawlog(log::INFO, "%G=> $ltext%0");
 	fwrite($_irc, "$text\r\n");
 }
 
@@ -69,7 +69,7 @@ while (true) {
 
 		// Handle ping/pong
 		if (substr($line, 0, 4) == 'PING') {
-			log::info("%K<= $lline%0");
+			log::rawlog(log::INFO, "%K<= $lline%0");
 			send('PONG '.substr($line, 5));
 			continue;
 		}
@@ -78,13 +78,15 @@ while (true) {
 		$iprefix = pg_escape_string($_sql, $_i['prefix']);
 		if (($handle = f::parse_hostmask($iprefix)) !== false) {
 			if ($handle->nick == 'Global' || $handle->nick == $_nick) {
-				log::info("%C<= $line%0");
+				log::rawlog(log::INFO, "%C<= $line%0");
 				continue;
 			}
-			log::info("%c<= $lline%0");
+			log::rawlog(log::INFO, "%c<= $lline%0");
 			$itext = pg_escape_string($_sql, $_i['text']);
 			$iargs = pg_escape_string($_sql, implode(' ', $_i['args']));
 			$icmd = pg_escape_string($_sql, $_i['cmd']);
+
+			$handle->nick = strtolower($nick);
 
 			$uts = time();
 			$query = "INSERT INTO $table (uts, nick, ircuser, irchost, command, args, message) VALUES ($uts, '{$handle->nick}', '{$handle->user}', '{$handle->host}', '$icmd', '$iargs', '$itext')";
@@ -96,7 +98,7 @@ while (true) {
 				exit(1);
 			}
 		} else {
-			log::info("%K<= $lline%0");
+			log::rawlog(log::INFO, "%K<= $lline%0");
 		}
 	}
 

@@ -33,9 +33,7 @@ if ($do_offset && (preg_match('/^[+-](\d+)(.*)/', $params, $matches) === 1)) {
 }
 
 $query = "SELECT uts, nick, message FROM newlog WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}')" . f::log_where($params) . " $orderby $limit";
-
-$lq = color_formatting::escape($query);
-log::debug("log search query >>> $lq");
+log::debug("log search query >>> $query");
 
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {

@@ -144,7 +144,7 @@ class uplink {
 
 	public static function send($line) {
 		$lline = color_formatting::escape($line);
-		log::info("%G=> $lline%0");
+		log::rawlog(log::INFO, "%G=> $lline%0");
 		return fwrite(self::$socket, "$line\r\n");
 	}
 

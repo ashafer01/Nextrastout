@@ -15,7 +15,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 	$line = uplink::readline();
 	if ($line != null) {
 		$lline = color_formatting::escape($line);
-		log::info("%c<= $lline%0");
+		log::rawlog(log::INFO, "%c<= $lline%0");
 	} else {
 		continue;
 	}
@@ -149,6 +149,11 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							case 'es-reinit':
 								log::notice('Got !es-reinit');
 								return 3;
+							case 'loglevel':
+								log::notice("Got !loglevel $uarg");
+								log::$level = log::string_to_level($uarg);
+								$_i['handle']->say($_i['reply_to'], 'Changed log level');
+								break;
 							case 'reload-all':
 								log::notice('Got !reload-all');
 								$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading');

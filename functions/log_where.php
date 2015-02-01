@@ -171,7 +171,7 @@ if (!$no_nicks) {
 		$nicks = array();
 		foreach ($req_nicks as $nickgrp) {
 			foreach ($nickgrp as $nickstr) {
-				$nicklist = explode(',', $nickstr);
+				$nicklist = explode(',', strtolower($nickstr));
 				$nicks = array_merge($nicks, $nicklist);
 			}
 		}
@@ -185,7 +185,7 @@ if (!$no_nicks) {
 	if (count($exc_nicks) > 0) {
 		$nicks = array();
 		foreach ($exc_nicks as $nickstr) {
-			$nicklist = explode(',', $nickstr);
+			$nicklist = explode(',', strtolower($nickstr));
 			$nicks = array_merge($nicks, $nicklist);
 		}
 		$nicks = array_unique($nicks);
