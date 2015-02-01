@@ -34,6 +34,13 @@ function smart_date_fmt($uts) {
 	return $dt->format($fmt);
 }
 
+function date_fmt($fmt, $uts) {
+	$dt = new DateTime();
+	$dt->setTimestamp($uts);
+	$dt->setTimezone(new DateTimeZone(ExtraServ::$output_tz));
+	return $dt->format($fmt);
+}
+
 function duration_str($seconds) {
 	if ($seconds == 0)
 		return '0 seconds';
@@ -121,6 +128,22 @@ function ord_suffix($number) {
 		$abbreviation = $number. 'th';
 	else
 		$abbreviation = $number. $ends[$number % 10];
+}
+
+# Check if a postgres prepared statement already exists
+function pg_is_prepared($stmt_name) {
+	$q = pg_query(ExtraServ::$db, 'SELECT name FROM pg_prepared_statements');
+	if ($q === false) {
+		log::error('pg_is_prepared query failed');
+		log::error(pg_last_error());
+		return true;
+	} else {
+		while ($row = pg_fetch_assoc($q)) {
+			if ($row['name'] == $stmt_name)
+				return true;
+		}
+		return false;
+	}
 }
 
 class color_formatting {

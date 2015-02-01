@@ -4,7 +4,8 @@ log::trace('entered f::log_where()');
 
 $_ARGV[] = null;
 $_ARGV[] = null;
-list($param_string, $no_nicks, $leading_and) = $_ARGV;
+$_ARGV[] = null;
+list($param_string, $no_nicks, $date_limit, $leading_and) = $_ARGV;
 if ($no_nicks === null) {
 	$no_nicks = false;
 }
@@ -196,16 +197,56 @@ if (!$no_nicks) {
 	}
 }
 
-if (count($before) > 0) {
-	$timestr = pg_escape_string(ExtraServ::$db, implode(' ', $before[0]));
-	$uts = strtotime($timestr);
-	$conds[] = "(uts < $uts)";
-}
+if ($date_limit === null) {
+	if (count($before) > 0) {
+		$timestr = pg_escape_string(ExtraServ::$db, implode(' ', $before[0]));
+		$uts = strtotime($timestr);
+		if ($uts !== false) {
+			$conds[] = "(uts < $uts)";
+		}
+	}
 
-if (count($after) > 0) {
-	$timestr = pg_escape_string(ExtraServ::$db, implode(' ', $after[0]));
-	$uts = strtotime($timestr);
-	$conds[] = "(uts > $uts)";
+	if (count($after) > 0) {
+		$timestr = pg_escape_string(ExtraServ::$db, implode(' ', $after[0]));
+		$uts = strtotime($timestr);
+		if ($uts !== false) {
+			$conds[] = "(uts > $uts)";
+		}
+	}
+} else {
+	$before_uts = null;
+	if (count($before) > 0) {
+		$timestr = dbescape(implode(' ', $before[0]));
+		$uts = strtotime($timestr);
+		if ($uts !== false) {
+			$before_uts = $uts;
+		}
+	}
+	
+	$after_uts = null;
+	if (count($after) > 0) {
+		$timestr = dbescape(implode(' ', $after[0]));
+		$uts = strtotime($timestr);
+		if ($uts !== false) {
+			$after_uts = $uts;
+		}
+	}
+
+	if (($before_uts !== null) && ($after_uts !== null)) {
+		if (abs($before_uts - $after_uts) > $date_limit) {
+			$after_uts = $before_uts - $date_limit;
+		}
+	} elseif (($before_uts === null) && ($after_uts !== null)) {
+		$before_uts = $after_uts + $date_limit;
+	} elseif (($after_uts === null) && ($before_uts !== null)) {
+		$after_uts = $before_uts - $date_limit;
+	} else {
+		$before_uts = time();
+		$after_uts = $before_uts - $date_limit;
+	}
+
+	$conds[] = "(uts < $before_uts)";
+	$conds[] = "(uts > $after_uts)";
 }
 
 if (count($conds) == 0) {
