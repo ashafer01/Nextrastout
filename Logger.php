@@ -86,7 +86,7 @@ while (true) {
 			$iargs = pg_escape_string($_sql, implode(' ', $_i['args']));
 			$icmd = pg_escape_string($_sql, $_i['cmd']);
 
-			$handle->nick = strtolower($nick);
+			$handle->nick = strtolower($handle->nick);
 
 			$uts = time();
 			$query = "INSERT INTO $table (uts, nick, ircuser, irchost, command, args, message) VALUES ($uts, '{$handle->nick}', '{$handle->user}', '{$handle->host}', '$icmd', '$iargs', '$itext')";
