@@ -3,7 +3,7 @@
 log::trace('entering f::cmd_seen()');
 list($_CMD, $_ARG, $_i) = $_ARGV;
 
-$channel = $_i['reply_to'];
+$channel = $_i['sent_to'];
 $fc = substr($channel, 0, 1);
 if ($fc != '#' && $fc != '&') {
 	$_i['handle']->say($_i['reply_to'], 'seen in PM coming soon');
@@ -27,7 +27,8 @@ LIMIT 1
 QUERY
 );
 
-log::debug("seen query >>> $query");
+$lq = color_formatting::escape($query);
+log::debug("seen query >>> $lq");
 
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {

@@ -3,6 +3,12 @@
 # main function for ExtraServ
 log::trace('entered f::main()');
 
+f::ALIAS('cmd_f', 'cmd_logsearch');
+f::ALIAS('cmd_first', 'cmd_logsearch');
+f::ALIAS('cmd_l', 'cmd_logsearch');
+f::ALIAS('cmd_last', 'cmd_logsearch');
+f::ALIAS('cmd_random', 'cmd_logsearch');
+
 $_socket_start = null;
 $_socket_timeout = ini_get('default_socket_timeout');
 while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) < $_socket_timeout) {
@@ -132,13 +138,8 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					# Special admin commands
 					if (!$handled && is_admin($_i['prefix'])) {
 						switch ($ucmd) {
-							case 'reload-all':
-								log::notice('Got !reload-all');
-								$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading');
-								f::RELOAD_ALL();
-								break;
 							case 'es-reload':
-								log::notice('Got !esreload, reloading main()');
+								log::notice('Got !es-reload, reloading main()');
 								$_i['handle']->say($_i['reply_to'], 'Reloading main');
 								f::RELOAD('main');
 								return 0;
@@ -148,10 +149,20 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							case 'es-reinit':
 								log::notice('Got !es-reinit');
 								return 3;
-							case 'es-freload':
-								log::notice('Got !es-freload');
+							case 'reload-all':
+								log::notice('Got !reload-all');
+								$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading');
+								f::RELOAD_ALL();
+								break;
+							case 'f-reload':
+								log::notice('Got !f-reload');
 								f::RELOAD($uarg);
 								$_i['handle']->say($_i['reply_to'], "Reloading f::$uarg()");
+								break;
+							case 'c-reload':
+								log::notice('Got !c-reload');
+								f::RELOAD("cmd_$uarg");
+								$_i['handle']->say($_i['reply_to'], "Reloading f::cmd_$uarg()");
 								break;
 							case 'set-tz':
 								log::notice('Got !set-tz');

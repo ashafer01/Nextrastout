@@ -85,6 +85,44 @@ function tab_lines($text, $level = 1) {
 	return implode("\n", $ret);
 }
 
+function single_quote($str) {
+	return "'$str'";
+}
+
+function dbescape($str) {
+	return pg_escape_string(ExtraServ::$db, $str);
+}
+
+function rainbow($string) {
+	static $colors = array('0', '4', '8', '9', '11', '12', '13');
+	$len = strlen($string);
+	$newstr = '';
+	$last = 255;
+	$color = 0;
+
+	for ($i = 0; $i < $len; $i++) {
+		$char = substr($string, $i, 1);
+		if ($char == ' ') {
+			$newstr .= $char;
+			continue;
+		}
+		while (($color = $colors[array_rand($colors)]) == $last) {}
+		$last = $color;
+		$newstr .= "\x03$color";
+		$newstr .= $char;
+	}
+
+	return $newstr;
+}
+
+function ord_suffix($number) {
+	static $ends = array('th','st','nd','rd','th','th','th','th','th','th');
+	if (($number %100) >= 11 && ($number%100) <= 13)
+		$abbreviation = $number. 'th';
+	else
+		$abbreviation = $number. $ends[$number % 10];
+}
+
 class color_formatting {
 	public static function escape($text) {
 		return str_replace('%', '%!', $text);

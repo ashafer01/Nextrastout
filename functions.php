@@ -23,7 +23,9 @@ class f {
 	}
 
 	public static function ALIAS($alias, $real) {
-		self::$aliases[$alias] = $real;
+		if (!array_key_exists($alias, self::$aliases) || (array_key_exists($alias, self::$aliases) && (self::$aliases[$alias] != $real))) {
+			self::$aliases[$alias] = $real;
+		}
 	}
 
 	private static function _reload($func) {
@@ -32,7 +34,7 @@ class f {
 			log::fatal("'$func' is a class method of f");
 			throw new Exception("Function name '$func' is reserved");
 		}
-		if (in_array($func, self::$aliases)) {
+		if (array_key_exists($func, self::$aliases)) {
 			$orig = $func;
 			$func = self::$aliases[$func];
 			log::debug("== Mapping alias function '$orig' to '$func' for reload");
