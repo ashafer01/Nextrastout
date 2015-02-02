@@ -168,6 +168,7 @@ pcntl_signal(SIGINT, 'parent_sigint');
 
 setproctitle('ExtraServ [parent]');
 proc::$name = 'parent';
+proc::$parent_queue = msg_get_queue(proc::PARENT_QUEUEID);
 
 $_status = -10;
 while (true) {
@@ -195,6 +196,7 @@ while (true) {
 		if ($_status === -10) {
 			# no change
 			sleep(1);
+			proc::queue_relay();
 			continue;
 		} elseif ($_status === 0) {
 			# clean exit
@@ -203,6 +205,7 @@ while (true) {
 		} elseif ($_status === 1) {
 			# loop has ended, probably broken pipe
 			log::debug('breaking wait loop');
+			proc::queue_relay();
 			break;
 		} elseif ($_status === 2) {
 			# stopping gracefully
@@ -231,6 +234,7 @@ while (true) {
 		} else {
 			log::fatal("Unknown return '$_status' from main()");
 			$intstatus = (int)$_status;
+			proc::stop_all();
 			if ($intstatus < 1 || $intstatus > 254) {
 				echo "Unknown return '$_status' from main() is out of range for exit codes";
 				exit(1);
@@ -238,6 +242,7 @@ while (true) {
 				exit($intstatus);
 			}
 		}
+		proc::queue_relay();
 		log::debug('Reached end of wait loop');
 	}
 	log::debug('Reached end of init loop');

@@ -13,7 +13,6 @@ class pseudoclient {
 				continue;
 			$this->channels[] = $chan;
 		}
-		var_dump($this->channels);
 		unset($params['channels']);
 		$this->params = $params;
 	}

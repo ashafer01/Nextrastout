@@ -8,6 +8,15 @@ class proc {
 
 	public static $name = null;
 
+	const PARENT_QUEUEID = 420;
+	const MAX_MSG_SIZE = 4096;
+	private static $mqid = 421;
+
+	public static $parent_queue = null;
+	public static $queue = null;
+
+	private static $queues = array();
+
 	public static function start($name, $func, $args = null) {
 		if (strlen($name) > 10) {
 			$name = substr($name, 0, 10);
@@ -29,6 +38,9 @@ class proc {
 				$name .= $index;
 			}
 		}
+		$MQID = self::$mqid;
+		self::$mqid++;
+		self::$queues[$name] = msg_get_queue($MQID);
 		log::info("Starting proc '$name' with function f::$func()");
 		$pid = pcntl_fork();
 		if ($pid === -1) {
@@ -38,6 +50,8 @@ class proc {
 			pcntl_signal(SIGINT, 'child_sigint');
 			file_put_contents("pids/$name.pid", posix_getpid());
 			setproctitle("ExtraServ [$name]");
+			proc::$parent_queue = msg_get_queue(proc::PARENT_QUEUEID);
+			proc::$queue = msg_get_queue($MQID);
 
 			self::$name = $name;
 			self::$procs = array();
@@ -64,6 +78,44 @@ class proc {
 			} # end call loop
 		} else {
 			self::$procs[$name] = $func;
+		}
+	}
+
+	public static function queue_relay() {
+		if (msg_receive(self::$parent_queue, 0, $msgtype, proc::MAX_MSG_SIZE, $message, false, MSG_IPC_NOWAIT|MSG_NOERROR) === true) {
+			foreach (self::$queues as $procname => $mq) {
+				if (msg_send($mq, $msgtype, $message, false) === true) {
+					log::debug("Relayed message of type $msgtype to proc '$procname'");
+				} else {
+					log::error("Failed to send message to proc '$procname'");
+				}
+			}
+		}
+	}
+
+	public static function queue_sendall($type, $msg) {
+		$myproc = proc::$name;
+		$msg = "$myproc::$msg";
+		msg_send(proc::$parent_queue, $type, $msg, false);
+	}
+
+	public static function queue_get($type, &$msgtype = null, &$fromproc = null) {
+		if (msg_receive(proc::$queue, $type, $i_msgtype, proc::MAX_MSG_SIZE, $message, false, MSG_IPC_NOWAIT|MSG_NOERROR) === true) {
+			$message = explode('::', $message, 2);
+			if ($message[0] == proc::$name) {
+				log::trace('ignoring own message');
+				$fromproc = null;
+				$msgtype = null;
+				return null;
+			} else {
+				$fromproc = $message[0];
+				$msgtype = $i_msgtype;
+				return $message[1];
+			}
+		} else {
+			$fromproc = null;
+			$msgtype = null;
+			return null;
 		}
 	}
 
