@@ -9,7 +9,7 @@ while (true) {
 	}
 
 	if (($message = proc::queue_get(0, $msgtype, $fromproc)) !== null) {
-		log::debug("Got message (type=$msgtype): $message");
+		log::debug("Got message from $fromproc (type=$msgtype): $message");
 	}
 	sleep(1);
 	$count++;

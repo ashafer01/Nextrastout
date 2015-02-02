@@ -50,12 +50,14 @@ class proc {
 			pcntl_signal(SIGINT, 'child_sigint');
 			file_put_contents("pids/$name.pid", posix_getpid());
 			setproctitle("ExtraServ [$name]");
-			proc::$parent_queue = msg_get_queue(proc::PARENT_QUEUEID);
-			proc::$queue = msg_get_queue($MQID);
 
-			self::$name = $name;
 			self::$procs = array();
 			self::$dups = array();
+
+			proc::$name = $name;
+			proc::$parent_queue = msg_get_queue(proc::PARENT_QUEUEID);
+			proc::$queue = msg_get_queue($MQID);
+			proc::queue_sendall(184, $MQID); # tell other processes our queue id
 
 			while (true) {
 				$_status = f::CALL($func, $args);
@@ -94,9 +96,12 @@ class proc {
 	}
 
 	public static function queue_sendall($type, $msg) {
+		log::debug("Sending message (type=$type)");
 		$myproc = proc::$name;
 		$msg = "$myproc::$msg";
-		msg_send(proc::$parent_queue, $type, $msg, false);
+		if (msg_send(proc::$parent_queue, $type, $msg, false) !== true) {
+			log::error('Failed to send message to parent queue');
+		}
 	}
 
 	public static function queue_get($type, &$msgtype = null, &$fromproc = null) {
@@ -108,9 +113,19 @@ class proc {
 				$msgtype = null;
 				return null;
 			} else {
-				$fromproc = $message[0];
-				$msgtype = $i_msgtype;
-				return $message[1];
+				if ($i_msgtype == 184) {
+					# notification of new queue
+					log::debug("Recieved new queue notification {$message[0]} => {$message[1]}");
+					self::$queues[$message[0]] = msg_get_queue((int) $message[1]);
+
+					$fromproc = null;
+					$msgtype = null;
+					return null;
+				} else {
+					$fromproc = $message[0];
+					$msgtype = $i_msgtype;
+					return $message[1];
+				}
 			}
 		} else {
 			$fromproc = null;
