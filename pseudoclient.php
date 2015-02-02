@@ -4,7 +4,16 @@ class pseudoclient {
 	private $params;
 	private $channels;
 	public function __construct($params) {
-		$this->channels = $params['channels'];
+		if (is_object($params)) {
+			$params = (array) $params;
+		}
+		$this->channels = array();
+		foreach ($params['channels'] as $chan) {
+			if ($chan == null)
+				continue;
+			$this->channels[] = $chan;
+		}
+		var_dump($this->channels);
 		unset($params['channels']);
 		$this->params = $params;
 	}
@@ -20,6 +29,9 @@ class pseudoclient {
 	public function init() {
 		$host = ExtraServ::$hostname;
 		$ts = time();
+		if (strlen($this->user) > 9) {
+			$this->user = substr($this->user, 0, 9);
+		}
 		uplink::send("NICK {$this->nick} 1 $ts {$this->mode} {$this->user} $host $host 0 :{$this->name}");
 		foreach ($this->channels as $chan) {
 			$this->join($chan);

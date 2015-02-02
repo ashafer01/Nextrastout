@@ -29,6 +29,7 @@ class ExtraServ {
 
 	public static function init() {
 		self::$password = get_password('uplink');
+		$conf = config::get_instance();
 
 		$c = uplink::connect();
 		if (!$c) {
@@ -42,29 +43,14 @@ class ExtraServ {
 			exit(1);
 		}
 
-		# temporary setup until config stuff is done
-		$handles = array(
-			'ExtraServ' => new pseudoclient(array(
-				'nick' => 'ExtraServ',
-				'user' => 'ExtraServ',
-				'name' => self::$info,
-				'mode' => '+iow',
-				'channels' => array('#alex')
-			)),
-			'Nextrastout' => new pseudoclient(array(
-				'nick' => 'Nextrastout',
-				'user' => 'Nextrasto',
-				'name' => 'Extrastout c/o alex',
-				'mode' => '+i',
-				'channels' => array()
-			))
-		);
 		if (self::$handles === null) {
-			self::$handles = $handles;
-			self::$serv_handle = self::$handles['ExtraServ'];
-			self::$bot_handle = self::$handles['Nextrastout'];
+			self::$handles = array();
+			foreach ($conf->handles as $key => $params) {
+				self::$handles[$key] = new pseudoclient($params);
+			}
+			self::$serv_handle = self::$handles[$conf->serv->handle];
+			self::$bot_handle = self::$handles[$conf->bot->handle];
 		}
-		# --- end hack
 
 		# Identify to the uplink server
 		$my = 'ExtraServ';
