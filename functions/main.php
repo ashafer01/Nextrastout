@@ -118,6 +118,8 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					break;
 				}
 			}
+
+			# commands
 			$leader = '!';
 			if (substr($_i['text'], 0, 1) == $leader) {
 				log::trace('Detected command');
@@ -130,58 +132,69 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				$cmdfunc = "cmd_$ucmd";
 				if (f::EXISTS($cmdfunc)) {
 					f::CALL($cmdfunc, array($ucmd, $uarg, $_i));
-				} else {
-					# Simple commands that don't need their own function file
-					$handled = f::simple_commands($ucmd, $uarg, $_i);
+				} elseif(is_admin($_i['prefix'])) {
+					switch ($ucmd) {
+						case 'serv':
+							log::notice('Got !serv');
 
-					# Special admin commands
-					if (!$handled && is_admin($_i['prefix'])) {
-						switch ($ucmd) {
-							case 'es-reload':
-								log::notice('Got !es-reload, reloading main()');
-								$_i['handle']->say($_i['reply_to'], 'Reloading main');
-								f::RELOAD('main');
-								return 0;
-							case 'es-stop':
-								log::notice('Got !es-stop, stopping');
-								return 2;
-							case 'es-reinit':
-								log::notice('Got !es-reinit');
-								return 3;
-							case 'loglevel':
-								log::notice("Got !loglevel $uarg");
-								log::$level = log::string_to_level($uarg);
-								$_i['handle']->say($_i['reply_to'], 'Changed log level');
-								break;
-							case 'reload-all':
-								log::notice('Got !reload-all');
-								$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading');
-								f::RELOAD_ALL();
-								break;
-							case 'f-reload':
-								log::notice('Got !f-reload');
-								f::RELOAD($uarg);
-								$_i['handle']->say($_i['reply_to'], "Reloading f::$uarg()");
-								break;
-							case 'c-reload':
-								log::notice('Got !c-reload');
-								f::RELOAD("cmd_$uarg");
-								$_i['handle']->say($_i['reply_to'], "Reloading f::cmd_$uarg()");
-								break;
-							case 'set-tz':
-								log::notice('Got !set-tz');
-								ExtraServ::$output_tz = $uarg;
-								$_i['handle']->say($_i['reply_to'], 'Changed output timezone');
-								break;
-							default:
-								log::trace('Not an admin command');
-						}
-					} else {
-						log::trace("simple_commands handled '$ucmd'");
+							break;
+						case 'es-reload':
+							log::notice('Got !es-reload, reloading main()');
+							$_i['handle']->say($_i['reply_to'], 'Reloading main');
+							f::RELOAD('main');
+							return 0;
+						case 'es-stop':
+							log::notice('Got !es-stop, stopping');
+							return 2;
+						case 'es-reinit':
+							log::notice('Got !es-reinit');
+							return 3;
+						case 'loglevel':
+							log::notice("Got !loglevel $uarg");
+							log::$level = log::string_to_level($uarg);
+							$_i['handle']->say($_i['reply_to'], 'Changed log level');
+							break;
+						case 'reload-all':
+							log::notice('Got !reload-all');
+							$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading');
+							f::RELOAD_ALL();
+							break;
+						case 'f-reload':
+							log::notice('Got !f-reload');
+							f::RELOAD($uarg);
+							$_i['handle']->say($_i['reply_to'], "Reloading f::$uarg()");
+							break;
+						case 'c-reload':
+							log::notice('Got !c-reload');
+							f::RELOAD("cmd_$uarg");
+							$_i['handle']->say($_i['reply_to'], "Reloading f::cmd_$uarg()");
+							break;
+						case 'set-tz':
+							log::notice('Got !set-tz');
+							ExtraServ::$output_tz = $uarg;
+							$_i['handle']->say($_i['reply_to'], 'Changed output timezone');
+							break;
+						default:
+							log::trace('Not an admin command');
 					}
 				}
+			} # --- end commands
+
+			# other privmsg replies
+			else {
+				$fsw = explode(' ', $_i['text'], 2);
+				switch ($fsw[0]) {
+					case 'seen':
+					case 'karma':
+						log::info('Got non-leader command');
+						$cmdfunc = "cmd_{$fsw[0]}";
+						f::CALL($cmdfunc, array($fsw[0], $fsw[1], $_i));
+						break;
+					default:
+						log::trace('Not a non-leader command');
+				}
 			}
-			break;
+			break; # --- end privmsg handling
 	}
 }
 

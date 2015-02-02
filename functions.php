@@ -77,8 +77,11 @@ class f {
 		}
 	}
 
-	private static function _do_call($_FUNC_NAME, $_ARGV) {
+	private static function _do_call($_FUNC_NAME, $_ARGV = null) {
 		log::trace('f::_do_call()');
+		if ($_ARGV === null) {
+			$_ARGV = array();
+		}
 		if (array_key_exists($_FUNC_NAME, self::$aliases)) {
 			$___orig_func = $_FUNC_NAME;
 			$_FUNC_NAME = self::$aliases[$___orig_func];
@@ -137,7 +140,7 @@ class f {
 	public static function RELOAD_ALL() {
 		log::info("Doing f::RELOAD_ALL");
 		foreach (self::$reload as $func => $_) {
-			if (!in_array($func, array('main'))) {
+			if (!in_array($func, array('main', 'timer'))) {
 				self::RELOAD($func);
 			} else {
 				log::debug("Skipping $func() for RELOAD_ALL");

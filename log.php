@@ -1,5 +1,6 @@
 <?php
 require_once 'utils.php';
+require_once 'procs.php';
 
 class log {
 	const FATAL = 0;
@@ -43,12 +44,13 @@ class log {
 		if ($level <= log::$level) {
 			$ts = utimestamp();
 			$lvl = log::level_to_string($level);
+			$procname = sprintf('%10s', proc::$name);
 
 			$lines = explode("\n", $message);
 			foreach ($lines as $line) {
 				# log to stdout
 				$line = color_formatting::ansi($line);
-				echo "[$ts] $lvl: $line\n";
+				echo "[$ts] [$procname] $lvl: $line\n";
 			}
 		}
 	}

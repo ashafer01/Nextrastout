@@ -5,12 +5,22 @@ require_once 'log.php';
 require_once 'functions.php';
 require_once 'pseudoclient.php';
 require_once 'config.php';
+require_once 'procs.php';
 
 function is_admin($nick) {
 	static $admin_nicks = array(
 		'alex'
 	);
 	return in_array($nick, $admin_nicks);
+}
+
+function parent_sigint() {
+	log::fatal('Got sigint in parent, killing children');
+	foreach (ExtraServ::$handles as $pc) {
+		$pc->quit('Got SIGINT');
+	}
+	proc::stop_all();
+	exit(42);
 }
 
 class ExtraServ {
@@ -149,7 +159,12 @@ class uplink {
 
 error_reporting(E_ALL);
 date_default_timezone_set('UTC');
+pcntl_signal(SIGINT, 'parent_sigint');
 
+setproctitle('ExtraServ [parent]');
+proc::$name = 'parent';
+
+$_status = -10;
 while (true) {
 	log::debug('Started init loop');
 	$_status = ExtraServ::init();
@@ -158,29 +173,47 @@ while (true) {
 		sleep(30);
 		continue;
 	}
+	$_status = -10;
 
+	proc::start('responder', 'main');
+	proc::start('timer', 'timer');
+
+	proc::wait_pidfile('responder');
+	$responder_pid = proc::get_proc_pid('responder');
 	while (true) {
-		log::debug('Started main loop');
-		$_status = f::main();
+		$wait = pcntl_waitpid($responder_pid, $_status, WNOHANG);
+		if (pcntl_wifexited($_status)) {
+			$_status = pcntl_wexitstatus($_status);
+		}
 
-		if ($_status === 0) {
-			# reloading main()
-			log::debug('continuing main loop');
+		pcntl_signal_dispatch();
+		if ($_status === -10) {
+			# no change
+			sleep(1);
 			continue;
+		} elseif ($_status === 0) {
+			# clean exit
+			proc::stop_all();
+			exit(0);
 		} elseif ($_status === 1) {
 			# loop has ended, probably broken pipe
-			log::debug('breaking main loop');
+			log::debug('breaking wait loop');
 			break;
 		} elseif ($_status === 2) {
 			# stopping gracefully
-			log::debug('breaking main loop and init loop');
+			log::debug('breaking wait loop and init loop');
 			break 2;
 		} elseif ($_status === 3) {
 			# manual reconnect
 			log::notice('Closing uplink socket');
 			fclose(uplink::$socket);
-			log::debug('continuing main loop and init loop');
+			log::debug('continuing wait loop and init loop');
+			proc::stop_all();
 			continue 2;
+		} elseif ($_status === 42) {
+			# got sigint in child process
+			proc::stop_all();
+			exit(42);
 		} else {
 			log::fatal("Unknown return '$_status' from main()");
 			$intstatus = (int)$_status;
@@ -191,7 +224,7 @@ while (true) {
 				exit($intstatus);
 			}
 		}
-		log::debug('Reached end of main loop');
+		log::debug('Reached end of wait loop');
 	}
 	log::debug('Reached end of init loop');
 }

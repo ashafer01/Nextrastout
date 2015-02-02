@@ -49,6 +49,10 @@ class pseudoclient {
 		}
 	}
 
+	public function quit($reason) {
+		ExtraServ::usend($this->nick, "QUIT :$reason");
+	}
+
 	public function del_channel($channel) {
 		$this->channels = array_diff($this->channels, array($channel));
 	}
