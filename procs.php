@@ -23,7 +23,11 @@ class proc {
 				self::$dups[$name] = 0;
 				$index = 0;
 			}
-			$name = substr_replace($name, $index, -1);
+			if (strlen("$index") + strlen($name) >= 10) {
+				$name = substr_replace($name, $index, -1);
+			} else {
+				$name .= $index;
+			}
 		}
 		log::info("Starting proc '$name' with function f::$func()");
 		$pid = pcntl_fork();
@@ -63,21 +67,32 @@ class proc {
 		}
 	}
 
+	private static function del_proc($name) {
+		if (array_key_exists($name, self::$procs)) {
+			unset(self::$procs[$name]);
+		}
+		if (array_key_exists($name, self::$dups)) {
+			unset(self::$dups[$name]);
+		}
+		if (file_exists("pids/$name.pid")) {
+			log::debug("Deleting pids/$name.pid");
+			unlink("pids/$name.pid");
+		}
+	}
+
 	private static function _stopsignal($name, $signal) {
 		if (file_exists("pids/$name.pid")) {
 			$child_pid = trim(file_get_contents("pids/$name.pid"));
+			self::del_proc($name);
 			if (posix_kill($child_pid, $signal)) {
 				log::info("Signaled process $child_pid with $signal");
-				unset(self::$procs[$name]);
-				if (array_key_exists($name, self::$dups)) {
-					unset(self::$dups[$name]);
-				}
 				return true;
 			} else {
 				log::error("Failed to signal process $child_pid");
 				return false;
 			}
 		} else {
+			self::del_proc($name);
 			log::error("proc::_stopsignal($name, $signal) PID file does not exist");
 			return false;
 		}

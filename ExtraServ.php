@@ -133,6 +133,11 @@ class uplink {
 		return true;
 	}
 
+	public static function close() {
+		log::notice('Closing uplink socket');
+		fclose(self::$socket);
+	}
+
 	public static function safe_feof(&$start = null) {
 		$start = microtime(true);
 		return feof(self::$socket);
@@ -201,16 +206,20 @@ while (true) {
 			break;
 		} elseif ($_status === 2) {
 			# stopping gracefully
-			log::notice('Closing uplink socket');
-			fclose(uplink::$socket);
+			foreach (ExtraServ::$handles as $pc) {
+				$pc->quit('Stopping');
+			}
+			uplink::close();
 			log::debug('stopping children');
 			proc::stop_all();
 			log::debug('breaking wait loop and init loop');
 			break 2;
 		} elseif ($_status === 3) {
 			# manual reconnect
-			log::notice('Closing uplink socket');
-			fclose(uplink::$socket);
+			foreach (ExtraServ::$handles as $pc) {
+				$pc->quit('Reconnecting');
+			}
+			uplink::close();
 			log::debug('stopping children');
 			proc::stop_all();
 			log::debug('continuing wait loop and init loop');
