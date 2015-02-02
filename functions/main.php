@@ -3,22 +3,10 @@
 # main function for ExtraServ
 log::trace('entered f::main()');
 
-f::ALIAS('cmd_f', 'cmd_logsearch');
-f::ALIAS('cmd_first', 'cmd_logsearch');
-f::ALIAS('cmd_l', 'cmd_logsearch');
-f::ALIAS('cmd_last', 'cmd_logsearch');
-f::ALIAS('cmd_random', 'cmd_logsearch');
-f::ALIAS('cmd_line', 'cmd_logsearch');
-f::ALIAS('cmd_randcaps', 'cmd_logsearch');
-f::ALIAS('cmd_rancaps', 'cmd_logsearch');
-f::ALIAS('cmd_rrandcaps', 'cmd_logsearch');
-f::ALIAS('cmd_rrancaps', 'cmd_logsearch');
-f::ALIAS('cmd_randomcaps', 'cmd_logsearch');
-f::ALIAS('cmd_rrandomcaps', 'cmd_logsearch');
-f::ALIAS('cmd_kotw', 'cmd_kol');
-f::ALIAS('cmd_rotw', 'cmd_kol');
-f::ALIAS('cmd_lines', 'cmd_count');
-f::ALIAS('cmd_logct', 'cmd_count');
+$conf = config::get_instance();
+foreach ($conf->alias as $alias => $real) {
+	f::ALIAS($alias, $real);
+}
 
 $_socket_start = null;
 $_socket_timeout = ini_get('default_socket_timeout');
