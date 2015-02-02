@@ -201,14 +201,19 @@ while (true) {
 			break;
 		} elseif ($_status === 2) {
 			# stopping gracefully
+			log::notice('Closing uplink socket');
+			fclose(uplink::$socket);
+			log::debug('stopping children');
+			proc::stop_all();
 			log::debug('breaking wait loop and init loop');
 			break 2;
 		} elseif ($_status === 3) {
 			# manual reconnect
 			log::notice('Closing uplink socket');
 			fclose(uplink::$socket);
-			log::debug('continuing wait loop and init loop');
+			log::debug('stopping children');
 			proc::stop_all();
+			log::debug('continuing wait loop and init loop');
 			continue 2;
 		} elseif ($_status === 42) {
 			# got sigint in child process

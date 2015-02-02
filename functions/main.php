@@ -134,10 +134,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					f::CALL($cmdfunc, array($ucmd, $uarg, $_i));
 				} elseif(is_admin($_i['prefix'])) {
 					switch ($ucmd) {
-						case 'serv':
-							log::notice('Got !serv');
-
-							break;
 						case 'es-reload':
 							log::notice('Got !es-reload, reloading main()');
 							$_i['handle']->say($_i['reply_to'], 'Reloading main');
