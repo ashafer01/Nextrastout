@@ -17,6 +17,8 @@ class proc {
 
 	private static $queues = array();
 
+	## process control
+
 	public static function start($name, $func, $args = null) {
 		if (strlen($name) > 10) {
 			$name = substr($name, 0, 10);
@@ -83,6 +85,95 @@ class proc {
 		}
 	}
 
+	public static function stop($name) {
+		return self::_stopsignal($name, SIGTERM);
+	}
+
+	public static function kill($name) {
+		return self::_stopsignal($name, SIGKILL);
+	}
+
+	# send a signal and delete the process
+	private static function _stopsignal($name, $signal) {
+		if (file_exists("pids/$name.pid")) {
+			$child_pid = trim(file_get_contents("pids/$name.pid"));
+			self::del_proc($name);
+			if (posix_kill($child_pid, $signal)) {
+				log::info("Signaled process $child_pid with $signal");
+				return true;
+			} else {
+				log::error("Failed to signal process $child_pid");
+				return false;
+			}
+		} else {
+			self::del_proc($name);
+			log::error("proc::_stopsignal($name, $signal) PID file does not exist");
+			return false;
+		}
+	}
+
+	public static function stop_all() {
+		foreach (self::$procs as $name => $_) {
+			if ($name != proc::$name) {
+				proc::stop($name);
+			}
+		}
+	}
+
+	public static function kill_all() {
+		foreach (self::$procs as $name => $_) {
+			if ($name != proc::$name) {
+				proc::kill($name);
+			}
+		}
+	}
+
+	# delete metadata about a child process
+	private static function del_proc($name) {
+		if (array_key_exists($name, self::$procs)) {
+			unset(self::$procs[$name]);
+		}
+		if (array_key_exists($name, self::$dups)) {
+			unset(self::$dups[$name]);
+		}
+		if (file_exists("pids/$name.pid")) {
+			log::debug("Deleting pids/$name.pid");
+			unlink("pids/$name.pid");
+		}
+	}
+
+	## PID stuff
+
+	# wait for a pidfile to be created- used for syncronization
+	public static function wait_pidfile($name) {
+		if (array_key_exists($name, self::$procs)) {
+			while(!file_exists("pids/$name.pid"));
+		} else {
+			throw new Exception("No proc named '$name'");
+		}
+	}
+
+	# get the PID of a process by name
+	public static function get_proc_pid($name) {
+		if (array_key_exists($name, self::$procs)) {
+			return (int)trim(file_get_contents("pids/$name.pid"));
+		}
+		return false;
+	}
+
+	## queue stuff
+
+	# send a message to the parent queue to be relayed to siblings
+	public static function queue_sendall($type, $msg) {
+		log::debug("Sending message (type=$type)");
+		$myproc = proc::$name;
+		$msg = "$myproc::$msg";
+		if (msg_send(proc::$parent_queue, $type, $msg, false) !== true) {
+			log::error('Failed to send message to parent queue');
+		}
+	}
+
+	# called in a parent process- relays message from its queue to all of its children's queues
 	public static function queue_relay() {
 		if (msg_receive(self::$parent_queue, 0, $msgtype, proc::MAX_MSG_SIZE, $message, false, MSG_IPC_NOWAIT|MSG_NOERROR) === true) {
 			foreach (self::$queues as $procname => $mq) {
@@ -95,15 +186,7 @@ class proc {
 		}
 	}
 
-	public static function queue_sendall($type, $msg) {
-		log::debug("Sending message (type=$type)");
-		$myproc = proc::$name;
-		$msg = "$myproc::$msg";
-		if (msg_send(proc::$parent_queue, $type, $msg, false) !== true) {
-			log::error('Failed to send message to parent queue');
-		}
-	}
-
+	# get a message from the current process queue
 	public static function queue_get($type, &$msgtype = null, &$fromproc = null) {
 		if (msg_receive(proc::$queue, $type, $i_msgtype, proc::MAX_MSG_SIZE, $message, false, MSG_IPC_NOWAIT|MSG_NOERROR) === true) {
 			$message = explode('::', $message, 2);
@@ -133,76 +216,6 @@ class proc {
 			$msgtype = null;
 			return null;
 		}
-	}
-
-	private static function del_proc($name) {
-		if (array_key_exists($name, self::$procs)) {
-			unset(self::$procs[$name]);
-		}
-		if (array_key_exists($name, self::$dups)) {
-			unset(self::$dups[$name]);
-		}
-		if (file_exists("pids/$name.pid")) {
-			log::debug("Deleting pids/$name.pid");
-			unlink("pids/$name.pid");
-		}
-	}
-
-	private static function _stopsignal($name, $signal) {
-		if (file_exists("pids/$name.pid")) {
-			$child_pid = trim(file_get_contents("pids/$name.pid"));
-			self::del_proc($name);
-			if (posix_kill($child_pid, $signal)) {
-				log::info("Signaled process $child_pid with $signal");
-				return true;
-			} else {
-				log::error("Failed to signal process $child_pid");
-				return false;
-			}
-		} else {
-			self::del_proc($name);
-			log::error("proc::_stopsignal($name, $signal) PID file does not exist");
-			return false;
-		}
-	}
-
-	public static function stop($name) {
-		return self::_stopsignal($name, SIGTERM);
-	}
-
-	public static function kill($name) {
-		return self::_stopsignal($name, SIGKILL);
-	}
-
-	public static function stop_all() {
-		foreach (self::$procs as $name => $_) {
-			if ($name != proc::$name) {
-				proc::stop($name);
-			}
-		}
-	}
-
-	public static function kill_all() {
-		foreach (self::$procs as $name => $_) {
-			if ($name != proc::$name) {
-				proc::kill($name);
-			}
-		}
-	}
-
-	public static function wait_pidfile($name) {
-		if (array_key_exists($name, self::$procs)) {
-			while(!file_exists("pids/$name.pid"));
-		} else {
-			throw new Exception("No proc named '$name'");
-		}
-	}
-
-	public static function get_proc_pid($name) {
-		if (array_key_exists($name, self::$procs)) {
-			return (int)trim(file_get_contents("pids/$name.pid"));
-		}
-		return false;
 	}
 }
 

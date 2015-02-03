@@ -15,9 +15,13 @@ class config {
 
 	## ini stuff
 	private $conf = null;
-	private function __construct() {
+	public function reload() {
 		$parser = new IniParser(config::$base . 'ExtraServ.ini');
 		$this->conf = $parser->parse();
+	}
+
+	private function __construct() {
+		$this->reload();
 	}
 
 	public function __get($key) {

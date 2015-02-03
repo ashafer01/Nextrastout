@@ -67,6 +67,10 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			}
 			log::trace('Finished NICK handling');
 			break;
+		case 'ERROR':
+			// [Mon 2015.02.02 23:31:55.409541+00:00] [ responder] INFO: <= ERROR :Closing Link: 127.0.0.1 (Not enough arguments to server command.)
+			log::fatal('Got ERROR line');
+			exit(13);
 		case 'PING':
 			uplink::send("PONG :{$_i['text']}");
 			break;
@@ -105,6 +109,15 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 		case 'QUIT':
 			unset(uplink::$nicks[$_i['prefix']]);
 			log::debug("Deleted nick {$_i['prefix']} due to QUIT");
+			break;
+		case 'SQUIT':
+			// [Mon 2015.02.02 23:31:55.408885+00:00] [ responder] INFO: <= :extrastout.defiant.worf.co SQUIT yakko.cs.wmich.edu :Not enough arguments 
+			if ($_i['prefix'] == ExtraServ::$hostname) {
+				log::error("Server {$_i['args'][0]} is killing me: {$_i['text']}");
+			} else {
+				log::info("Server {$_i['prefix']} has quit ({$_i['text']})");
+				unset(uplink::$network[$_i['prefix']]);
+			}
 			break;
 		case 'PRIVMSG':
 			$_i['sent_to'] = $_i['args'][0];
@@ -158,6 +171,29 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							$_i['handle']->say($_i['reply_to'], 'Reloading main');
 							f::RELOAD('main');
 							return 0;
+						case 'reload':
+						case 'f-reload':
+							log::notice('Got !f-reload');
+							f::RELOAD($uarg);
+							$_i['handle']->say($_i['reply_to'], "Reloading f::$uarg()");
+							break;
+						case 'creload':
+						case 'c-reload':
+							log::notice('Got !creload');
+							f::RELOAD("cmd_$uarg");
+							$_i['handle']->say($_i['reply_to'], "Reloading f::cmd_$uarg()");
+							break;
+						case 'hup':
+							log::notice('Got !hup');
+							config::reload();
+							$_i['handle']->say($_i['reply_to'], 'Reloaded config');
+							break;
+						case 'reload-all':
+							log::notice('Got !reload-all');
+							$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading and reloading conf');
+							f::RELOAD_ALL();
+							config::reload();
+							break;
 						case 'es-stop':
 							log::notice('Got !es-stop, stopping');
 							return 2;
@@ -168,21 +204,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							log::notice("Got !loglevel $uarg");
 							log::$level = log::string_to_level($uarg);
 							$_i['handle']->say($_i['reply_to'], 'Changed log level');
-							break;
-						case 'reload-all':
-							log::notice('Got !reload-all');
-							$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading');
-							f::RELOAD_ALL();
-							break;
-						case 'f-reload':
-							log::notice('Got !f-reload');
-							f::RELOAD($uarg);
-							$_i['handle']->say($_i['reply_to'], "Reloading f::$uarg()");
-							break;
-						case 'c-reload':
-							log::notice('Got !c-reload');
-							f::RELOAD("cmd_$uarg");
-							$_i['handle']->say($_i['reply_to'], "Reloading f::cmd_$uarg()");
 							break;
 						case 'set-tz':
 							log::notice('Got !set-tz');

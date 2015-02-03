@@ -9,7 +9,7 @@ $_i['cmd'] = null;
 $_i['args'] = array();
 $_i['text'] = '';
 
-$lwords = explode(' ', $line);
+$lwords = explode(' ', trim($line));
 if (substr($lwords[0], 0, 1) == ':') {
 	$_i['prefix'] = substr(array_shift($lwords), 1);
 }
@@ -18,13 +18,13 @@ $twords = array();
 $ontext = false;
 foreach ($lwords as $w) {
 	if (!$ontext) {
-		$w = trim($w);
-		if ($w == null)
+		if (trim($w) == null)
 			continue;
-		if (substr($w, 0, 1) == ':') {
+		if (substr(ltrim($w), 0, 1) == ':') {
 			$ontext = true;
-			$twords[] = substr($w, 1);
+			$twords[] = substr(ltrim($w), 1);
 		} else {
+			$w = trim($w);
 			$_i['args'][] = $w;
 		}
 	} else {
