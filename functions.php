@@ -23,8 +23,10 @@ class f {
 	}
 
 	public static function ALIAS($alias, $real) {
-		if (!array_key_exists($alias, self::$aliases) || (array_key_exists($alias, self::$aliases) && (self::$aliases[$alias] != $real))) {
+		if (f::EXISTS($real)) {
 			self::$aliases[$alias] = $real;
+		} else {
+			log::warning("Ignoring function alias $alias => $real because $real does not exist");
 		}
 	}
 
