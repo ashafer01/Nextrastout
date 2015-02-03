@@ -8,9 +8,9 @@ class proc {
 
 	public static $name = null;
 
-	const PARENT_QUEUEID = 420;
+	const PARENT_QUEUEID = 421;
 	const MAX_MSG_SIZE = 4096;
-	private static $mqid = 421;
+	private static $mqid = 422;
 
 	public static $parent_queue = null;
 	public static $queue = null;
@@ -107,6 +107,7 @@ class proc {
 	public static function queue_get($type, &$msgtype = null, &$fromproc = null) {
 		if (msg_receive(proc::$queue, $type, $i_msgtype, proc::MAX_MSG_SIZE, $message, false, MSG_IPC_NOWAIT|MSG_NOERROR) === true) {
 			$message = explode('::', $message, 2);
+			$message[] = null;
 			if ($message[0] == proc::$name) {
 				log::trace('ignoring own message');
 				$fromproc = null;

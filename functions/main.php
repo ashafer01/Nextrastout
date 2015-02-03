@@ -21,7 +21,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 	$_i = f::parse_line($line);
 
-	// Handle line
+	# Handle line
 	switch ($_i['cmd']) {
 		case 'SERVER':
 			log::trace('Started SERVER handling');
@@ -32,7 +32,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			);
 
 			uplink::$network[$_i['args'][0]] = $server;
-			if ($_i['prefix'] === null) { // this is the SERVER line for the uplink server
+			if ($_i['prefix'] === null) { # this is the SERVER line for the uplink server
 				uplink::$server = $server;
 			}
 
@@ -41,7 +41,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 		case 'NICK':
 			log::trace('Started NICK handling');
 			// NICK NickServ 2 1409083701 +io NickServ dot.cs.wmich.edu dot.cs.wmich.edu 0 :Nickname Services
-			if ($_i['prefix'] === null || uplink::is_server($_i['prefix'])) { // a server is telling us about a nick
+			if ($_i['prefix'] === null || uplink::is_server($_i['prefix'])) { # a server is telling us about a nick
 				uplink::$nicks[$_i['args'][0]] = array(
 					'nick' => $_i['args'][0],
 					'hopcount' => $_i['args'][1]+1,
@@ -54,7 +54,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					'channels' => array()
 				);
 				log::debug("Stored nick {$_i['args'][0]}");
-			} elseif (uplink::is_nick($_i['prefix'])) { // user has changed their nick
+			} elseif (uplink::is_nick($_i['prefix'])) { # user has changed their nick
 				$nick = uplink::$nicks[$_i['prefix']];
 				$nick['nick'] = $_i['args'][0];
 				if (count($_i['args']) > 1)
@@ -134,10 +134,25 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					f::CALL($cmdfunc, array($ucmd, $uarg, $_i));
 				} elseif(is_admin($_i['prefix'])) {
 					switch ($ucmd) {
+						# manual/testing functions
 						case 'mqt':
 							log::trace('Got !mqt');
 							proc::queue_sendall(42, $uarg);
 							break;
+						case 'serv':
+							log::trace('Got !serv');
+							ExtraServ::send($uarg);
+							break;
+						case 'es':
+							log::trace('Got !es');
+							ExtraServ::usend('ExtraServ', $uarg);
+							break;
+						case 'servts':
+							$ts = time();
+							ExtraServ::send("$uarg $ts");
+							break;
+
+						# operational functions
 						case 'es-reload':
 							log::notice('Got !es-reload, reloading main()');
 							$_i['handle']->say($_i['reply_to'], 'Reloading main');
