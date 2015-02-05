@@ -38,7 +38,7 @@ class config {
 	## List management
 	private static $lists = array();
 
-	private static function get_list($name) {
+	public static function get_list($name) {
 		if (!array_key_exists($name, self::$lists)) {
 			$lines = array_map('trim', file(self::$base . "$name.list"));
 			$list = array();

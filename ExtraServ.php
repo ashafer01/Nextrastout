@@ -49,7 +49,7 @@ while (true) {
 			continue;
 		} elseif ($_status === 0) {
 			# clean exit
-			proc::stop_all();
+			close_all();
 			exit(0);
 		} elseif ($_status === 1) {
 			# loop has ended, probably broken pipe
@@ -99,8 +99,8 @@ log::debug('Reached end of file');
 close_all();
 
 function close_all() {
-	proc::queue_relay();
 	uplink::close();
+	pg_close(ExtraServ::$db);
 	log::debug('stopping children');
 	proc::stop_all();
 }
@@ -110,7 +110,7 @@ function parent_sigint() {
 	foreach (ExtraServ::$handles as $pc) {
 		$pc->quit('Got SIGINT');
 	}
-	proc::stop_all();
+	close_all();
 	exit(42);
 }
 
@@ -161,7 +161,7 @@ class ExtraServ {
 		$ts = time();
 		$tok = ExtraServ::HYBRID_TOKEN;
 		uplink::send("PASS $pw :TS");
-		uplink::send("CAPAB :EX IE HOPS SVS");
+		uplink::send("CAPAB :ENCAP EX IE HOPS SVS CHW QS EOB KLN GLN KNOCK UNKLN TBURST DLN UNDLN");
 		uplink::send("SID {$my::$hostname} 1 $tok :{$my::$info}");
 		uplink::send("SERVER {$my::$hostname} 1 :{$my::$info}");
 		uplink::send("SVINFO 6 5 0 :$ts");
@@ -226,7 +226,7 @@ class uplink {
 		log::notice('>> Trying uplink to '.self::$host.':'.self::$port);
 		self::$socket = fsockopen(self::$host, self::$port, $errno, $errstr);
 		if (self::$socket === false) {
-			log::error('Failed to connect to uplink server '.self::$host.':'.self::$port."$errstr ($errno)");
+			log::error('Failed to connect to uplink server '.self::$host.':'.self::$port." - $errstr ($errno)");
 			return false;
 		}
 		return true;

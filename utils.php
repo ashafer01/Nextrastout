@@ -124,10 +124,10 @@ function rainbow($string) {
 
 function ord_suffix($number) {
 	static $ends = array('th','st','nd','rd','th','th','th','th','th','th');
-	if (($number %100) >= 11 && ($number%100) <= 13)
-		$abbreviation = $number. 'th';
+	if (($number % 100) >= 11 && ($number % 100) <= 13)
+		return 'th';
 	else
-		$abbreviation = $number. $ends[$number % 10];
+		return $ends[$number % 10];
 }
 
 # Check if a postgres prepared statement already exists
