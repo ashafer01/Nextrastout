@@ -5,7 +5,8 @@ log::trace('entered f::log_where()');
 $_ARGV[] = null;
 $_ARGV[] = null;
 $_ARGV[] = null;
-list($params, $no_nicks, $date_limit, $leading_and) = $_ARGV;
+$_ARGV[] = null;
+list($params, $no_nicks, $date_limit, $leading_and, $default_cond) = $_ARGV;
 if ($no_nicks === null) {
 	$no_nicks = false;
 }
@@ -14,11 +15,11 @@ if ($leading_and === null) {
 }
 
 if (is_string($params)) {
-	$p = f::parse_logquery($params);
+	$p = f::parse_logquery($params, $default_cond);
 } elseif (is_object($params)) {
 	$p = $params;
 } else {
-	$p = f::parse_logquery("$params");
+	$p = f::parse_logquery("$params", $default_cond);
 }
 
 $conds = array();

@@ -152,6 +152,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							log::trace('Got !mqt');
 							proc::queue_sendall(42, $uarg);
 							break;
+						case 'dbt':
+							pg_query(ExtraServ::$db, 'SELECT pg_sleep(15)');
+							break;
 						case 'serv':
 							log::trace('Got !serv');
 							ExtraServ::send($uarg);
@@ -160,9 +163,16 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							log::trace('Got !es');
 							ExtraServ::usend('ExtraServ', $uarg);
 							break;
+						case 'nes':
+							log::trace('Got !nes');
+							ExtraServ::usend('Nextrastout', $uarg);
+							break;
 						case 'servts':
 							$ts = time();
 							ExtraServ::send("$uarg $ts");
+							break;
+						case 'dumpconf':
+							var_dump(config::get_instance());
 							break;
 
 						# operational functions
@@ -185,14 +195,14 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							break;
 						case 'hup':
 							log::notice('Got !hup');
-							config::reload();
+							config::reload_all();
 							$_i['handle']->say($_i['reply_to'], 'Reloaded config');
 							break;
 						case 'reload-all':
 							log::notice('Got !reload-all');
 							$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading and reloading conf');
 							f::RELOAD_ALL();
-							config::reload();
+							config::reload_all();
 							break;
 						case 'es-stop':
 							log::notice('Got !es-stop, stopping');

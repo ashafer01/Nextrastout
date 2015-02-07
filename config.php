@@ -16,8 +16,9 @@ class config {
 	## ini stuff
 	private $conf = null;
 	public function reload() {
-		$parser = new IniParser(config::$base . 'ExtraServ.ini');
-		$this->conf = $parser->parse();
+		$main = new IniParser(config::$base . 'ExtraServ.ini');
+		$private = new IniParser(config::$base . 'private.ini');
+		$this->conf = new ArrayObject(array_merge($main->parse()->getArrayCopy(), $private->parse()->getArrayCopy()), ArrayObject::ARRAY_AS_PROPS);
 	}
 
 	private function __construct() {
@@ -33,6 +34,11 @@ class config {
 
 	public function offsetExists($key) {
 		return isset($this->conf->$key);
+	}
+
+	public static function reload_all() {
+		config::get_instance()->reload();
+		self::$lists = array();
 	}
 
 	## List management

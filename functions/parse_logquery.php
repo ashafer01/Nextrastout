@@ -2,7 +2,11 @@
 
 log::trace('Entered f::parse_logquery()');
 
-list($param_string) = $_ARGV;
+$_ARGV[] = null;
+list($param_string, $default_cond) = $_ARGV;
+if ($default_cond === null) {
+	$default_cond = 'likes';
+}
 
 $params = explode(' ', $param_string);
 
@@ -18,7 +22,7 @@ $ret->exc_nicks = array();
 $ret->req_re = array();
 $ret->exc_re = array();
 
-$current_var = 'likes';
+$current_var = $default_cond;
 $current_index = 0;
 foreach ($params as $param) {
 	if ($param == null) {

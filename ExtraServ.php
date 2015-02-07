@@ -140,7 +140,7 @@ class ExtraServ {
 		}
 
 		$dbpw = get_password('db');
-		self::$db = pg_connect("host=localhost dbname=alex user=alex password=$dbpw");
+		self::$db = pg_connect("host=localhost dbname=alex user=alex password=$dbpw application_name=ExtraServ");
 		if (self::$db === false) {
 			log::fatal('Failed to connect to database, exiting');
 			exit(1);

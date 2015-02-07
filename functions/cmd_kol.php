@@ -6,7 +6,7 @@ list($_CMD, $param, $_i) = $_ARGV;
 
 $where = "(command='PRIVMSG' AND args='{$_i['sent_to']}')";
 if ($param != null) {
-	$where .= f::log_where($param);
+	$where .= f::log_where($param, null, null, null, 'req_wordbound');
 }
 
 $query = "SELECT COUNT(uts) AS count FROM newlog WHERE $where";
