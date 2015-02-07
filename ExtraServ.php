@@ -214,9 +214,16 @@ class uplink {
 
 	protected static $socket;
 
+	public static $chanmode_map = array(
+		'@' => 'o', # chan op
+		'%' => 'h', # half op
+		'+' => 'v'  # voice
+	);
+
 	public static $server;
-	public static $network;
-	public static $nicks;
+	public static $network = array();
+	public static $channels = array();
+	public static $nicks = array();
 
 	public static function connect() {
 		$conf = config::get_instance();

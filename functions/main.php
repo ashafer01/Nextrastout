@@ -23,6 +23,12 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 	# Handle line
 	switch ($_i['cmd']) {
+		case 'ERROR':
+			log::fatal('Got ERROR line');
+			exit(13);
+		case 'PING':
+			uplink::send("PONG :{$_i['text']}");
+			break;
 		case 'SERVER':
 			log::trace('Started SERVER handling');
 			$server = array(
@@ -46,11 +52,12 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					'nick' => $_i['args'][0],
 					'hopcount' => $_i['args'][1]+1,
 					'jointime' => $_i['args'][2],
-					'mode' => $_i['args'][3],
+					'mode' => str_split(substr($_i['args'][3], 1), 1),
 					'user' => $_i['args'][4],
 					'host' => $_i['args'][5],
 					'server' => $_i['args'][6],
 					'modtime' => $_i['args'][7],
+					'realname' => $_i['text'],
 					'channels' => array()
 				);
 				log::debug("Stored nick {$_i['args'][0]}");
@@ -67,28 +74,126 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			}
 			log::trace('Finished NICK handling');
 			break;
-		case 'ERROR':
-			// [Mon 2015.02.02 23:31:55.409541+00:00] [ responder] INFO: <= ERROR :Closing Link: 127.0.0.1 (Not enough arguments to server command.)
-			log::fatal('Got ERROR line');
-			exit(13);
-		case 'PING':
-			uplink::send("PONG :{$_i['text']}");
-			break;
 		case 'SJOIN':
 			$chan = $_i['args'][1];
 			log::debug("Got SJOIN for $chan");
+
+			# process modes
+			$cmodes = str_split(substr($_i['args'][2], 1), 1);
+			$modes_array = array();
+			foreach ($cmodes as $modechar) {
+				$modes_array[$modechar] = null;
+			}
+			end($modes_array);
+			for ($i = count($_i['args'])-1; $i >= 3; $i--) {
+				$modes_array[key($modes_array)] = $_i['args'][$i];
+				prev($modes_array);
+			}
+			if (!array_key_exists($chan, uplink::$channels)) {
+				uplink::$channels[$chan] = $modes_array;
+			} else {
+				uplink::$channels[$chan] = array_merge(uplink::$channels[$chan], $modes_array);
+			}
+			foreach (uplink::$chanmode_map as $c) {
+				if (!array_key_exists($c, uplink::$channels[$chan])) {
+					uplink::$channels[$chan][$c] = array();
+				}
+			}
+			if (!array_key_exists('b', uplink::$channels[$chan]))
+				uplink::$channels[$chan]['b'] = array(); # ban list
+			if (!array_key_exists('e', uplink::$channels[$chan]))
+				uplink::$channels[$chan]['e'] = array(); # ban exceptions
+			if (!array_key_exists('I', uplink::$channels[$chan]))
+				uplink::$channels[$chan]['I'] = array(); # invite exceptions
+
+			# process names list
 			$names = explode(' ', $_i['text']);
+			$modesymbols = array_keys(uplink::$chanmode_map);
 			foreach ($names as $name) {
-				while (in_array(substr($name, 0, 1), array('@','%','+','~')))
+				$chanmode = array();
+				while (in_array(($c = substr($name, 0, 1)), $modesymbols)) {
+					$chanmode[] = uplink::$chanmode_map[$c];
 					$name = substr($name, 1);
+				}
+				foreach ($chanmode as $modechar) {
+					uplink::$channels[$chan][$modechar][] = $name;
+				}
 				if (array_key_exists($name, uplink::$nicks)) {
 					uplink::$nicks[$name]['channels'][] = $chan;
-					log::trace("$name in $chan");
+					$chanmode = implode('', $chanmode);
+					log::trace("$name in $chan with modes $chanmode");
 				} else {
 					log::notice('Got unknown nick in SJOIN');
 				}
 			}
 			log::trace('Finished SJOIN handling');
+			break;
+		case 'MODE':
+			log::trace('Started MODE handling');
+			$chan = $_i['args'][0];
+			$args = array_slice($_i['args'], 2);
+			if (array_key_exists($chan, uplink::$channels)) {
+				log::trace('Got channel mode change');
+				$modes = str_split($_i['args'][1], 1);
+				$op = null;
+				$mode_changes = array();
+				foreach ($modes as $c) {
+					if ($c == '+' || $c == '-') {
+						$op = $c;
+						continue;
+					}
+					log::debug("Found $chan $op$c");
+					if (array_key_exists($c, uplink::$channels[$chan]) && is_array(uplink::$channels[$chan][$c])) {
+						# list modes are always pre-populated with arrays
+						$param = array_shift($args);
+						log::debug("Took param for $op$c => $param");
+						if (array_key_exists("$op$c", $mode_changes)) {
+							$mode_changes["$op$c"][] = $param;
+						} else {
+							$mode_changes["$op$c"] = array($param);
+						}
+					} elseif ($c == 'k' || $c == 'l') {
+						# modes with parameters
+						$param = array_shift($args);
+						log::debug("Took param for $op$c => $param");
+						$mode_changes["$op$c"] = $param;
+					} else {
+						# modes without params
+						$mode_changes["$op$c"] = null;
+					}
+				}
+				foreach ($mode_changes as $modeop => $newval) {
+					$op = substr($modeop, 0, 1);
+					$modechar = substr($modeop, 1, 1);
+					if (is_array($newval)) {
+						$lnewval = implode(',', $newval);
+					} else {
+						$lnewval = $newval;
+					}
+					log::trace("Applying $op$modechar to $chan ($lnewval)");
+					if ($op == '+') {
+						if (is_array($newval)) {
+							uplink::$channels[$chan][$modechar] = array_merge(uplink::$channels[$chan][$modechar], $newval);
+						} else {
+							uplink::$channels[$chan][$modechar] = $newval;
+						}
+					} else {
+						if (is_array($newval)) {
+							foreach ($newval as $param) {
+								if (($key = array_search($param, uplink::$channels[$chan][$modechar])) !== false) {
+									unset(uplink::$channels[$chan][$modechar][$key]);
+								} else {
+									log::notice("$modeop value not in list");
+								}
+							}
+						} else {
+							unset(uplink::$channels[$chan][$modechar]);
+						}
+					}
+				}
+			} else {
+				log::trace('Got user mode change');
+			}
 			break;
 		case 'JOIN':
 			log::trace('Started JOIN handling');
@@ -173,6 +278,18 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							break;
 						case 'dumpconf':
 							var_dump(config::get_instance());
+							break;
+						case 'dumpchans':
+							if ($uarg == null)
+								print_r(uplink::$channels);
+							else
+								print_r(uplink::$channels[$uarg]);
+							break;
+						case 'dumpnicks':
+							if ($uarg == null)
+								print_r(uplink::$nicks);
+							else
+								print_r(uplink::$nicks[$uarg]);
 							break;
 
 						# operational functions

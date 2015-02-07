@@ -82,6 +82,12 @@ while (true) {
 				continue;
 			}
 			log::rawlog(log::INFO, "%c<= $lline%0");
+
+			if (($_i['cmd'] == 'PRIVMSG') && !in_array($_i['args'][0], $_channels)) {
+				log::trace('Skipping PRIVMSG from un-joined channel');
+				continue;
+			}
+
 			$itext = pg_escape_string($_sql, $_i['text']);
 			$iargs = pg_escape_string($_sql, implode(' ', $_i['args']));
 			$icmd = pg_escape_string($_sql, $_i['cmd']);
