@@ -2,6 +2,8 @@
 
 log::trace('entered f::timer()');
 
+ExtraServ::dbconnect();
+
 $count = 0;
 while (true) {
 	if ($count % 1000 == 0) {

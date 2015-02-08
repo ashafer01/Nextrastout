@@ -3,6 +3,8 @@
 # main function for ExtraServ
 log::trace('entered f::main()');
 
+ExtraServ::dbconnect();
+
 $conf = config::get_instance();
 foreach ($conf->alias as $alias => $real) {
 	f::ALIAS($alias, $real);
@@ -46,8 +48,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			break;
 		case 'NICK':
 			log::trace('Started NICK handling');
-			// NICK NickServ 2 1409083701 +io NickServ dot.cs.wmich.edu dot.cs.wmich.edu 0 :Nickname Services
-			if ($_i['prefix'] === null || uplink::is_server($_i['prefix'])) { # a server is telling us about a nick
+			# a server is telling us about a nick
+			if ($_i['prefix'] === null || uplink::is_server($_i['prefix'])) {
+				// NICK NickServ 2 1409083701 +io NickServ dot.cs.wmich.edu dot.cs.wmich.edu 0 :Nickname Services
 				uplink::$nicks[$_i['args'][0]] = array(
 					'nick' => $_i['args'][0],
 					'hopcount' => $_i['args'][1]+1,
@@ -61,14 +64,19 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					'channels' => array()
 				);
 				log::debug("Stored nick {$_i['args'][0]}");
-			} elseif (uplink::is_nick($_i['prefix'])) { # user has changed their nick
+
+			# user has changed their nick
+			} elseif (uplink::is_nick($_i['prefix'])) {
 				$nick = uplink::$nicks[$_i['prefix']];
 				$nick['nick'] = $_i['args'][0];
 				if (count($_i['args']) > 1)
 					$nick['modtime'] = $_i['args'][1];
 				uplink::$nicks[$_i['args'][0]] = $nick;
 				unset(uplink::$nicks[$_i['prefix']]);
+				uplink::rename_in_modelists($_i['prefix'], $_i['args'][0]);
 				log::debug("Nick change {$_i['prefix']} => {$_i['args'][0]}");
+
+			# unhandled input
 			} else {
 				log::notice('Input to NICK is not a handled condition');
 			}
@@ -193,6 +201,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				}
 			} else {
 				log::trace('Got user mode change');
+				log::warning('User mode changes are not yet implemented');
 			}
 			break;
 		case 'JOIN':
@@ -209,9 +218,16 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			$params = uplink::$nicks[$_i['args'][1]];
 			$params['channels'] = array_diff($params['channels'], array($_i['args'][0]));
 			uplink::$nicks[$_i['args'][1]] = $params;
+			uplink::remove_from_modelists($_i['args'][1], $_i['args'][0]);
 			log::debug("Removed {$_i['args'][1]} from {$_i['args'][0]} due to kick by {$_i['prefix']}");
 			break;
 		case 'QUIT':
+			$user = uplink::$nicks[$_i['prefix']]['user'];
+			uplink::remove_from_modelists($_i['prefix']);
+			if (array_key_exists($user, ExtraServ::$ident)) {
+				log::info("Deleted ident for user '$user' due to QUIT");
+				unset(ExtraServ::$ident[$user]);
+			}
 			unset(uplink::$nicks[$_i['prefix']]);
 			log::debug("Deleted nick {$_i['prefix']} due to QUIT");
 			break;
@@ -225,20 +241,43 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			}
 			break;
 		case 'PRIVMSG':
+			$leader = '!';
 			$_i['sent_to'] = $_i['args'][0];
 			$_i['reply_to'] = $_i['args'][0];
 			$_i['handle'] = ExtraServ::$bot_handle;
+			$in_pm = false;
 			foreach (ExtraServ::$handles as $handle) {
 				if ($_i['reply_to'] == $handle->nick) {
 					log::trace('Received private message');
 					$_i['reply_to'] = $_i['prefix'];
 					$_i['handle'] = $handle;
+					$in_pm = true;
 					break;
 				}
 			}
 
-			# commands
-			$leader = '!';
+			# PM-only commands (mainly Serv stuff)
+			if ($in_pm) {
+				if (substr($_i['text'], 0, 1) == $leader) {
+					$ucmd = explode(' ', substr($_i['text'], 1), 2);
+				} else {
+					$ucmd = explode(' ', $_i['text'], 2);
+				}
+				$uarg = null;
+				if (count($ucmd) > 1)
+					$uarg = $ucmd[1];
+				$ucmd = $ucmd[0];
+
+				$cmdfunc = strtolower("pm_$ucmd");
+				if (f::EXISTS($cmdfunc)) {
+					f::CALL($cmdfunc, array($ucmd, $uarg, $_i));
+					break;
+				} else {
+					log::trace('Not a PM command');
+				}
+			}
+
+			# Normal commands
 			if (substr($_i['text'], 0, 1) == $leader) {
 				log::trace('Detected command');
 				$ucmd = explode(' ', $_i['text'], 2);

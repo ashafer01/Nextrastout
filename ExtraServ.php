@@ -126,6 +126,20 @@ class ExtraServ {
 	public static $serv_handle = null;
 	public static $bot_handle = null;
 
+	public static $ident;
+
+	public static function dbconnect() {
+		log::info('Opening database connection');
+		$conf = config::get_instance();
+		$dbpw = get_password($conf->db->pwname);
+		$proc = proc::$name;
+		self::$db = pg_connect("host={$conf->db->host} dbname={$conf->db->name} user={$conf->db->user} password=$dbpw application_name=ExtraServ_$proc");
+		if (self::$db === false) {
+			log::fatal('Failed to connect to database, exiting');
+			exit(17);
+		}
+	}
+
 	public static function init() {
 		$conf = config::get_instance();
 		self::$conf = $conf;
@@ -134,16 +148,11 @@ class ExtraServ {
 		self::$info = $conf->info;
 		self::$output_tz = $conf->output_tz;
 
+		self::$ident = array();
+
 		$c = uplink::connect();
 		if (!$c) {
 			return 1;
-		}
-
-		$dbpw = get_password('db');
-		self::$db = pg_connect("host=localhost dbname=alex user=alex password=$dbpw application_name=ExtraServ");
-		if (self::$db === false) {
-			log::fatal('Failed to connect to database, exiting');
-			exit(1);
 		}
 
 		if (self::$handles === null) {
@@ -161,7 +170,7 @@ class ExtraServ {
 		$ts = time();
 		$tok = ExtraServ::HYBRID_TOKEN;
 		uplink::send("PASS $pw :TS");
-		uplink::send("CAPAB :ENCAP EX IE HOPS SVS CHW QS EOB KLN GLN KNOCK UNKLN TBURST DLN UNDLN");
+		uplink::send("CAPAB :ENCAP EX IE HOPS SVS CHW QS EOB KLN GLN KNOCK UNKLN DLN UNDLN");
 		uplink::send("SID {$my::$hostname} 1 $tok :{$my::$info}");
 		uplink::send("SERVER {$my::$hostname} 1 :{$my::$info}");
 		uplink::send("SVINFO 6 5 0 :$ts");
@@ -237,6 +246,44 @@ class uplink {
 			return false;
 		}
 		return true;
+	}
+
+	public static function remove_from_modelists($nick, $channel = null, $replace_with = null) {
+		log::trace("uplink::remove_from_modelists($nick, $channel, $replace_with)");
+		if ($channel == null) {
+			log::trace('Iterating over all channels');
+			$ret = true;
+			foreach (self::$channels as $chan => $_) {
+				$ret = ($ret && self::remove_from_modelists($nick, $chan, $replace_with));
+			}
+			return $ret;
+		} elseif (array_key_exists($channel, self::$channels)) {
+			reset(uplink::$channels[$channel]);
+			while (list($modechar, $value) = each(uplink::$channels[$channel])) {
+				if (is_array($value)) {
+					$bc = count($value);
+					$newval = array_diff($value, array($nick));
+					$ac = count($newval);
+					uplink::$channels[$channel][$modechar] = $newval;
+					if ($ac < $bc) {
+						log::debug("Removed $nick from $channel +$modechar mode list");
+						if ($replace_with != null) {
+							uplink::$channels[$channel][$modechar][] = $replace_with;
+							log::debug("Added $channel +$modechar $replace_with for replacement of $nick");
+						}
+					}
+				}
+			}
+			return true;
+		} else {
+			log::error('Unknown channel passed to uplink::remove_from_modelists()');
+			return false;
+		}
+	}
+
+	public static function rename_in_modelists($oldnick, $newnick) {
+		log::trace("uplink::rename_in_modelists($oldnick, $newnick)");
+		return self::remove_from_modelists($oldnick, null, $newnick);
 	}
 
 	public static function close() {

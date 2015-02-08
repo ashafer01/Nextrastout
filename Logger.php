@@ -1,11 +1,14 @@
 <?php
 
+require_once 'procs.php';
 require_once 'log.php';
+
+proc::$name = 'logger';
+log::$level = log::INFO;
+
 require_once 'utils.php';
 require_once 'functions.php';
 require_once 'config.php';
-
-log::$level = log::INFO;
 
 $_nick = 'newLogger';
 $_user = 'newLogger';

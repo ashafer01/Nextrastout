@@ -31,7 +31,7 @@ class pseudoclient {
 		if (strlen($this->user) > 9) {
 			$this->user = substr($this->user, 0, 9);
 		}
-		uplink::send("NICK {$this->nick} 1 $ts {$this->mode} {$this->user} $host $host 0 :{$this->name}");
+		uplink::send("NICK {$this->nick} 1 $ts {$this->mode} {$this->user} defiant $host 0 :{$this->name}");
 		foreach ($this->channels as $chan) {
 			$this->join($chan);
 		}
@@ -39,6 +39,10 @@ class pseudoclient {
 
 	public function say($to, $message) {
 		ExtraServ::usend($this->nick, "PRIVMSG $to :$message");
+	}
+
+	public function notice($to, $message) {
+		ExtraServ::usend($this->nick, "NOTICE $to :$message");
 	}
 
 	public function join($channel) {
