@@ -83,7 +83,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			log::trace('Finished NICK handling');
 			break;
 		case 'SJOIN':
-			$chan = $_i['args'][1];
+			$chan = strtolower($_i['args'][1]);
 			log::debug("Got SJOIN for $chan");
 
 			# process modes
@@ -201,7 +201,26 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				}
 			} else {
 				log::trace('Got user mode change');
-				log::warning('User mode changes are not yet implemented');
+				$nick = strtolower($_i['args'][0]);
+				$chars = str_split($_i['text'], 1);
+				$op = null;
+				$remove = array();
+				foreach ($chars as $c) {
+					if ($c == '+' || $c == '-') {
+						$op = $c;
+					} elseif ($op == '+') {
+						uplink::$nicks[$nick]['mode'][] = $c;
+						log::debug("Applied MODE $nick +$c");
+					} elseif ($op == '-') {
+						$remove[] = $c;
+					} else {
+						log::warning('Unhandled user mode character');
+					}
+				}
+				if (count($remove) > 0) {
+					uplink::$nicks[$nick]['mode'] = array_diff(uplink::$nicks[$nick]['mode'], $remove);
+					log::debug("Applied MODE $nick -" . implode($remove));
+				}
 			}
 			break;
 		case 'JOIN':
@@ -258,11 +277,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 			# PM-only commands (mainly Serv stuff)
 			if ($in_pm) {
-				if (substr($_i['text'], 0, 1) == $leader) {
-					$ucmd = explode(' ', substr($_i['text'], 1), 2);
-				} else {
-					$ucmd = explode(' ', $_i['text'], 2);
-				}
+				$ucmd = explode(' ', $_i['text'], 2);
 				$uarg = null;
 				if (count($ucmd) > 1)
 					$uarg = $ucmd[1];
@@ -330,6 +345,10 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							else
 								print_r(uplink::$nicks[$uarg]);
 							break;
+						case 'kill':
+							$uarg = explode(' ', $uarg, 2);
+							ExtraServ::$serv_handle->kill($uarg[0], $uarg[1]);
+							break;
 
 						# operational functions
 						case 'es-reload':
@@ -340,14 +359,22 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						case 'reload':
 						case 'f-reload':
 							log::notice('Got !f-reload');
-							f::RELOAD($uarg);
-							$_i['handle']->say($_i['reply_to'], "Reloading f::$uarg()");
+							if (f::EXISTS($uarg)) {
+								f::RELOAD($uarg);
+								$_i['handle']->say($_i['reply_to'], "Reloading f::$uarg()");
+							} else {
+								$_i['handle']->say($_i['reply_to'], "Function $uarg does not exist");
+							}
 							break;
 						case 'creload':
 						case 'c-reload':
 							log::notice('Got !creload');
-							f::RELOAD("cmd_$uarg");
-							$_i['handle']->say($_i['reply_to'], "Reloading f::cmd_$uarg()");
+							if (f::EXISTS("cmd_$uarg")) {
+								f::RELOAD("cmd_$uarg");
+								$_i['handle']->say($_i['reply_to'], "Reloading f::cmd_$uarg()");
+							} else {
+								$_i['handle']->say($_i['reply_to'], "Function cmd_$uarg does not exist");
+							}
 							break;
 						case 'hup':
 							log::notice('Got !hup');

@@ -11,7 +11,7 @@ class log {
 	const DEBUG = 5;
 	const TRACE = 6;
 
-	public static $level = log::TRACE;
+	public static $level = log::DEBUG;
 
 	public static function level_to_string($level) {
 		switch ($level) {

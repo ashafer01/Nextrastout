@@ -3,7 +3,8 @@
 log::trace('Entered f::pm_identify()');
 list($_CMD, $uarg, $_i) = $_ARGV;
 
-$user = uplink::$nicks[strtlower($_i['prefix'])]['user'];
+$nick = strtolower($_i['prefix']);
+$user = uplink::$nicks[$nick]['user'];
 if (array_key_exists($user, ExtraServ::$ident)) {
 	log::debug('Already identified');
 	$_i['handle']->notice($_i['reply_to'], 'You are already identified');
@@ -28,6 +29,10 @@ if ($q === false) {
 		log::info("Identify OK for user '$user'");
 		ExtraServ::$ident[$user] = true;
 		$_i['handle']->notice($_i['reply_to'], 'You are now identified');
+
+		if (uplink::is_oper($nick)) {
+			$_i['handle']->notice($_i['reply_to'], 'Welcome, operator.');
+		}
 	} else {
 		log::info('Password incorrect');
 		$_i['handle']->notice($_i['reply_to'], 'Password incorrect');

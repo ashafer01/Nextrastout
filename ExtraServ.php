@@ -127,6 +127,8 @@ class ExtraServ {
 	public static $bot_handle = null;
 
 	public static $ident;
+	public static $chan_stickymodes;
+	public static $chan_stickylists;
 
 	public static function dbconnect() {
 		log::info('Opening database connection');
@@ -143,6 +145,49 @@ class ExtraServ {
 	public static function init() {
 		$conf = config::get_instance();
 		self::$conf = $conf;
+
+		log::$level = log::string_to_level($conf->loglevel);
+		self::dbconnect();
+
+		# populate channel stickies
+		self::$chan_stickymodes = array();
+		self::$chan_stickylists = array();
+		$q = pg_query(self::$db, 'SELECT channel, stickymodes, stickylists, mode_flags, mode_k, mode_l FROM chan_register');
+		if ($q === false) {
+			log::fatal('Failed to select channel register');
+			log::fatal(pg_last_error());
+			exit(1);
+		} else {
+			while ($qr = pg_fetch_assoc($q)) {
+				if ($qr['stickymodes'] == 't') {
+					log::debug("Doing stickymodes for channel '{$qr['channel']}'");
+					$val = str_split($qr['mode_flags'], 1);
+					if ($qr['mode_k'] != null)
+						$val['k'] = $qr['mode_k'];
+					if ($qr['mode_l'] != null)
+						$val['l'] = $qr['mode_l'];
+					self::$chan_stickymodes[$qr['channel']] = $val;
+				}
+				if ($qr['stickylists'] == 't') {
+					log::debug("Doing stickylists for channel '{$qr['channel']}'");
+					self::$chan_stickylists[$qr['channel']] = array();
+					$q0 = pg_query(self::$db, "SELECT mode_list, value FROM chan_stickylists WHERE channel='{$qr['channel']}'");
+					if ($qr === false) {
+						log::fatal("Failed to select sticky lists for channel '{$qr['channel']}'");
+						log::fatal(pg_last_error());
+						exit(1);
+					} else {
+						while ($qr0 = pg_fetch_assoc($q0)) {
+							if (!array_key_exists($qr0['mode_list'], self::$chan_stickylists[$qr['channel']])) {
+								self::$chan_stickylists[$qr['channel']][$qr0['mode_list']] = array($qr0['value']);
+							} else {
+								self::$chan_stickylists[$qr['channel']][$qr0['mode_list']][] = $qr0['value'];
+							}
+						}
+					}
+				}
+			}
+		}
 
 		self::$hostname = $conf->hostname;
 		self::$info = $conf->info;
@@ -246,6 +291,10 @@ class uplink {
 			return false;
 		}
 		return true;
+	}
+
+	public static function is_oper($nick) {
+		return (in_array('a', uplink::$nicks[$nick]['mode']) && in_array('o', uplink::$nicks[$nick]['mode']));
 	}
 
 	public static function remove_from_modelists($nick, $channel = null, $replace_with = null) {

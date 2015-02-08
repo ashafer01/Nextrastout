@@ -40,7 +40,7 @@ if ($q === false) {
 	if ($api)
 		$reply[] = 'NOASSOC';
 	else
-		$reply[] = '* Nickname is not associated with any user';
+		$reply[] = '*** Nickname is not associated with any user';
 } else {
 	log::debug('validate query OK');
 	$qr = pg_fetch_assoc($q);
@@ -65,6 +65,20 @@ if (!array_key_exists($req_nick, uplink::$nicks)) {
 		$reply[] = "* Specified real name: $name";
 	} else {
 		$reply[] = 'ONLINE';
+	}
+}
+
+if ($user != null) {
+	if (array_key_exists($user, ExtraServ::$ident)) {
+		if (!$api)
+			$reply[] = '* User is identified';
+		else
+			$reply[] = 'IDENT';
+	} else {
+		if (!$api)
+			$reply[] = '* User is not currently identified';
+		else
+			$reply[] = 'NOIDENT';
 	}
 }
 

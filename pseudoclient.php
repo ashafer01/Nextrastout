@@ -26,15 +26,19 @@ class pseudoclient {
 	}
 
 	public function init() {
-		$host = ExtraServ::$hostname;
+		$serv = ExtraServ::$hostname;
 		$ts = time();
 		if (strlen($this->user) > 9) {
 			$this->user = substr($this->user, 0, 9);
 		}
-		uplink::send("NICK {$this->nick} 1 $ts {$this->mode} {$this->user} defiant $host 0 :{$this->name}");
+		uplink::send("NICK {$this->nick} 1 $ts {$this->mode} {$this->user} {$this->host} $serv 0 :{$this->name}");
 		foreach ($this->channels as $chan) {
 			$this->join($chan);
 		}
+	}
+
+	public function send($line) {
+		ExtraServ::usend($this->nick, $line);
 	}
 
 	public function say($to, $message) {
@@ -50,6 +54,11 @@ class pseudoclient {
 		if (!in_array($channel, $this->channels)) {
 			$this->channels[] = $channel;
 		}
+	}
+
+	public function kill($nick, $reason = null) {
+		$serv = ExtraServ::$hostname;
+		ExtraServ::usend($this->nick, "KILL $nick :$serv!{$this->host}!{$this->user}!{$this->nick} <$reason>");
 	}
 
 	public function quit($reason) {
