@@ -50,7 +50,7 @@ if (pg_send_query_params(ExtraServ::$db, $query, array($user, $uarg, $ts))) {
 		} else {
 			log::error('Failed to send nick association query');
 			log::error(pg_last_error());
-			$_i['handle']->notice($_i['reply_to'], 'Successfully registered username '$user', but the nick association query failed');
+			$_i['handle']->notice($_i['reply_to'], "Successfully registered username '$user', but the nick association query failed");
 			return f::FALSE;
 		}
 	} elseif ($err == '23505') {
