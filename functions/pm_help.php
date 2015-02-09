@@ -101,6 +101,7 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], 'they will be re-applied on server start. This does not apply to list modes.');
 		$_i['handle']->notice($_i['reply_to'], 'See also: STICKYLISTS');
 		$_i['handle']->notice($_i['reply_to'], 'Note: mode changes made by ExtraServ will not be sticky');
+		$_i['handle']->notice($_i['reply_to'], 'Note: Channel keys (+k) must be stored unencrypted in the database');
 		break;
 	case 'STICKYLISTS':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: STICKYLISTS <modes> <channel>');

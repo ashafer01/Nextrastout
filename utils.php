@@ -120,6 +120,120 @@ function pg_is_prepared($stmt_name) {
 	}
 }
 
+function pg_table_pkeys($table) {
+	static $pkeys = array();
+	if (array_key_exists($table, $pkeys)) {
+		return $pkeys[$table];
+	} else {
+		$query = "SELECT split_part(rtrim(indexdef, ')'), '(', 2) AS pkeys FROM pg_indexes WHERE right(indexname, 5)='_pkey' AND tablename=$1";
+		$q = pg_query_params(ExtraServ::$db, $query, array($table));
+		if ($q === false) {
+			log::error('find_table_pkeys() query failed');
+			log::error(pg_last_error());
+			return false;
+		} elseif (pg_num_rows($q) == 0) {
+			log::debug('No primary keys for table');
+			$pkeys[$table] = array();
+		} else {
+			log::debug('query ok');
+			$qr = pg_fetch_assoc($q);
+			$pkeys[$table] = explode(', ', $qr['pkeys']);
+		}
+		return $pkeys[$table];
+	}
+}
+
+function pg_insert_on_duplicate_key_update($table, $insert_cols, $insert_values, $updates) {
+	$multi_values = false;
+	$col_count = count($insert_cols);
+	if (count($insert_values) != $col_count) {
+		log::error('pg_insert_on_duplicate_key_update(): $insert_values must have the same number of elements as $insert_cols');
+		return false;
+	}
+
+	if (count($updates) < 1) {
+		log::error('pg_insert_on_duplicate_key_update(): At least one update must be supplied');
+		return false;
+	}
+
+	$pkeys = pg_table_pkeys($table);
+	foreach ($pkeys as $col) {
+		if (!in_array($col, $insert_cols)) {
+			log::error('pg_insert_on_duplicate_key_update(): All PRIMARY KEY columns must be in $insert_cols');
+			return false;
+		}
+	}
+
+	$vals = '(' . implode(', ', array_map('sqlify', $insert_values)) . ')';
+	$query = "INSERT INTO $table ($cols) VALUES $vals";
+	log::debug("pg_insert_on_duplicate_key_update(): insert query >>> $query");
+	if (pg_send_query(ExtraServ::$db, $query)) {
+		$q = pg_get_result(ExtraServ::$db);
+		$err = pg_result_error_field($q, PGSQL_DIAG_SQLSTATE);
+		if ($err === null || $err == '00000') {
+			$n = pg_affected_rows($q);
+			log::debug("pg_insert_on_duplicate_key_update(): insert OK (affected rows = $n)");
+			return true;
+		} elseif ($err == '23505') {
+			log::debug('pg_insert_on_duplicate_key_update(): duplicate keys, doing update');
+			$where = array();
+			foreach ($pkeys as $pkey) {
+				$i = 0;
+				foreach ($insert_cols as $col) {
+					if ($col == $pkey)
+						break;
+					$i++;
+				}
+				$val = sqlify($insert_values[$i]);
+				$where[] = "($pkey = $val)";
+			}
+			$where = implode(' AND ', $where);
+
+			$set = array();
+			foreach ($updates as $key => $val) {
+				$val = sqlify($val);
+				$set[] = "$key = $val";
+			}
+			$set = implode(', ', $set);
+
+			$query = "UPDATE $table SET $set WHERE $where";
+			log::debug("pg_insert_on_duplicate_key_update(): update query >>> $query");
+			$q = pg_query(ExtraServ::$db, $query);
+			if ($q === false) {
+				log::error('pg_insert_on_duplicate_key_update(): update query failed');
+				log::error(pg_last_error());
+				return false;
+			} else {
+				$n = pg_affected_rows($q);
+				log::debug("pg_insert_on_duplicate_key_update(): update OK (affected rows = $n)");
+				return true;
+			}
+		} else {
+			log::error("pg_insert_on_duplicate_key_update(): insert query failed ($err)");
+			return false;
+		}
+	} else {
+		log::error('pg_insert_on_duplicate_key_update(): failed to send insert query');
+		return false;
+	}
+}
+
+function sqlify($val) {
+	if (($val === true) || (strtoupper($val) == 'TRUE'))
+		$val = 'TRUE';
+	elseif (($val === false) || (strtoupper($val) == 'FALSE'))
+		$val = 'FALSE';
+	elseif (($val === null) || (strtoupper($val) == 'NULL'))
+		$val = 'NULL';
+	elseif (is_numeric($val))
+		;
+	else {
+		$val = dbescape($val);
+		$val = "'$val'";
+	}
+	return $val;
+}
+
 function rainbow($string) {
 	static $colors = array('0', '4', '8', '9', '11', '12', '13');
 	$len = strlen($string);
