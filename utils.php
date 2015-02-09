@@ -101,21 +101,20 @@ function dbescape($str) {
 }
 
 function pg_is_prepared($stmt_name) {
-	log::trace('entered pg_is_prepared()');
 	$q = pg_query(ExtraServ::$db, 'SELECT name FROM pg_prepared_statements');
 	if ($q === false) {
-		log::error('pg_is_prepared() query failed');
+		log::error('pg_is_prepared(): query failed');
 		log::error(pg_last_error());
 		return true;
 	} else {
-		log::debug('pg_is_prepared query OK');
+		log::debug('pg_is_prepared(): query ok');
 		while ($row = pg_fetch_assoc($q)) {
 			if ($row['name'] == $stmt_name) {
-				log::debug("Statement $stmt_name is prepared");
+				log::debug("pg_is_prepared(): Statement $stmt_name is prepared");
 				return true;
 			}
 		}
-		log::debug("Statement $stmt_name is not prepared");
+		log::debug("pg_is_prepared(): Statement $stmt_name is not prepared");
 		return false;
 	}
 }
@@ -128,14 +127,14 @@ function pg_table_pkeys($table) {
 		$query = "SELECT split_part(rtrim(indexdef, ')'), '(', 2) AS pkeys FROM pg_indexes WHERE right(indexname, 5)='_pkey' AND tablename=$1";
 		$q = pg_query_params(ExtraServ::$db, $query, array($table));
 		if ($q === false) {
-			log::error('find_table_pkeys() query failed');
+			log::error('pg_table_pkeys(): query failed');
 			log::error(pg_last_error());
 			return false;
 		} elseif (pg_num_rows($q) == 0) {
-			log::debug('No primary keys for table');
+			log::debug('pg_table_pkeys(): No primary keys for table');
 			$pkeys[$table] = array();
 		} else {
-			log::debug('query ok');
+			log::debug('pg_table_pkeys(): query ok');
 			$qr = pg_fetch_assoc($q);
 			$pkeys[$table] = explode(', ', $qr['pkeys']);
 		}
