@@ -152,7 +152,7 @@ class ExtraServ {
 		# populate channel stickies
 		self::$chan_stickymodes = array();
 		self::$chan_stickylists = array();
-		$q = pg_query(self::$db, 'SELECT channel, stickymodes, stickylists, mode_flags, mode_k, mode_l FROM chan_register');
+		$q = pg_query(self::$db, 'SELECT channel, stickymodes, stickylists, mode_flags, list_flags, mode_k, mode_l FROM chan_register');
 		if ($q === false) {
 			log::fatal('Failed to select channel register');
 			log::fatal(pg_last_error());
@@ -161,7 +161,11 @@ class ExtraServ {
 			while ($qr = pg_fetch_assoc($q)) {
 				if ($qr['stickymodes'] == 't') {
 					log::debug("Doing stickymodes for channel '{$qr['channel']}'");
-					$val = str_split($qr['mode_flags'], 1);
+					$modechars = str_split($qr['mode_flags'], 1);
+					$val = array();
+					foreach ($modechars as $c) {
+						$val[$c] = null;
+					}
 					if ($qr['mode_k'] != null)
 						$val['k'] = $qr['mode_k'];
 					if ($qr['mode_l'] != null)
@@ -182,6 +186,12 @@ class ExtraServ {
 								self::$chan_stickylists[$qr['channel']][$qr0['mode_list']] = array($qr0['value']);
 							} else {
 								self::$chan_stickylists[$qr['channel']][$qr0['mode_list']][] = $qr0['value'];
+							}
+						}
+						$stickylist_modes = str_split($qr['list_flags'], 1);
+						foreach ($stickylist_modes as $modechar) {
+							if (!array_key_exists($modechar, self::$chan_stickylists[$qr['channel']])) {
+								self::$chan_stickylists[$qr['channel']][$modechar] = array();
 							}
 						}
 					}

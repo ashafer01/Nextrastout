@@ -45,22 +45,15 @@ if (uplink::is_oper($nick)) {
 	uplink::$channels[$channel]['o'][] = $nick;
 	return f::TRUE;
 } else {
-	$query = "SELECT owner_ircuser FROM chan_register WHERE channel='$channel'";
-	log::debug("op chan owner query >>> $query");
-	$q = pg_query(ExtraServ::$db, $query);
-	if ($q === false) {
-		log::error('query failed');
-		log::error(pg_last_error());
-		$_i['handle']->notice($_i['reply_to'], 'Query failed');
+	$owner = f::get_channel_owner($channel);
+	if ($owner === false) {
+		$_i['handle']->notice($_i['reply_to'], 'Failed to look up channel owner');
 		return f::FALSE;
-	} elseif (pg_num_rows($q) == 0) {
-		log::debug('channel not registered');
+	} elseif ($owner === null) {
 		$_i['handle']->notice($_i['reply_to'], 'Channel is not registered');
 		return f::FALSE;
 	} else {
-		log::debug('query ok');
-		$qr = pg_fetch_assoc($q);
-		if ($qr['owner_ircuser'] == $user) {
+		if ($owner == $user) {
 			log::info("Adding op to $channel");
 			ExtraServ::$serv_handle->send("MODE $channel +o $nick");
 			$_i['handle']->notice($_i['reply_to'], 'Mode change sent for channel owner');

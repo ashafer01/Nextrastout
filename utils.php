@@ -100,6 +100,26 @@ function dbescape($str) {
 	return pg_escape_string(ExtraServ::$db, $str);
 }
 
+function pg_is_prepared($stmt_name) {
+	log::trace('entered pg_is_prepared()');
+	$q = pg_query(ExtraServ::$db, 'SELECT name FROM pg_prepared_statements');
+	if ($q === false) {
+		log::error('pg_is_prepared() query failed');
+		log::error(pg_last_error());
+		return true;
+	} else {
+		log::debug('pg_is_prepared query OK');
+		while ($row = pg_fetch_assoc($q)) {
+			if ($row['name'] == $stmt_name) {
+				log::debug("Statement $stmt_name is prepared");
+				return true;
+			}
+		}
+		log::debug("Statement $stmt_name is not prepared");
+		return false;
+	}
+}
+
 function rainbow($string) {
 	static $colors = array('0', '4', '8', '9', '11', '12', '13');
 	$len = strlen($string);
@@ -128,22 +148,6 @@ function ord_suffix($number) {
 		return 'th';
 	else
 		return $ends[$number % 10];
-}
-
-# Check if a postgres prepared statement already exists
-function pg_is_prepared($stmt_name) {
-	$q = pg_query(ExtraServ::$db, 'SELECT name FROM pg_prepared_statements');
-	if ($q === false) {
-		log::error('pg_is_prepared query failed');
-		log::error(pg_last_error());
-		return true;
-	} else {
-		while ($row = pg_fetch_assoc($q)) {
-			if ($row['name'] == $stmt_name)
-				return true;
-		}
-		return false;
-	}
 }
 
 class color_formatting {

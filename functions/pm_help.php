@@ -97,10 +97,11 @@ switch (strtoupper($uarg)) {
 	case 'STICKYMODES':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: STICKYMODES <channel>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
-		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
 		$_i['handle']->notice($_i['reply_to'], 'Make changes to simple mode flags by channel operators (@) "sticky" meaning');
 		$_i['handle']->notice($_i['reply_to'], 'they will be re-applied on server start. This does not apply to list modes.');
-		$_i['handle']->notice($_i['reply_to'], '   See also: STICKYLISTS');
+		$_i['handle']->notice($_i['reply_to'], 'See also: STICKYLISTS');
+		$_i['handle']->notice($_i['reply_to'], 'Note: mode changes made by ExtraServ will not be sticky');
+		break;
 	case 'STICKYLISTS':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: STICKYLISTS <modes> <channel>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
@@ -122,7 +123,10 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], 'Example:');
 		$_i['handle']->notice($_i['reply_to'], '   STICKYLISTS oI #test');
-		$_i['handle']->notice($_i['reply_to'], 'ExtraServ will remember channel operators and invite exceptions only');
+		$_i['handle']->notice($_i['reply_to'], '   * ExtraServ will remember channel operators and invite exceptions only');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], 'See also: STICKYMODES');
+		$_i['handle']->notice($_i['reply_to'], 'Note: mode changes made by ExtraServ will not be sticky');
 		break;
 	case 'REGEMAIL':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: REGEMAIL <email address>');

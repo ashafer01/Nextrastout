@@ -10,6 +10,9 @@ foreach ($conf->alias as $alias => $real) {
 	f::ALIAS($alias, $real);
 }
 
+# static data
+$start_lists = array('b','e','I');
+
 $_socket_start = null;
 $_socket_timeout = ini_get('default_socket_timeout');
 while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) < $_socket_timeout) {
@@ -30,6 +33,97 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			exit(13);
 		case 'PING':
 			uplink::send("PONG :{$_i['text']}");
+			break;
+		case 'EOB':
+			log::debug('Got EOB');
+
+			# update stickymodes
+			$query = 'SELECT channel, mode_flags, mode_k, mode_l FROM chan_register WHERE stickymodes IS TRUE';
+			log::debug("get stickymodes query >>> $query");
+			$q = pg_query(ExtraServ::$db, $query);
+			if ($q === false) {
+				log::fatal('query failed');
+				log::fatal(pg_last_error());
+				exit(21);
+			} else {
+				while ($qr = pg_fetch_assoc($q)) {
+					$channel = $qr['channel'];
+					if (array_key_exists($channel, uplink::$channels)) {
+						log::debug("Updating stickymodes for channel $channel");
+						$modes = str_split($qr['mode_flags'], 1);
+						$adds = array();
+						foreach ($modes as $c) {
+							if (!array_key_exists($c, uplink::$channels[$channel])) {
+								uplink::$channels[$channel][$c] = null;
+								$adds[] = $c;
+							}
+						}
+						$adds = array_chunk($adds, 4);
+						foreach ($adds as $modechars) {
+							$modechars = implode($modechars);
+							ExtraServ::$serv_handle->send("MODE $channel +$modechars");
+						}
+						foreach (array('k','l') as $c) {
+							if ($qr["mode_$c"] != null) {
+								ExtraServ::$serv_handle->send("MODE $channel +$c {$qr["mode_$c"]}");
+								uplink::$channels[$channel][$c] = $qr["mode_c"];
+							}
+						}
+					} else {
+						log::trace('Channel does not currently exist');
+					}
+				}
+			}
+
+			# update stickylists
+			$query = 'SELECT channel, list_flags FROM chan_register WHERE stickylists IS TRUE';
+			log::debug("get stickylists query >>> $query");
+			$q = pg_query(ExtraServ::$db, $query);
+			if ($q === false) {
+				log::fatal('query failed');
+				log::fatal(pg_last_error());
+				exit(21);
+			} else {
+				$qn = 'stickylists_get_list';
+				if (!pg_is_prepared($qn)) {
+					$query = "SELECT value FROM chan_stickylists WHERE channel=$1 AND mode_list=$2";
+					log::debug("preparing $qn >>> $query");
+					$p = pg_prepare(ExtraServ::$db, $qn, $query);
+					if ($p === false) {
+						log::fatal('failed to prepare query');
+						log::fatal(pg_last_error());
+						exit(22);
+					}
+				} else {
+					log::trace("$qn query already prepared");
+				}
+
+				while ($qr = pg_fetch_assoc($q)) {
+					$list_flags = str_split($qr['list_flags'], 1);
+					if (array_key_exists($qr['channel'], uplink::$channels)) {
+						log::debug("Doing startup sticky lists for channel {$qr['channel']}");
+						foreach ($start_lists as $c) {
+							if (in_array($c, $list_flags)) {
+								$e = pg_execute(ExtraServ::$db, $qn, array($qr['channel'], $c));
+								if ($e === false) {
+									log::fatal('failed to execute query');
+									log::fatal(pg_last_error());
+									exit(23);
+								} else {
+									while ($er = pg_fetch_assoc($e)) {
+										if (!in_array($er['value'], uplink::$channels[$qr['channel']][$c])) {
+											ExtraServ::$serv_handle->send("MODE {$qr['channel']} +$c {$er['value']}");
+											uplink::$channels[$qr['channel']][$c][] = $er['value'];
+										}
+									}
+								}
+							}
+						}
+					} else {
+						log::trace('Channel does not currently exist');
+					}
+				}
+			}
 			break;
 		case 'SERVER':
 			log::trace('Started SERVER handling');
@@ -126,9 +220,28 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				foreach ($chanmode as $modechar) {
 					uplink::$channels[$chan][$modechar][] = $name;
 				}
+
 				if (array_key_exists($name, uplink::$nicks)) {
+					# check sticky lists
+					if (array_key_exists($chan, ExtraServ::$chan_stickylists)) {
+						log::debug("Channel $chan has sticky lists");
+						foreach (ExtraServ::$chan_stickylists[$chan] as $c => $modenames) {
+							if (!in_array($c, uplink::$chanmode_map)) {
+								log::trace("skipped non-joinlist mode $c");
+								continue;
+							}
+							if (in_array($name, $modenames)) {
+								if (!in_array($name, uplink::$channels[$chan][$c])) {
+									log::debug("Sending MODE +$c for sticky list");
+									ExtraServ::$serv_handle->send("MODE $chan +$c $name");
+									uplink::$channels[$chan][$c][] = $name;
+								}
+							}
+						}
+					}
+
 					uplink::$nicks[$name]['channels'][] = $chan;
-					$chanmode = implode('', $chanmode);
+					$chanmode = implode($chanmode);
 					log::trace("$name in $chan with modes $chanmode");
 				} else {
 					log::notice('Got unknown nick in SJOIN');
@@ -136,9 +249,14 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			}
 			log::trace('Finished SJOIN handling');
 			break;
+		case 'JOIN':
+			log::trace('Started JOIN handling');
+			uplink::$nicks[$_i['prefix']]['channels'][] = $_i['args'][0];
+			log::debug("{$_i['prefix']} joined {$_i['args'][0]}");
+			break;
 		case 'MODE':
 			log::trace('Started MODE handling');
-			$chan = $_i['args'][0];
+			$chan = strtolower($_i['args'][0]);
 			$args = array_slice($_i['args'], 2);
 			if (array_key_exists($chan, uplink::$channels)) {
 				log::trace('Got channel mode change');
@@ -170,6 +288,17 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						$mode_changes["$op$c"] = null;
 					}
 				}
+
+				$modes_updated = false;
+				$do_stickymodes = array_key_exists($chan, ExtraServ::$chan_stickymodes);
+
+				if (array_key_exists($chan, ExtraServ::$chan_stickylists))
+					$stickylist_flags = array_keys(ExtraServ::$chan_stickylists[$chan]);
+				else
+					$stickylist_flags = array();
+
+				$slists_insert_values = array();
+				$slists_delete_conds = array();
 				foreach ($mode_changes as $modeop => $newval) {
 					$op = substr($modeop, 0, 1);
 					$modechar = substr($modeop, 1, 1);
@@ -182,21 +311,100 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					if ($op == '+') {
 						if (is_array($newval)) {
 							uplink::$channels[$chan][$modechar] = array_merge(uplink::$channels[$chan][$modechar], $newval);
+
+							# update stickylists
+							if (in_array($modechar, $stickylist_flags)) {
+								foreach ($newval as $value) {
+									if (!in_array($value, ExtraServ::$chan_stickylists[$chan][$modechar])) {
+										ExtraServ::$chan_stickylists[$chan][$modechar][] = $value;
+										$ival = dbescape($value);
+										$slists_insert_values[] = "('$chan', '$modechar', '$ival')";
+									}
+								}
+							}
 						} else {
 							uplink::$channels[$chan][$modechar] = $newval;
+							$modes_updated = true;
 						}
 					} else {
 						if (is_array($newval)) {
 							foreach ($newval as $param) {
 								if (($key = array_search($param, uplink::$channels[$chan][$modechar])) !== false) {
 									unset(uplink::$channels[$chan][$modechar][$key]);
+
+									# update stickylists
+									if (in_array($modechar, $stickylist_flags)) {
+										if (($key = array_search($param, ExtraServ::$chan_stickylists[$chan][$modechar])) !== false) {
+											unset(ExtraServ::$chan_stickylists[$chan][$modechar][$key]);
+											$iparam = dbescape($param);
+											$slists_delete_conds[] = "(channel='$chan' AND mode_list='$modechar' AND value='$iparam')";
+										}
+									}
 								} else {
 									log::notice("$modeop value not in list");
 								}
 							}
 						} else {
 							unset(uplink::$channels[$chan][$modechar]);
+							$modes_updated = true;
 						}
+					}
+				}
+
+				if (count($slists_insert_values) > 0) {
+					$values = implode(',', $slists_insert_values);
+					$query = "INSERT INTO chan_stickylists VALUES $values";
+					log::debug("stickylist additions query >>> $query");
+					$i = pg_query(ExtraServ::$db, $query);
+					if ($i === false) {
+						log::error('stickylist additions query failed');
+						log::error(pg_last_error());
+						exit(24);
+					} else {
+						log::debug('stickylist additions query OK');
+					}
+				}
+
+				if (count($slists_delete_conds) > 0) {
+					$where = implode(' OR ', $slists_delete_conds);
+					$query = "DELETE FROM chan_stickylists WHERE $where";
+					log::debug("stickylist removals query >>> $query");
+					$d = pg_query(ExtraServ::$db, $query);
+					if ($d === false) {
+						log::error('stickylist removals query failed');
+						log::error(pg_last_error());
+						exit(25);
+					} else {
+						log::debug('stickylist removals query OK');
+					}
+				}
+
+				if ($do_stickymodes && $modes_updated) {
+					$updates = array();
+					$list_modes = array('b', 'e', 'I', 'o', 'h', 'v');
+					$modes_array = array_filter(uplink::$channels[$chan], function($val) use ($list_modes) {
+						return !is_array($val);
+					});
+					if (array_key_exists('k', $modes_array)) {
+						$updates[] = "mode_k='{$modes_array['k']}'";
+						unset($modes_array['k']);
+					}
+					if (array_key_exists('l', $modes_array)) {
+						$updates[] = "mode_l='{$modes_array['l']}'";
+						unset($modes_array['l']);
+					}
+					$updates[] = "mode_flags='" . implode(array_keys($modes_array)) . "'";
+
+					$set = implode(', ', $updates);
+					$query = "UPDATE chan_register SET $set WHERE channel='$chan'";
+					log::debug("stickymodes update query >>> $query");
+					$u = pg_query(ExtraServ::$db, $query);
+					if ($u === false) {
+						log::error('stickymodes update query failed');
+						log::error(pg_last_error());
+						exit(25);
+					} else {
+						log::debug('stickymodes update query OK');
 					}
 				}
 			} else {
@@ -222,15 +430,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					log::debug("Applied MODE $nick -" . implode($remove));
 				}
 			}
-			break;
-		case 'JOIN':
-			log::trace('Started JOIN handling');
-			if ($_i['prefix'] === null) {
-				log::notice("Got a JOIN from the uplink server?");
-				break;
-			}
-			uplink::$nicks[$_i['prefix']]['channels'][] = $_i['args'][0];
-			log::debug("{$_i['prefix']} joined {$_i['args'][0]}");
 			break;
 		case 'KICK':
 			log::trace('Started KICK handling');
@@ -348,6 +547,12 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						case 'kill':
 							$uarg = explode(' ', $uarg, 2);
 							ExtraServ::$serv_handle->kill($uarg[0], $uarg[1]);
+							break;
+						case 'dumpstickies':
+							echo "================== LISTS ============================\n";
+							print_r(ExtraServ::$chan_stickylists);
+							echo "================== MODES ============================\n";
+							print_r(ExtraServ::$chan_stickymodes);
 							break;
 
 						# operational functions
