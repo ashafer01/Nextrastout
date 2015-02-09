@@ -105,7 +105,6 @@ switch (strtoupper($uarg)) {
 	case 'STICKYLISTS':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: STICKYLISTS <modes> <channel>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
-		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
 		$_i['handle']->notice($_i['reply_to'], 'When a channel operator (@) changes the mode, that change will be stored and');
 		$_i['handle']->notice($_i['reply_to'], 'then re-applied as needed. Ban lists and exception lists will be restored on');
 		$_i['handle']->notice($_i['reply_to'], 'server start. Op, half-op, and voice lists will be restored when one of the');
