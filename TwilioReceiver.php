@@ -112,7 +112,7 @@ if ($q === false) {
 
 finish:
 ob_end_clean();
-fclose($log);
+fclose(log::$static->file);
 echo '<?xml version="1.0" encoding="UTF-8"?>',"\n";
 ?>
 <Response>
