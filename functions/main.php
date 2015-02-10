@@ -212,37 +212,42 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			$names = explode(' ', $_i['text']);
 			$modesymbols = array_keys(uplink::$chanmode_map);
 			foreach ($names as $name) {
-				$chanmode = array();
-				while (in_array(($c = substr($name, 0, 1)), $modesymbols)) {
-					$chanmode[] = uplink::$chanmode_map[$c];
-					$name = substr($name, 1);
-				}
-				foreach ($chanmode as $modechar) {
-					uplink::$channels[$chan][$modechar][] = $name;
-				}
-
 				if (array_key_exists($name, uplink::$nicks)) {
-					# check sticky lists
-					if (array_key_exists($chan, ExtraServ::$chan_stickylists)) {
-						log::debug("Channel $chan has sticky lists");
-						foreach (ExtraServ::$chan_stickylists[$chan] as $c => $modenames) {
-							if (!in_array($c, uplink::$chanmode_map)) {
-								log::trace("skipped non-joinlist mode $c");
-								continue;
-							}
-							if (in_array($name, $modenames)) {
-								if (!in_array($name, uplink::$channels[$chan][$c])) {
-									log::debug("Sending MODE +$c for sticky list");
-									ExtraServ::$serv_handle->send("MODE $chan +$c $name");
-									uplink::$channels[$chan][$c][] = $name;
+					$chanmode = array();
+					while (in_array(($c = substr($name, 0, 1)), $modesymbols)) {
+						$chanmode[] = uplink::$chanmode_map[$c];
+						$name = substr($name, 1);
+					}
+					foreach ($chanmode as $modechar) {
+						uplink::$channels[$chan][$modechar][] = $name;
+					}
+
+					$user = uplink::$nicks[$name]['user'];
+					if (array_key_exists($user, ExtraServ::$ident)) {
+						log::debug("$nick!$user is identified");
+						# check sticky lists
+						if (array_key_exists($chan, ExtraServ::$chan_stickylists)) {
+							log::debug("Channel $chan has sticky lists");
+							foreach (ExtraServ::$chan_stickylists[$chan] as $c => $modenames) {
+								if (!in_array($c, uplink::$chanmode_map)) {
+									log::trace("skipped non-joinlist mode $c");
+									continue;
+								}
+								if (in_array($name, $modenames)) {
+									if (!in_array($name, uplink::$channels[$chan][$c])) {
+										log::debug("Sending MODE +$c for sticky list");
+										ExtraServ::$serv_handle->send("MODE $chan +$c $name");
+										uplink::$channels[$chan][$c][] = $name;
+									}
 								}
 							}
 						}
+					} else {
+						log::trace("$nick!$user is not identified");
 					}
 
 					uplink::$nicks[$name]['channels'][] = $chan;
-					$chanmode = implode($chanmode);
-					log::trace("$name in $chan with modes $chanmode");
+					log::trace("$name joins $chan");
 				} else {
 					log::notice('Got unknown nick in SJOIN');
 				}
