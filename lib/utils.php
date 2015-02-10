@@ -263,6 +263,76 @@ function ord_suffix($number) {
 		return $ends[$number % 10];
 }
 
+function shortlink($url) {
+	$conf = config::get_instance();
+
+	$url = rawurlencode($url);
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, "https://api-ssl.bitly.com/v3/shorten?longUrl=$url&domain=j.mp&apiKey={$conf->bitly->api_key}&login={$conf->bitly->username}");
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+	curl_setopt($ch, CURLOPT_HEADER, false);
+	$json = curl_exec($ch);
+	curl_close($ch);
+	$data = json_decode($json, true);
+	$httpcode = $data['status_code'];
+	switch ($httpcode) {
+		case 200:
+			return $data['data']['url'];
+		default:
+			log::error("bitly returned $httpcode");
+			return false;
+	}
+}
+
+function zip_to_tz($zipcode, &$shorttz = null) {
+	log::trace('entered zip_to_tz()');
+	if (!ctype_digit($zipcode) || strlen($zipcode) != 5) {
+		log::error("Invalid zip code passed to zip_to_tz");
+		return false;
+	}
+
+	$ch = curl_init();
+	curl_setopt($ch, CURLOPT_URL, "https://maps.googleapis.com/maps/api/geocode/json?address=$zipcode");
+	curl_setopt($ch, CURLOPT_HEADER, false);
+	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+	$json = curl_exec($ch);
+	$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+	if ($code != 200) {
+		log::error("google geocode api returned $code");
+		log::error($json);
+		return false;
+	}
+
+	$res = json_decode($json);
+
+	$loc = $res->results[0]->geometry->location;
+	$latlong = "{$loc->lat},{$loc->lng}";
+	$timestamp = time();
+
+	curl_setopt($ch, CURLOPT_URL, "https://maps.googleapis.com/maps/api/timezone/json?location=$latlong&timestamp=$timestamp");
+
+	$json = curl_exec($ch);
+	$code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+	if ($code != 200) {
+		log::error("google timezone api returned $code");
+		log::error($json);
+		return false;
+	}
+
+	$res = json_decode($json);
+	curl_close($ch);
+
+	$tzn = '';
+	$words = explode(' ', $res->timeZoneName);
+	foreach ($words as $w) {
+		$tzn .= substr($w, 0, 1);
+	}
+	$shorttz = $tzn;
+
+	return $res->timeZoneId;
+}
+
 class color_formatting {
 	public static function escape($text) {
 		return str_replace('%', '%!', $text);

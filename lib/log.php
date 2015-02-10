@@ -1,6 +1,7 @@
 <?php
 require_once 'utils.php';
 require_once 'procs.php';
+require_once 'functions.php';
 
 class log {
 	const FATAL = 0;
@@ -40,17 +41,30 @@ class log {
 		}
 	}
 
+	public static $static = null;
+	private static $logger_func = null;
+	public static function set_logger($function) {
+		self::$logger_func = $function;
+	}
+
 	protected static function _do_log($level, $message) {
 		if ($level <= log::$level) {
-			$ts = utimestamp();
-			$lvl = log::level_to_string($level);
-			$procname = sprintf('%10s', proc::$name);
+			if (self::$logger_func != null) {
+				$lines = explode("\n", $message);
+				foreach ($lines as $line) {
+					f::CALL(self::$logger_func, array($level, $line));
+				}
+			} else {
+				$ts = utimestamp();
+				$lvl = log::level_to_string($level);
+				$procname = sprintf('%10s', proc::$name);
 
-			$lines = explode("\n", $message);
-			foreach ($lines as $line) {
-				# log to stdout
-				$line = color_formatting::ansi($line);
-				echo "[$ts] [$procname] $lvl: $line\n";
+				$lines = explode("\n", $message);
+				foreach ($lines as $line) {
+					# log to stdout
+					$line = color_formatting::ansi($line);
+					echo "[$ts] [$procname] $lvl: $line\n";
+				}
 			}
 		}
 	}

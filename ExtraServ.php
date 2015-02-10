@@ -1,11 +1,11 @@
 <?php
 
-require_once 'utils.php';
-require_once 'log.php';
-require_once 'functions.php';
-require_once 'pseudoclient.php';
-require_once 'config.php';
-require_once 'procs.php';
+require_once 'lib/utils.php';
+require_once 'lib/log.php';
+require_once 'lib/functions.php';
+require_once 'lib/pseudoclient.php';
+require_once 'lib/config.php';
+require_once 'lib/procs.php';
 
 function is_admin($nick) {
 	return in_array($nick, ExtraServ::$conf->admins);
@@ -304,7 +304,7 @@ class uplink {
 	}
 
 	public static function is_oper($nick) {
-		return (in_array('a', uplink::$nicks[$nick]['mode']) && in_array('o', uplink::$nicks[$nick]['mode']));
+		return in_array('o', uplink::$nicks[$nick]['mode']);
 	}
 
 	public static function remove_from_modelists($nick, $channel = null, $replace_with = null) {

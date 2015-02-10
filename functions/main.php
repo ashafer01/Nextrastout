@@ -66,7 +66,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						foreach (array('k','l') as $c) {
 							if ($qr["mode_$c"] != null) {
 								ExtraServ::$serv_handle->send("MODE $channel +$c {$qr["mode_$c"]}");
-								uplink::$channels[$channel][$c] = $qr["mode_c"];
+								uplink::$channels[$channel][$c] = $qr["mode_$c"];
 							}
 						}
 					} else {
@@ -224,7 +224,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 					$user = uplink::$nicks[$name]['user'];
 					if (array_key_exists($user, ExtraServ::$ident)) {
-						log::debug("$nick!$user is identified");
+						log::debug("$name!$user is identified");
 						# check sticky lists
 						if (array_key_exists($chan, ExtraServ::$chan_stickylists)) {
 							log::debug("Channel $chan has sticky lists");
@@ -243,7 +243,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							}
 						}
 					} else {
-						log::trace("$nick!$user is not identified");
+						log::trace("$name!$user is not identified");
 					}
 
 					uplink::$nicks[$name]['channels'][] = $chan;
