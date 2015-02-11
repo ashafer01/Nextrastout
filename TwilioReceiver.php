@@ -9,13 +9,11 @@ require_once 'lib/log.php';
 proc::$name = 'twiliorecv';
 log::$level = log::DEBUG;
 
-if (log::$static === null) {
-	log::$static = new stdClass;
-	log::$static->file = fopen('/var/log/lighttpd/sms.log', 'a');
-	if (log::$static->file === false) {
-		header('HTTP/1.1 500 Server Error (1)');
-		goto finish;
-	}
+log::$static = new stdClass;
+log::$static->file = fopen('/var/log/lighttpd/sms.log', 'a');
+if (log::$static->file === false) {
+	header('HTTP/1.1 500 Server Error (1)');
+	goto finish;
 }
 log::set_logger('smslog');
 

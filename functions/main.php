@@ -10,10 +10,9 @@ foreach ($conf->alias as $alias => $real) {
 	f::ALIAS($alias, $real);
 }
 
-$handles_re = implode('|', array_keys(ExtraServ::$handles));
-
 # static data
 $start_lists = array('b','e','I');
+$handles_re = implode('|', array_keys(ExtraServ::$handles));
 
 $_socket_start = null;
 $_socket_timeout = ini_get('default_socket_timeout');
@@ -70,7 +69,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							ExtraServ::$serv_handle->send("MODE $channel +$modechars");
 						}
 						foreach (array('k','l') as $c) {
-							if ($qr["mode_$c"] != null) {
+							if (in_array($c, $modes) && ($qr["mode_$c"] != null)) {
 								ExtraServ::$serv_handle->send("MODE $channel +$c {$qr["mode_$c"]}");
 								uplink::$channels[$channel][$c] = $qr["mode_$c"];
 							}
@@ -163,7 +162,26 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					'realname' => $_i['text'],
 					'channels' => array()
 				);
-				log::debug("Stored nick {$_i['args'][0]}");
+				log::trace("Stored nick {$_i['args'][0]}");
+
+				log::trace('Checking if username is registered');
+				$user = dbescape($_i['args'][4]);
+				$q = pg_query("SELECT count(*) FROM user_register WHERE ircuser='$user'");
+				if ($q === false) {
+					log::error('Failed to check if username is registered');
+					log::error(pg_last_error());
+				} else {
+					$qr = pg_fetch_assoc($q);
+					if ($qr['count'] > 0) {
+						if (!array_key_exists($user, ExtraServ::$ident)) {
+							log::debug('Username is registered, nagging for ident');
+							$shn = ExtraServ::$serv_handle->nick;
+							ExtraServ::$serv_handle->notice($_i['args'][0], "Your username '$user' is registered. Please '/msg $shn IDENTIFY password' to verify your identity.");
+						} else {
+							log::trace('User is already identified');
+						}
+					}
+				}
 
 			# user has changed their nick
 			} elseif (uplink::is_nick($_i['prefix'])) {
@@ -218,16 +236,16 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			$names = explode(' ', $_i['text']);
 			$modesymbols = array_keys(uplink::$chanmode_map);
 			foreach ($names as $name) {
-				if (array_key_exists($name, uplink::$nicks)) {
-					$chanmode = array();
-					while (in_array(($c = substr($name, 0, 1)), $modesymbols)) {
-						$chanmode[] = uplink::$chanmode_map[$c];
-						$name = substr($name, 1);
-					}
-					foreach ($chanmode as $modechar) {
-						uplink::$channels[$chan][$modechar][] = $name;
-					}
+				$chanmode = array();
+				while (in_array(($c = substr($name, 0, 1)), $modesymbols)) {
+					$chanmode[] = uplink::$chanmode_map[$c];
+					$name = substr($name, 1);
+				}
+				foreach ($chanmode as $modechar) {
+					uplink::$channels[$chan][$modechar][] = $name;
+				}
 
+				if (array_key_exists($name, uplink::$nicks)) {
 					$user = uplink::$nicks[$name]['user'];
 					if (array_key_exists($user, ExtraServ::$ident)) {
 						log::debug("$name!$user is identified");
@@ -255,7 +273,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					uplink::$nicks[$name]['channels'][] = $chan;
 					log::trace("$name joins $chan");
 				} else {
-					log::notice('Got unknown nick in SJOIN');
+					log::notice("Got unknown nick '$name' in SJOIN");
 				}
 			}
 			log::trace('Finished SJOIN handling');
@@ -392,8 +410,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 				if ($do_stickymodes && $modes_updated) {
 					$updates = array();
-					$list_modes = array('b', 'e', 'I', 'o', 'h', 'v');
-					$modes_array = array_filter(uplink::$channels[$chan], function($val) use ($list_modes) {
+					$modes_array = array_filter(uplink::$channels[$chan], function($val) {
 						return !is_array($val);
 					});
 					if (array_key_exists('k', $modes_array)) {

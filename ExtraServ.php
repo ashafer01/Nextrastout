@@ -126,7 +126,7 @@ class ExtraServ {
 	public static $serv_handle = null;
 	public static $bot_handle = null;
 
-	public static $ident;
+	public static $ident = array();
 	public static $chan_stickymodes;
 	public static $chan_stickylists;
 
@@ -202,8 +202,6 @@ class ExtraServ {
 		self::$hostname = $conf->hostname;
 		self::$info = $conf->info;
 		self::$output_tz = $conf->output_tz;
-
-		self::$ident = array();
 
 		$c = uplink::connect();
 		if (!$c) {
