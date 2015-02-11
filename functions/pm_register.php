@@ -15,9 +15,9 @@ if (strlen($uarg) > 72) {
 	log::debug('Password is too long');
 	$_i['handle']->notice($_i['reply_to'], 'Password must be no longer than 72 characters');
 	return f::FALSE;
-} elseif (strlen($uarg) < 6) {
+} elseif (strlen($uarg) < 4) {
 	log::debug('Password is too short');
-	$_i['handle']->notice($_i['reply_to'], 'Password must be at least 6 characters');
+	$_i['handle']->notice($_i['reply_to'], 'Password must be at least 4 characters');
 	return f::FALSE;
 }
 

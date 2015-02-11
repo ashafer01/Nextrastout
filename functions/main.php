@@ -10,6 +10,8 @@ foreach ($conf->alias as $alias => $real) {
 	f::ALIAS($alias, $real);
 }
 
+$handles_re = implode('|', array_keys(ExtraServ::$handles));
+
 # static data
 $start_lists = array('b','e','I');
 
@@ -19,6 +21,10 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 	$line = uplink::readline();
 	if ($line != null) {
 		$lline = color_formatting::escape($line);
+		if (preg_match("/^(:.+? PRIVMSG ($handles_re) [^:]*:(REGISTER|SETPASS|IDENTIFY) )(.+)$/i", $lline, $matches) === 1) {
+			log::debug('Hiding password from log');
+			$lline = "{$matches[1]}**********";
+		}
 		log::rawlog(log::INFO, "%c<= $lline%0");
 	} else {
 		continue;

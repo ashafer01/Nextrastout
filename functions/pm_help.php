@@ -30,7 +30,7 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], 'Registers your current username using the given password. You will need to');
 		$_i['handle']->notice($_i['reply_to'], 'send this password with IDENTIFY whenever you connect to IRC. Passwords');
-		$_i['handle']->notice($_i['reply_to'], 'must be at least 6 and no more than 72 characters in length. You may include');
+		$_i['handle']->notice($_i['reply_to'], 'must be at least 4 and no more than 72 characters in length. You may include');
 		$_i['handle']->notice($_i['reply_to'], 'numbers, symbols, and whitespace, but they are not required.');
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], 'Your current nickname will automatically be associated with your username on');
