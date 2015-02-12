@@ -84,9 +84,8 @@ class f {
 		if ($_ARGV === null) {
 			$_ARGV = array();
 		}
-		$_CALLED_AS = null;
+		$_CALLED_AS = $_FUNC_NAME;
 		if (array_key_exists($_FUNC_NAME, self::$aliases)) {
-			$_CALLED_AS = $_FUNC_NAME;
 			$_FUNC_NAME = self::$aliases[$_CALLED_AS];
 			log::debug("== Mapping alias function '$_CALLED_AS' to '$_FUNC_NAME' for call");
 		}
