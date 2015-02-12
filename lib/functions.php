@@ -84,10 +84,11 @@ class f {
 		if ($_ARGV === null) {
 			$_ARGV = array();
 		}
+		$_CALLED_AS = null;
 		if (array_key_exists($_FUNC_NAME, self::$aliases)) {
-			$___orig_func = $_FUNC_NAME;
-			$_FUNC_NAME = self::$aliases[$___orig_func];
-			log::debug("== Mapping alias function '$___orig_func' to '$_FUNC_NAME' for call");
+			$_CALLED_AS = $_FUNC_NAME;
+			$_FUNC_NAME = self::$aliases[$_CALLED_AS];
+			log::debug("== Mapping alias function '$_CALLED_AS' to '$_FUNC_NAME' for call");
 		}
 		if (!array_key_exists($_FUNC_NAME, self::$functions) || self::$reload[$_FUNC_NAME]) {
 			log::info('Need to reload fx function');

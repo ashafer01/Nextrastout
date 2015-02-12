@@ -5,6 +5,8 @@ log::trace('entered f::timer()');
 ExtraServ::dbconnect();
 $conf = config::get_instance();
 
+f::ALIAS('infosms', 'sms');
+
 $count = 0;
 while (true) {
 	if ($count % 1000 == 0) {
@@ -112,6 +114,15 @@ while (true) {
 					log::debug('User does not have default channel, sending to global default channel');
 					ExtraServ::$bot_handle->say($conf->sms->default_channel, $reply);
 				}
+			}
+
+			$q = pg_query(ExtraServ::$db, "UPDATE sms SET posted=TRUE WHERE message_sid='{$qr['message_sid']}'");
+			if ($q === false) {
+				log::error('Failed to mark SMS posted!');
+				log::error(pg_last_error());
+				return f::FALSE;
+			} else {
+				log::debug('Marked message posted');
 			}
 		}
 	}

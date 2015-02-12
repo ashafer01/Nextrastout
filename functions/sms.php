@@ -1,16 +1,16 @@
 //<?php
 
-log::trace("Entered f::$_FUNC_NAME()");
+log::trace("Entered f::$_CALLED_AS()");
 
 # function sms($to, $message, $from, $from_chan=null, $media_urls=array());
-if ($_FUNC_NAME == 'sms') {
+if ($_CALLED_AS == 'sms') {
 	list($to, $message, $from) = $_ARGV;
 	array_shift($_ARGV);
 	array_shift($_ARGV);
 	array_shift($_ARGV);
 
 # function infosms($to, $message, $from_chan=null, $media_urls=array());
-} elseif ($_FUNC_NAME == 'infosms') {
+} elseif ($_CALLED_AS == 'infosms') {
 	list($to, $message) = $_ARGV;
 	array_shift($_ARGV);
 	array_shift($_ARGV);
@@ -53,7 +53,7 @@ if (ctype_digit($to) && strlen($to) == 10) {
 	}
 }
 
-if ($_FUNC_NAME != 'infosms') {
+if ($_CALLED_AS != 'infosms') {
 	if (!$sms_enable) {
 		log::debug('User has disabled non-info sms for this number');
 		return 'That user does not wish to receive SMS messages';
