@@ -1,6 +1,6 @@
 //<?php
 
-log::trace('entered f::pm_stickylists.php');
+log::trace('entered f::serv_stickylists.php');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
 $nick = strtolower($_i['prefix']);

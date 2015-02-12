@@ -1,6 +1,6 @@
 //<?php
 
-log::trace('entered f::pm_deident()');
+log::trace('entered f::serv_deident()');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
 $user = uplink::$nicks[strtolower($_i['prefix'])]['user'];

@@ -1,6 +1,6 @@
 //<?php
 
-log::trace('entered f::pm_op()');
+log::trace('entered f::serv_op()');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
 $nick = strtolower($_i['prefix']);

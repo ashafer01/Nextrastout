@@ -1,6 +1,6 @@
 //<?php
 
-log::trace('entered f::pm_recover()');
+log::trace('entered f::serv_recover()');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
 $user = uplink::$nicks[$_i['prefix']]['user'];

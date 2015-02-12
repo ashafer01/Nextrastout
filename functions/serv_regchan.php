@@ -1,6 +1,6 @@
 //<?php
 
-log::trace('entered f::pm_regchan()');
+log::trace('entered f::serv_regchan()');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
 $nick = strtolower($_i['prefix']);

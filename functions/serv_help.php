@@ -1,6 +1,6 @@
 //<?php
 
-log::trace('Entered f::pm_help()');
+log::trace('Entered f::serv_help()');
 list($_CMD, $uarg, $_i) = $_ARGV;
 
 switch (strtoupper($uarg)) {

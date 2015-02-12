@@ -1,6 +1,6 @@
 //<?php
 
-log::trace('entered f::pm_stickymodes()');
+log::trace('entered f::serv_stickymodes()');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
 $nick = strtolower($_i['prefix']);

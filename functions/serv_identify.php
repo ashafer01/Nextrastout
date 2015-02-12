@@ -1,6 +1,6 @@
 //<?php
 
-log::trace('Entered f::pm_identify()');
+log::trace('Entered f::serv_identify()');
 list($_CMD, $uarg, $_i) = $_ARGV;
 
 $nick = strtolower($_i['prefix']);

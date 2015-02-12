@@ -1,6 +1,6 @@
 //<?php
 
-log::trace('entered f::pm_associate()');
+log::trace('entered f::serv_associate()');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
 $nick = strtolower($_i['prefix']);

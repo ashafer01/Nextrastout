@@ -1,6 +1,6 @@
 //<?php
 
-log::trace('entered f::pm_validate()');
+log::trace('entered f::serv_validate()');
 list($ucmd, $uargs, $_i) = $_ARGV;
 
 $uargs = explode(' ', $uargs);
