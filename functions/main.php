@@ -502,7 +502,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				}
 			}
 
-			# PM-only commands (mainly Serv stuff)
+			# Check for serv commands in pm
 			if ($in_pm) {
 				$ucmd = explode(' ', $_i['text'], 2);
 				$uarg = null;
@@ -510,12 +510,12 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					$uarg = $ucmd[1];
 				$ucmd = $ucmd[0];
 
-				$cmdfunc = strtolower("pm_$ucmd");
+				$cmdfunc = strtolower("serv_$ucmd");
 				if (f::EXISTS($cmdfunc)) {
 					f::CALL($cmdfunc, array($ucmd, $uarg, $_i));
 					break;
 				} else {
-					log::trace('Not a PM command');
+					log::trace('Not a serv command');
 				}
 			}
 
