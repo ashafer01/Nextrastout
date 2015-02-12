@@ -125,6 +125,10 @@ switch ($code) {
 				log::error(print_r($response, true));
 				say("Failed to send $msgtype.");
 				$_i['handle']->say($_i['reply_to'], "Failed to send $msgtype.");
+
+				if ($mark_intro_sms) {
+					log::error("Message containing intro for $to failed to send");
+				}
 				break;
 			default:
 				log::debug("$msgtype sent");
@@ -135,10 +139,26 @@ switch ($code) {
 					$ts = time();
 					$u = pg_query(ExtraServ::$db, "UPDATE phone_register SET last_send_uts=$ts, last_from_chan='$from_chan' WHERE phone_number='$to'");
 					if ($u === false) {
+						log::error('Failed to update last send info');
+						log::error(pg_last_error());
 						if (!$quiet)
-							$reply .= " Failed to update last send info.";
+							$reply .= ' Failed to update last send info.';
 					} else {
 						log::debug("Updated last_send_uts and last_from_chan for $to");
+					}
+				}
+
+				if ($mark_intro_sms) {
+					log::debug('Marking intro sms sent');
+					$i = pg_query(ExtraServ::$db, "INSERT INTO phone_intro_sent (phone_number) VALUES ('$to')");
+					if ($i === false) {
+						log::error("Failed to mark intro sent for $to");
+						log::error(pg_last_error());
+						if (!$quiet) {
+							$reply .= ' Failed to mark intro SMS sent.';
+						}
+					} else {
+						log::debug('Marked intro sms sent');
 					}
 				}
 
