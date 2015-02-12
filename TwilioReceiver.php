@@ -64,6 +64,7 @@ foreach ($_POST as $k => $v) {
 $_POST = $cleanpost;
 
 $ircmessage = trim($_POST['Body']);
+$from = substr($_POST['From'], 2);
 
 if (array_key_exists('NumMedia', $_POST) && $_POST['NumMedia'] > 0) {
 	log::debug('Got MMS message');
@@ -93,11 +94,41 @@ if (array_key_exists('NumMedia', $_POST) && $_POST['NumMedia'] > 0) {
 		$ircmessage = "$dchan $ircmessage";
 	}
 } else {
+	if ($ircmessage == 'BLOCK') {
+		log::notice("Got number block request for $from");
+		$q = pg_query($db, "INSERT INTO blocked_numbers (phone_number) VALUES ('$from')");
+		if ($q === false) {
+			log::error('Failed to block number');
+			log::error(pg_last_error());
+			$autoreply = 'An error occurred; your number has not been blocked. Please try again in a few minutes.';
+			goto finish;
+		} else {
+			log::info("Successfully blocked $from");
+			$autoreply = 'Your number has been blocked. Send me UNBLOCK (case-sensitive) at any time to unblock your number.';
+			goto finish;
+		}
+	} elseif ($ircmessage == 'UNBLOCK') {
+		log::notice("Got number unblock request from $from");
+		$q = pg_query($db, "DELETE FROM blocked_numbers WHERE phone_number='$from'");
+		if ($q === false) {
+			log::error("Failed to unblock $from");
+			log::error(pg_last_error());
+			$autoreply = 'An error occurred; your number has not been unblocked. Please try again in a few minutes.';
+			goto finish;
+		} elseif (pg_affected_rows($q) == 0) {
+			log::info('Number not blocked (no deleted rows)');
+			$autoreply = 'Your number was not blocked';
+			goto finish;
+		} else {
+			log::info("Successfully unblocked $from");
+			$autoreply = 'Your number has been unblocked. Welcome back!';
+			goto finish;
+		}
+	}
 	$mms = 'FALSE';
 }
 
 $ts = time();
-$from = substr($_POST['From'], 2);
 $query = "INSERT INTO newsms (uts, message_sid, from_number, message, is_mms) VALUES ($ts, '{$_POST['MessageSid']}', '$from', '$ircmessage', $mms)";
 log::debug($query);
 $q = pg_query($db, $query);
