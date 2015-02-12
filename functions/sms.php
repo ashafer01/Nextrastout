@@ -21,7 +21,7 @@ if ($media_urls === null) {
 
 if (ctype_digit($to) && strlen($to) == 10) {
 	# we got a phone number
-	log::debug('Got nick');
+	log::debug('Got phone number');
 } else {
 	# we got a nick
 	log::debug('Got nick, looking up phone number');
