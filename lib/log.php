@@ -52,7 +52,7 @@ class log {
 			if (self::$logger_func != null) {
 				$lines = explode("\n", $message);
 				foreach ($lines as $line) {
-					f::CALL(self::$logger_func, array($level, $line));
+					call_user_func_array(self::$logger_func, array($level, $line));
 				}
 			} else {
 				$ts = utimestamp();

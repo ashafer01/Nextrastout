@@ -176,7 +176,8 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						if (!array_key_exists($user, ExtraServ::$ident)) {
 							log::debug('Username is registered, nagging for ident');
 							$shn = ExtraServ::$serv_handle->nick;
-							ExtraServ::$serv_handle->notice($_i['args'][0], "Your username '$user' is registered. Please '/msg $shn IDENTIFY password' to verify your identity.");
+							//ExtraServ::$serv_handle->notice($_i['args'][0], "Your username '$user' is registered. Please '/msg $shn IDENTIFY password' to verify your identity.");
+							log::notice('Not sending ident request during dev');
 						} else {
 							log::trace('User is already identified');
 						}

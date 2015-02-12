@@ -100,6 +100,16 @@ function dbescape($str) {
 	return pg_escape_string(ExtraServ::$db, $str);
 }
 
+function smslog($level, $message) {
+	$message = color_formatting::strip($message);
+	$ms = microtime();
+	$ms = explode(' ', $ms);
+	$ms = substr($ms[0], 2, -2);
+	$ts = date('Y-m-d H:i:s');
+	$addr = str_pad($_SERVER['REMOTE_ADDR'], 15);
+	fwrite(log::$static->file, "[$ts.$ms] [$addr] $message\n");
+}
+
 function pg_is_prepared($stmt_name) {
 	$q = pg_query(ExtraServ::$db, 'SELECT name FROM pg_prepared_statements');
 	if ($q === false) {

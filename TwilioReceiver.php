@@ -8,9 +8,10 @@ require_once 'lib/log.php';
 
 proc::$name = 'twiliorecv';
 log::$level = log::DEBUG;
+$autoreply = null;
 
 log::$static = new stdClass;
-log::$static->file = fopen('/var/log/lighttpd/sms.log', 'a');
+log::$static->file = fopen('/var/log/lighttpd/sms-dev.log', 'a');
 if (log::$static->file === false) {
 	header('HTTP/1.1 500 Server Error (1)');
 	goto finish;
@@ -44,8 +45,6 @@ foreach (array('Body', 'To', 'From', 'MessageSid') as $key) {
 }
 
 $conf = config::get_instance();
-
-$autoreply = null;
 
 log::info('Opening database connection');
 $dbpw = get_password($conf->db->pwname);

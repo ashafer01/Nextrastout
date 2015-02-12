@@ -3,10 +3,20 @@
 log::trace("Entered f::$_FUNC_NAME()");
 
 # function sms($to, $message, $from, $from_chan=null, $media_urls=array());
-list($to, $message, $from) = $_ARGV;
-array_shift($_ARGV);
-array_shift($_ARGV);
-array_shift($_ARGV);
+if ($_FUNC_NAME == 'sms') {
+	list($to, $message, $from) = $_ARGV;
+	array_shift($_ARGV);
+	array_shift($_ARGV);
+	array_shift($_ARGV);
+
+# function infosms($to, $message, $from_chan=null, $media_urls=array());
+} elseif ($_FUNC_NAME == 'infosms') {
+	list($to, $message) = $_ARGV;
+	array_shift($_ARGV);
+	array_shift($_ARGV);
+	$from = ExtraServ::$serv_handle->nick;
+}
+
 
 # Optional arguments
 $from_chan = array_shift($_ARGV);

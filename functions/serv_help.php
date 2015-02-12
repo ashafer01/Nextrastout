@@ -22,6 +22,7 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], ' VERIFYPHONE   Verify your phone number and associate with your username');
 		$_i['handle']->notice($_i['reply_to'], '    REGPHONE   Associate a verified phone number with a nickname');
 		$_i['handle']->notice($_i['reply_to'], '    REGEMAIL   Register an email addresss');
+		$_i['handle']->notice($_i['reply_to'], '         SET   Change various settings');
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], 'Say "HELP <command>" for more information about a command');
 		break;
@@ -154,7 +155,37 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
 		$_i['handle']->notice($_i['reply_to'], 'Register an email address for use with image uploading.');
 		break;
+	case 'SET':
+		$_i['handle']->notice($_i['reply_to'], 'Usage: SET <type> <...>');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], 'SET changes various settings. Each type has its own help page');
+		$_i['handle']->notice($_i['reply_to'], 'describing all configurable options, just say "HELP SET <type>"');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], 'Types:');
+		$_i['handle']->notice($_i['reply_to'], '    PHONE  Phone-related settings');
+		$_i['handle']->notice($_i['reply_to'], '     CHAN  Channel-related settings');
+		$_i['handle']->notice($_i['reply_to'], '  PROFILE  General purpose public profile information');
+		break;
+	case 'SET PROFILE':
+		$_i['handle']->notice($_i['reply_to'], 'Usage: SET PROFILE <field name> = <value>');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], 'SET PROFILE allows you to store arbitrary information attached');
+		$_i['handle']->notice($_i['reply_to'], 'to your username/nicknames. This is meant to be free-form and');
+		$_i['handle']->notice($_i['reply_to'], 'can be used for things like usernames on social websites, contact');
+		$_i['handle']->notice($_i['reply_to'], 'information, biographical information, anything. This is a');
+		$_i['handle']->notice($_i['reply_to'], 'completely opt-in feature. All information stored will be public');
+		$_i['handle']->notice($_i['reply_to'], 'to anyone on IRC.');
+		$_i['handle']->notice($_i['reply_to'], 'Field names are limited to 48 characters, values are limited by');
+		$_i['handle']->notice($_i['reply_to'], 'the length of an IRC message. You may store more than one value');
+		$_i['handle']->notice($_i['reply_to'], 'per field name. The same field name and value pair cannot be');
+		$_i['handle']->notice($_i['reply_to'], 'stored more than once across all users.');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], 'Examples:');
+		$_i['handle']->notice($_i['reply_to'], '   SET PROFILE steam name = mysteamname');
+		$_i['handle']->notice($_i['reply_to'], '   SET PROFILE favorite color = blue');
+		$_i['handle']->notice($_i['reply_to'], '   SET PROFILE about me = It all started when I was born...');
+		break;
 	default:
-		$_i['handle']->notice($_i['reply_to'], "Unknown command: $uarg");
+		$_i['handle']->notice($_i['reply_to'], "Unknown help topic: $uarg");
 		break;
 }
