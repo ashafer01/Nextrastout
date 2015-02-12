@@ -16,7 +16,7 @@ $_name = 'New Log Bot c/o alex';
 $_host = 'localhost';
 $_port = 9999;
 
-$table = 'newlog';
+$table = 'log';
 
 $_channels = config::channels();
 
@@ -45,7 +45,7 @@ while (true) {
 
 	log::info('Connecting to database');
 	$dbpw = get_password('db');
-	$_sql = pg_connect("host=localhost dbname=alex user=alex password=$dbpw application_name=Logger");
+	$_sql = pg_connect("host=localhost dbname=extraserv user=alex password=$dbpw application_name=Logger");
 	if ($_sql === false) {
 		log::fatal('Failed to connect to database, exiting');
 		exit(1);
