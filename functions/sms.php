@@ -55,6 +55,7 @@ if ($q === false) {
 	if ($qr['count'] > 0) {
 		log::notice('Attempted send to blocked number');
 		$_i['handle']->say($_i['reply_to'], 'That number has been blocked');
+		return f::FALSE;
 	} else {
 		log::trace('Number not blocked');
 	}
