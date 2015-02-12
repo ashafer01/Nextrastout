@@ -9,7 +9,7 @@ if ($param != null) {
 	$where .= f::log_where($param, null, null, null, 'req_wordbound');
 }
 
-$query = "SELECT COUNT(uts) AS count FROM newlog WHERE $where";
+$query = "SELECT COUNT(uts) AS count FROM log WHERE $where";
 log::debug("total matching rows query >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -23,7 +23,7 @@ if ($q === false) {
 	log::debug("Got total matching rows: $total_count");
 
 	if ($total_count > 0) {
-		$query = "SELECT nick, COUNT(uts) AS count FROM newlog WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 11";
+		$query = "SELECT nick, COUNT(uts) AS count FROM log WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 11";
 		log::debug("kol query >>> $query");
 		$q = pg_query(ExtraServ::$db, $query);
 		if ($q === false) {

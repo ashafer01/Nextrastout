@@ -52,7 +52,7 @@ log::debug('Starting nickstats queries');
 #########################
 
 $ref = 'nickstats total lines query';
-$query = "SELECT count(uts) FROM newlog WHERE $where_privmsg AND $where_nonick";
+$query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where_nonick";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -75,7 +75,7 @@ if ($q === false) {
 #########################
 
 $ref = 'nickstats total nick lines query';
-$query = "SELECT count(uts) FROM newlog WHERE $where_privmsg AND $where";
+$query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -96,7 +96,7 @@ if ($q === false) {
 #########################
 
 $ref = 'nickstats rank query';
-$query = "SELECT nick, count(uts) FROM newlog WHERE $where_privmsg AND $where_nonick GROUP BY nick ORDER BY count DESC";
+$query = "SELECT nick, count(uts) FROM log WHERE $where_privmsg AND $where_nonick GROUP BY nick ORDER BY count DESC";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -141,7 +141,7 @@ $sayparts[] = "%C$fntl%0 lines / $ftl total ($fpcnt%)";
 $where_nickonly = f::log_where_nick($nicks, $channel, false);
 
 $ref = 'nickstats first use query';
-$query = "SELECT uts, nick, ircuser FROM newlog WHERE $where_nickonly ORDER BY uts ASC LIMIT 1";
+$query = "SELECT uts, nick, ircuser FROM log WHERE $where_nickonly ORDER BY uts ASC LIMIT 1";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -182,7 +182,7 @@ if ($q === false) {
 
 # Get big list of words
 $ref = 'nickstats word list query';
-$query = "SELECT * FROM (SELECT regexp_split_to_table(lower(message), '\s+') AS word, count(uts) FROM newlog WHERE $where_privmsg AND $where GROUP BY word ORDER BY count DESC) AS t1 WHERE word !~ '^\x01'";
+$query = "SELECT * FROM (SELECT regexp_split_to_table(lower(message), '\s+') AS word, count(uts) FROM log WHERE $where_privmsg AND $where GROUP BY word ORDER BY count DESC) AS t1 WHERE word !~ '^\x01'";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -221,7 +221,7 @@ foreach ($nicks as $nick) {
 	$up_conds[] = "(message ~* '[[:<:]]\(?$nick\)?\+\+(?![!-~])' AND nick != '$nick')";
 }
 $up_conds = implode(' OR ', $up_conds);
-$query = "SELECT count(uts) FROM newlog WHERE $where_privmsg AND ($up_conds) AND $where_notme";
+$query = "SELECT count(uts) FROM log WHERE $where_privmsg AND ($up_conds) AND $where_notme";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -243,7 +243,7 @@ foreach ($nicks as $nick) {
 	$down_conds[] = "(message ~* '[[:<:]]\(?$nick\)?--(?![!-~])' AND nick != '$nick')";
 }
 $down_conds = implode(' OR ', $down_conds);
-$query = "SELECT count(uts) FROM newlog WHERE $where_privmsg AND ($down_conds) AND $where_notme";
+$query = "SELECT count(uts) FROM log WHERE $where_privmsg AND ($down_conds) AND $where_notme";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -273,7 +273,7 @@ $sayparts[] = "Net karma: %C$fnv%0 (+$fuv/-$fdv; $fpli% like it; $fakpd net vote
 $saypart = 'Top voters:';
 
 $ref = 'nickstats top voters upvote query';
-$query = "SELECT nick, count(uts) FROM newlog WHERE $where_privmsg AND ($up_conds) AND $where_notme GROUP BY nick ORDER BY count DESC LIMIT 1";
+$query = "SELECT nick, count(uts) FROM log WHERE $where_privmsg AND ($up_conds) AND $where_notme GROUP BY nick ORDER BY count DESC LIMIT 1";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -293,7 +293,7 @@ if ($q === false) {
 }
 
 $ref = 'nickstats top voters downvote query';
-$query = "SELECT nick, count(uts) FROM newlog WHERE $where_privmsg AND ($down_conds) AND $where_notme GROUP BY nick ORDER BY count DESC LIMIT 1";
+$query = "SELECT nick, count(uts) FROM log WHERE $where_privmsg AND ($down_conds) AND $where_notme GROUP BY nick ORDER BY count DESC LIMIT 1";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -320,7 +320,7 @@ $upvote_max_count = 0;
 $upvote_max_thing = null;
 
 $ref = 'nickstats karma upvote without parens query';
-$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '[[:<:]]([!-&*-~]+?)(\+\+|--)(?![!-~])') AS karma FROM newlog WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='++' GROUP BY karma[1]";
+$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '[[:<:]]([!-&*-~]+?)(\+\+|--)(?![!-~])') AS karma FROM log WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='++' GROUP BY karma[1]";
 log::debug("$ref >>> $query");
 $q1 = pg_query(ExtraServ::$db, $query);
 if ($q1 === false) {
@@ -334,7 +334,7 @@ if ($q1 === false) {
 }
 
 $ref = 'nickstats karma upvote with parens query';
-$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '\(([ -~]+?)\)(\+\+|--)(?![!-~])') AS karma FROM newlog WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='++' GROUP BY karma[1]";
+$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '\(([ -~]+?)\)(\+\+|--)(?![!-~])') AS karma FROM log WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='++' GROUP BY karma[1]";
 log::debug("$ref >>> $query");
 $q2 = pg_query(ExtraServ::$db, $query);
 if ($q2 === false) {
@@ -365,7 +365,7 @@ $downvote_max_count = 0;
 $downvote_max_thing = null;
 
 $ref = 'nickstats karma downvote without parens query';
-$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '[[:<:]]([!-&*-~]+?)(\+\+|--)(?![!-~])') AS karma FROM newlog WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='--' GROUP BY karma[1]";
+$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '[[:<:]]([!-&*-~]+?)(\+\+|--)(?![!-~])') AS karma FROM log WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='--' GROUP BY karma[1]";
 log::debug("$ref >>> $query");
 $q1 = pg_query(ExtraServ::$db, $query);
 if ($q1 === false) {
@@ -379,7 +379,7 @@ if ($q1 === false) {
 }
 
 $ref = 'nickstats karma downvote with parens query';
-$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '\(([ -~]+?)\)(\+\+|--)(?![!-~])') AS karma FROM newlog WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='--' GROUP BY karma[1]";
+$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '\(([ -~]+?)\)(\+\+|--)(?![!-~])') AS karma FROM log WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='--' GROUP BY karma[1]";
 log::debug("$ref >>> $query");
 $q2 = pg_query(ExtraServ::$db, $query);
 if ($q2 === false) {

@@ -590,6 +590,11 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							$_i['handle']->say($_i['reply_to'], 'Reloading main');
 							f::RELOAD('main');
 							return 0;
+						case 'procs-reload':
+							log::notice('Got !procs-reload');
+							f::RELOAD('timer');
+							$_i['handle']->say($_i['reply_to'], 'Telling other processes to reload');
+							proc::queue_sendall(1, 'RELOAD');
 						case 'reload':
 						case 'f-reload':
 							log::notice('Got !f-reload');

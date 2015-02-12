@@ -62,7 +62,7 @@ switch ($command) {
 		break;
 }
 
-$query = "SELECT uts, nick, message FROM newlog WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}')" . f::log_where($params) . "$where $orderby $limit";
+$query = "SELECT uts, nick, message FROM log WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}')" . f::log_where($params) . "$where $orderby $limit";
 log::debug("log search query >>> $query");
 
 $q = pg_query(ExtraServ::$db, $query);

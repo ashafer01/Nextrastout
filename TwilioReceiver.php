@@ -128,7 +128,7 @@ if (array_key_exists('NumMedia', $_POST) && $_POST['NumMedia'] > 0) {
 }
 
 $ts = time();
-$query = "INSERT INTO newsms (uts, message_sid, from_number, message, is_mms) VALUES ($ts, '{$_POST['MessageSid']}', '$from', '$ircmessage', $mms)";
+$query = "INSERT INTO sms (uts, message_sid, from_number, message, is_mms) VALUES ($ts, '{$_POST['MessageSid']}', '$from', '$ircmessage', $mms)";
 log::debug($query);
 $q = pg_query($db, $query);
 if ($q === false) {
@@ -136,9 +136,12 @@ if ($q === false) {
 	log::error(pg_last_error());
 	$autoreply = 'An error occurred';
 	goto finish;
+} else {
+	log::debug('Query OK');
 }
 
 finish:
+log::debug('----- request finished -----');
 ob_end_clean();
 fclose(log::$static->file);
 echo '<?xml version="1.0" encoding="UTF-8"?>',"\n";

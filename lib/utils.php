@@ -100,6 +100,10 @@ function dbescape($str) {
 	return pg_escape_string(ExtraServ::$db, $str);
 }
 
+function query_whitespace($query) {
+	return trim(str_replace(array("\n","\t"), array(' ', ''), $query));
+}
+
 function smslog($level, $message) {
 	$message = color_formatting::strip($message);
 	$ms = microtime();

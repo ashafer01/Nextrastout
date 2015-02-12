@@ -3,7 +3,7 @@
 log::trace('entering f::cmd_count()');
 list($_CMD, $params, $_i) = $_ARGV;
 
-$query = "SELECT count(uts) FROM newlog WHERE (command='PRIVMSG' and args='{$_i['sent_to']}')" . f::log_where($params);
+$query = "SELECT count(uts) FROM log WHERE (command='PRIVMSG' and args='{$_i['sent_to']}')" . f::log_where($params);
 log::debug("count query >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {

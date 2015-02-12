@@ -4,7 +4,7 @@ log::trace('entered f::cmd_dailylines()');
 list($_CMD, $params, $_i) = $_ARGV;
 
 if (!pg_is_prepared('dailylines')) {
-	$query = "SELECT COUNT(uts) AS count FROM newlog WHERE command='PRIVMSG' AND uts >= $1 AND uts < $2 AND args=$4 AND nick ILIKE $3";
+	$query = "SELECT COUNT(uts) AS count FROM log WHERE command='PRIVMSG' AND uts >= $1 AND uts < $2 AND args=$4 AND nick ILIKE $3";
 	log::debug("preparing dailylines query >>> $query");
 	$pq = pg_prepare(ExtraServ::$db, 'dailylines', $query);
 	if ($pq === false) {

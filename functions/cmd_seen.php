@@ -15,7 +15,7 @@ $query = str_replace(array("\n","\t"), array(' ',''), <<<QUERY
 SELECT uts, command, nick, message,
 	split_part(args, ' ', 1) AS channel,
 	split_part(args, ' ', 2) AS arg
-FROM newlog
+FROM log
 WHERE
 	((split_part(args, ' ', 1) = '$channel') OR (split_part(args, ' ', 1) = ''))
 	AND ( ((command IN ('PRIVMSG','PART','QUIT','KICK','MODE','TOPIC')) AND (nick = '$inick'))

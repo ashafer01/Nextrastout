@@ -14,7 +14,7 @@ if (count($args) == 0) {
 		$where .= f::log_where($args[1], true); # ignoring @ and ^
 	}
 
-	$query = "SELECT max(uts), ircuser FROM newlog WHERE $where GROUP BY ircuser ORDER BY max DESC LIMIT 5";
+	$query = "SELECT max(uts), ircuser FROM log WHERE $where GROUP BY ircuser ORDER BY max DESC LIMIT 5";
 	log::debug("whowas query >>> $query");
 	$q = pg_query(ExtraServ::$db, $query);
 	if ($q === false) {

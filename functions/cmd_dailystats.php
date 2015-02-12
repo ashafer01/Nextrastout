@@ -45,7 +45,7 @@ date_default_timezone_set('UTC');
 
 $where = "(command='PRIVMSG') AND (args='{$_i['sent_to']}') AND (uts > $start_uts) AND (uts < $stop_uts)";
 
-$total = "SELECT count(uts) FROM newlog WHERE $where";
+$total = "SELECT count(uts) FROM log WHERE $where";
 log::debug("total query >>> $total");
 $q = pg_query(ExtraServ::$db, $total);
 if ($q === false) {
@@ -58,7 +58,7 @@ if ($q === false) {
 	$TOTAL = $qr['count'];
 }
 
-$distinct_nicks = "SELECT count(*) FROM (SELECT count(nick) FROM newlog WHERE $where GROUP BY nick) AS t1;";
+$distinct_nicks = "SELECT count(*) FROM (SELECT count(nick) FROM log WHERE $where GROUP BY nick) AS t1;";
 log::debug("distinct nicks query >>> $distinct_nicks");
 $q = pg_query(ExtraServ::$db, $distinct_nicks);
 if ($q === false) {
@@ -71,7 +71,7 @@ if ($q === false) {
 	$NUM_NICKS = $qr['count'];
 }
 
-$top_nicks = "SELECT nick, count(uts) FROM newlog WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 3";
+$top_nicks = "SELECT nick, count(uts) FROM log WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 3";
 log::debug("top nicks query >>> $top_nicks");
 $q = pg_query(ExtraServ::$db, $top_nicks);
 if ($q === false) {
@@ -98,7 +98,7 @@ for ($i = $start_uts; $i <= $stop_uts; $i += 3600) {
 		break;
 	}
 }
-$top_hours .= " END AS timerange, count(uts) FROM newlog WHERE $where GROUP BY timerange ORDER BY count DESC LIMIT 3";
+$top_hours .= " END AS timerange, count(uts) FROM log WHERE $where GROUP BY timerange ORDER BY count DESC LIMIT 3";
 log::debug("top hours query >>> $top_hours");
 $q = pg_query(ExtraServ::$db, $top_hours);
 if ($q === false) {
