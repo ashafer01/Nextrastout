@@ -1,8 +1,8 @@
 //<?php
 
-log::trace('Entered f::sms()');
+log::trace("Entered f::$_FUNC_NAME()");
 
-# function sms($to, $message, $from, $from_chan=null, $quiet=false, $media_urls=array());
+# function sms($to, $message, $from, $from_chan=null, $media_urls=array());
 list($to, $message, $from) = $_ARGV;
 array_shift($_ARGV);
 array_shift($_ARGV);
@@ -10,15 +10,13 @@ array_shift($_ARGV);
 
 # Optional arguments
 $from_chan = array_shift($_ARGV);
-$quiet = array_shift($_ARGV);
-if ($quiet === null) {
-	$quiet = false;
-}
 $media_urls = array_shift($_ARGV);
 if ($media_urls === null) {
 	$media_urls = array();
 }
 
+$sms_enable = true;
+$mms_enable = true;
 if (ctype_digit($to) && strlen($to) == 10) {
 	# we got a phone number
 	log::debug('Got phone number');
@@ -26,21 +24,32 @@ if (ctype_digit($to) && strlen($to) == 10) {
 	# we got a nick
 	log::debug('Got nick, looking up phone number');
 	$to = dbescape($to);
-	$q = pg_query(ExtraServ::$db, "SELECT phone_number FROM phone_register WHERE nick='$to'");
+	$q = pg_query(ExtraServ::$db, "SELECT phone_number, sms_enable, mms_enable FROM phone_register WHERE nick='$to'");
 	if ($q === false) {
 		log::error('Failed to look up phone number');
 		log::error(pg_last_error());
-		$_i['handle']->say($_i['reply_to'], 'Failed to look up phone number');
-		return f::FALSE;
+		return 'Failed to look up phone number';
 	} elseif (pg_num_rows($q) == 0) {
 		log::debug('No phone number for nick');
-		$_i['handle']->say($_i['reply_to'], 'Nickname not found');
-		return f::FALSE;
+		return 'Nickname not found';
 	} else {
 		$qr = pg_fetch_assoc($q);
 		log::debug("Found phone number {$qr['phone_number']} for nick '$to'");
 		$to = $qr['phone_number'];
+		if ($qr['sms_enable'] == 'f')
+			$sms_enable = false;
+		if ($qr['mms_enable'] == 'f')
+			$mms_enable = false;
 	}
+}
+
+if ($_FUNC_NAME != 'infosms') {
+	if (!$sms_enable) {
+		log::debug('User has disabled non-info sms for this number');
+		return 'That user does not wish to receive SMS messages';
+	}
+} else {
+	log::debug('Sending infosms');
 }
 
 log::debug('Checking if outgoing number has been blocked');
@@ -48,14 +57,12 @@ $q = pg_query(ExtraServ::$db, "SELECT count(*) FROM blocked_numbers WHERE phone_
 if ($q === false) {
 	log::error('Failed to check for blocked outgoing number');
 	log::error(pg_last_error());
-	$_i['handle']->say($_i['reply_to'], 'Query failed');
-	return f::FALSE;
+	return 'Query failed';
 } else {
 	$qr = pg_fetch_assoc($q);
 	if ($qr['count'] > 0) {
 		log::notice('Attempted send to blocked number');
-		$_i['handle']->say($_i['reply_to'], 'That number has been blocked');
-		return f::FALSE;
+		return 'That number has been blocked';
 	} else {
 		log::trace('Number not blocked');
 	}
@@ -78,8 +85,7 @@ $q = pg_query(ExtraServ::$db, "SELECT count(*) FROM phone_intro_sent WHERE phone
 if ($q === false) {
 	log::error('Failed to check if intro sms was sent');
 	log::error(pg_last_error());
-	$_i['handle']->say($_i['reply_to'], 'Query failed');
-	return f::FALSE;
+	return 'Query failed';
 } else {
 	$qr = pg_fetch_assoc($q);
 	if ($qr['count'] == 0) {
@@ -94,6 +100,10 @@ if ($q === false) {
 
 if (count($media_urls) > 0) {
 	$msgtype = 'MMS';
+	if (!$mms_enabled) {
+		log::debug('User has disabled MMS for this number');
+		return 'That user does not wish to receive MMS messages';
+	}
 } else {
 	$msgtype = 'SMS';
 }
@@ -124,8 +134,7 @@ switch ($code) {
 			case 'failed':
 				log::error("Twilio failed to send $msgtype");
 				log::error(print_r($response, true));
-				say("Failed to send $msgtype.");
-				$_i['handle']->say($_i['reply_to'], "Failed to send $msgtype.");
+				return "Failed to send $msgtype.";
 
 				if ($mark_intro_sms) {
 					log::error("Message containing intro for $to failed to send");
@@ -133,17 +142,14 @@ switch ($code) {
 				break;
 			default:
 				log::debug("$msgtype sent");
-				if (!$quiet) {
-					$reply = "$msgtype Sent.";
-				}
+				$reply = "$msgtype Sent.";
 				if ($from_chan != null) {
 					$ts = time();
 					$u = pg_query(ExtraServ::$db, "UPDATE phone_register SET last_send_uts=$ts, last_from_chan='$from_chan' WHERE phone_number='$to'");
 					if ($u === false) {
 						log::error('Failed to update last send info');
 						log::error(pg_last_error());
-						if (!$quiet)
-							$reply .= ' Failed to update last send info.';
+						$reply .= ' Failed to update last send info.';
 					} else {
 						log::debug("Updated last_send_uts and last_from_chan for $to");
 					}
@@ -155,28 +161,22 @@ switch ($code) {
 					if ($i === false) {
 						log::error("Failed to mark intro sent for $to");
 						log::error(pg_last_error());
-						if (!$quiet) {
-							$reply .= ' Failed to mark intro SMS sent.';
-						}
+						$reply .= ' Failed to mark intro SMS sent.';
 					} else {
 						log::debug('Marked intro sms sent');
 					}
 				}
 
-				if (!$quiet && $truncated) {
+				if ($truncated) {
 					$reply .= " (Message was truncated at \"...$trunc_end\")";
 				}
-				if ($reply !== null) {
-					$_i['handle']->say($_i['reply_to'], $reply);
-				}
-				break;
+				return $reply;
 		}
 		break;
 	default:
 		log::error("Twilio returned HTTP $code");
 		log::error($json);
-		$_i['handle']->say($_i['reply_to'], "Failed to send $msgtype.");
-		break;
+		return "Failed to send $msgtype.";
 }
 
 return f::TRUE;
