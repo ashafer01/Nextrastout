@@ -17,6 +17,14 @@ class proc {
 
 	private static $queues = array();
 
+	const TYPE_COMMAND = 1;
+	const TYPE_FUNC_RELOAD = 2;
+	const TYPE_LOGLEVEL = 3;
+	const TYPE_TIMEZONE = 4;
+	const TYPE_PROCS_STARTED = 100;
+	const TYPE_NEW_PROC_QUEUE = 184;
+	const TYPE_NEW_RELAY_QUEUE = 901;
+
 	## process control
 
 	public static function start($name, $func, $args = null) {
@@ -59,7 +67,9 @@ class proc {
 			proc::$name = $name;
 			proc::$parent_queue = msg_get_queue(proc::PARENT_QUEUEID);
 			proc::$queue = msg_get_queue($MQID);
-			proc::queue_sendall(184, $MQID); # tell other processes our queue id
+			proc::queue_sendall(proc::TYPE_NEW_PROC_QUEUE, $MQID); # tell other processes our queue id
+
+			proc::queue_get_block(proc::TYPE_PROCS_STARTED);
 
 			while (true) {
 				$_status = f::CALL($func, $args);
@@ -176,45 +186,64 @@ class proc {
 	# called in a parent process- relays message from its queue to all of its children's queues
 	public static function queue_relay() {
 		if (msg_receive(self::$parent_queue, 0, $msgtype, proc::MAX_MSG_SIZE, $message, false, MSG_IPC_NOWAIT|MSG_NOERROR) === true) {
-			foreach (self::$queues as $procname => $mq) {
-				if (msg_send($mq, $msgtype, $message, false) === true) {
-					log::debug("Relayed message of type $msgtype to proc '$procname'");
-				} else {
-					log::error("Failed to send message to proc '$procname'");
+			if ($msgtype == proc::TYPE_NEW_RELAY_QUEUE) {
+				$name_id = explode(':', $message);
+				self::$queues[$name_id[0]] = msg_get_queue($name_id[1]);
+				log::debug("Stored new relay queue {$name_id[0]} => {$name_id[1]}");
+			} else {
+				$fields = explode('::', $message, 2);
+				$from_proc = $fields[0];
+				foreach (self::$queues as $procname => $mq) {
+					if ($procname == $from_proc) {
+						continue;
+					}
+					if (msg_send($mq, $msgtype, $message, false) === true) {
+						log::debug("Relayed message of type $msgtype from proc '$from_proc' to proc '$procname'");
+					} else {
+						log::error("Failed to send message from proc '$from_proc' to proc '$procname'");
+					}
 				}
 			}
 		}
 	}
 
 	# get a message from the current process queue
-	public static function queue_get($type, &$msgtype = null, &$fromproc = null) {
-		if (msg_receive(proc::$queue, $type, $i_msgtype, proc::MAX_MSG_SIZE, $message, false, MSG_IPC_NOWAIT|MSG_NOERROR) === true) {
+	public static function queue_get($type, &$msgtype = null, &$fromproc = null, $flags = null) {
+		if ($flags === null) {
+			$flags = MSG_IPC_NOWAIT|MSG_NOERROR;
+		}
+		if (msg_receive(proc::$queue, $type, $i_msgtype, proc::MAX_MSG_SIZE, $message, false, $flags) === true) {
 			$message = explode('::', $message, 2);
-			$message[] = null;
-			if ($message[0] == proc::$name) {
-				log::trace('ignoring own message');
+			if ($i_msgtype == proc::TYPE_NEW_PROC_QUEUE) {
+				# notification of new queue
+				log::debug("Recieved new queue notification {$message[0]} => {$message[1]}");
+				self::$queues[$message[0]] = msg_get_queue((int) $message[1]);
+
 				$fromproc = null;
 				$msgtype = null;
 				return null;
 			} else {
-				if ($i_msgtype == 184) {
-					# notification of new queue
-					log::debug("Recieved new queue notification {$message[0]} => {$message[1]}");
-					self::$queues[$message[0]] = msg_get_queue((int) $message[1]);
-
-					$fromproc = null;
-					$msgtype = null;
-					return null;
-				} else {
-					$fromproc = $message[0];
-					$msgtype = $i_msgtype;
-					return $message[1];
-				}
+				$fromproc = $message[0];
+				$msgtype = $i_msgtype;
+				return $message[1];
 			}
 		} else {
 			$fromproc = null;
 			$msgtype = null;
 			return null;
+		}
+	}
+
+	public static function queue_get_block($type, &$msgtype = null, &$fromproc = null) {
+		return self::queue_get($type, $msgtype, $fromproc, MSG_NOERROR);
+	}
+
+	public static function register_relay_queue($name, $mqid) {
+		$pmq = msg_get_queue(proc::PARENT_QUEUEID);
+		if (!msg_send($pmq, proc::TYPE_NEW_RELAY_QUEUE, "$name:$mqid", false)) {
+			log::error('Failed to submit new relay queue id');
+		} else {
+			log::debug('Sent new relay queue id');
 		}
 	}
 }

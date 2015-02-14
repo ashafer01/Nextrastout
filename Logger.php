@@ -6,6 +6,9 @@ require_once 'lib/log.php';
 proc::$name = 'logger';
 log::$level = log::INFO;
 
+proc::register_relay_queue(proc::$name, 345);
+proc::$queue = msg_get_queue(345);
+
 require_once 'lib/utils.php';
 require_once 'lib/functions.php';
 require_once 'lib/config.php';
@@ -69,6 +72,12 @@ while (true) {
 			continue;
 		}
 		$lline = color_formatting::escape($line);
+
+		if (($message = proc::queue_get(0, $msgtype, $fromproc)) !== null) {
+			if ($msgtype != proc::TYPE_TIMEZONE && $msgtype != proc::TYPE_LOGLEVEL) {
+				f::handle_ipc($msgtype, $message);
+			}
+		}
 
 		// Handle ping/pong
 		if (substr($line, 0, 4) == 'PING') {

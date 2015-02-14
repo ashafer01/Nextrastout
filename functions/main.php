@@ -4,11 +4,7 @@
 log::trace('entered f::main()');
 
 ExtraServ::dbconnect();
-
-$conf = config::get_instance();
-foreach ($conf->alias as $alias => $real) {
-	f::ALIAS($alias, $real);
-}
+f::ALIAS_INIT();
 
 # static data
 $start_lists = array('b','e','I');
@@ -595,11 +591,13 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							f::RELOAD('timer');
 							$_i['handle']->say($_i['reply_to'], 'Telling other processes to reload');
 							proc::queue_sendall(1, 'RELOAD');
+							break;
 						case 'reload':
 						case 'f-reload':
 							log::notice('Got !f-reload');
 							if (f::EXISTS($uarg)) {
 								f::RELOAD($uarg);
+								proc::queue_sendall(2, $uarg);
 								$_i['handle']->say($_i['reply_to'], "Reloading f::$uarg()");
 							} else {
 								$_i['handle']->say($_i['reply_to'], "Function $uarg does not exist");
@@ -610,6 +608,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							log::notice('Got !creload');
 							if (f::EXISTS("cmd_$uarg")) {
 								f::RELOAD("cmd_$uarg");
+								proc::queue_sendall(2, "cmd_$uarg");
 								$_i['handle']->say($_i['reply_to'], "Reloading f::cmd_$uarg()");
 							} else {
 								$_i['handle']->say($_i['reply_to'], "Function cmd_$uarg does not exist");
@@ -619,12 +618,14 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							log::notice('Got !hup');
 							config::reload_all();
 							$_i['handle']->say($_i['reply_to'], 'Reloaded config');
+							proc::queue_sendall(1, 'HUP');
 							break;
 						case 'reload-all':
 							log::notice('Got !reload-all');
 							$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading and reloading conf');
 							f::RELOAD_ALL();
 							config::reload_all();
+							proc::queue_sendall(1, 'RELOAD ALL');
 							break;
 						case 'es-stop':
 							log::notice('Got !es-stop, stopping');
@@ -636,11 +637,13 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							log::notice("Got !loglevel $uarg");
 							log::$level = log::string_to_level($uarg);
 							$_i['handle']->say($_i['reply_to'], 'Changed log level');
+							proc::queue_sendall(3, $uarg);
 							break;
 						case 'set-tz':
 							log::notice('Got !set-tz');
 							ExtraServ::$output_tz = $uarg;
 							$_i['handle']->say($_i['reply_to'], 'Changed output timezone');
+							proc::queue_sendall(4, $uarg);
 							break;
 						default:
 							log::trace('Not an admin command');

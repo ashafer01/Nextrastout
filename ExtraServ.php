@@ -6,6 +6,7 @@ require_once 'lib/functions.php';
 require_once 'lib/pseudoclient.php';
 require_once 'lib/config.php';
 require_once 'lib/procs.php';
+require_once 'lib/es_utils.php';
 
 function is_admin($nick) {
 	return in_array($nick, ExtraServ::$conf->admins);
@@ -32,6 +33,8 @@ while (true) {
 
 	proc::start('responder', 'main');
 	proc::start('timer', 'timer');
+
+	proc::queue_sendall(proc::TYPE_PROCS_STARTED, '*');
 
 	proc::wait_pidfile('responder');
 	$responder_pid = proc::get_proc_pid('responder');
@@ -371,4 +374,5 @@ class uplink {
 		return array_key_exists($server, self::$network);
 	}
 }
+
 ?>

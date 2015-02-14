@@ -3,9 +3,8 @@
 log::trace('entered f::timer()');
 
 ExtraServ::dbconnect();
+f::ALIAS_INIT();
 $conf = config::get_instance();
-
-f::ALIAS('infosms', 'sms');
 
 $count = 0;
 while (true) {
@@ -14,17 +13,9 @@ while (true) {
 	}
 
 	if (($message = proc::queue_get(0, $msgtype, $fromproc)) !== null) {
-		switch ($msgtype) {
-			case 1:
-				# simple command
-				switch ($message) {
-					case 'RELOAD':
-						log::info('Got RELOAD, exiting 0');
-						exit(0);
-					default:
-						log::warning("Unknown simple IPC command: $message");
-				}
-				break;
+		$ret = f::handle_ipc($msgtype, $message);
+		if ($ret !== null) {
+			return $ret;
 		}
 	}
 

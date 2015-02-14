@@ -1,6 +1,7 @@
 -- Postgres setup file
 
 CREATE DATABASE extraserv;
+CREATE EXTENSION pgcrypto;
 
 CREATE TABLE blocked_numbers (
 	phone_number CHAR(10)

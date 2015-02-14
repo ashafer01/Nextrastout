@@ -22,6 +22,13 @@ class f {
 		return ($a || $b || $c);
 	}
 
+	public static function ALIAS_INIT() {
+		$conf = config::get_instance();
+		foreach ($conf->alias as $alias => $real) {
+			f::ALIAS($alias, $real);
+		}
+	}
+
 	public static function ALIAS($alias, $real) {
 		if (f::EXISTS($real)) {
 			self::$aliases[$alias] = $real;
@@ -39,10 +46,10 @@ class f {
 		if (array_key_exists($func, self::$aliases)) {
 			$orig = $func;
 			$func = self::$aliases[$func];
-			log::debug("== Mapping alias function '$orig' to '$func' for reload");
+			log::debug("Mapping alias function '$orig' to '$func' for reload");
 		}
 		$func_file = self::FUNC_DIR."$func.php";
-		log::debug("== Looking for code in $func_file");
+		log::debug("Looking for code in $func_file");
 		if (file_exists($func_file)) { # not using EXISTS() so that we get more specific errors
 			if (is_readable($func_file)) {
 				# Check syntax of file
@@ -87,7 +94,7 @@ class f {
 		$_CALLED_AS = $_FUNC_NAME;
 		if (array_key_exists($_FUNC_NAME, self::$aliases)) {
 			$_FUNC_NAME = self::$aliases[$_CALLED_AS];
-			log::debug("== Mapping alias function '$_CALLED_AS' to '$_FUNC_NAME' for call");
+			log::debug("Mapping alias function '$_CALLED_AS' to '$_FUNC_NAME' for call");
 		}
 		if (!array_key_exists($_FUNC_NAME, self::$functions) || self::$reload[$_FUNC_NAME]) {
 			log::info('Need to reload fx function');
@@ -131,7 +138,7 @@ class f {
 		if (in_array($func, self::$aliases)) {
 			$orig = $func;
 			$func = self::$aliases[$func];
-			log::debug("== Mapping alias function '$orig' to '$func' for reload mark");
+			log::debug("Mapping alias function '$orig' to '$func' for reload mark");
 		}
 		*/
 		log::info("Marking $func() for reloading");

@@ -1,5 +1,8 @@
 <?php
 
+require_once 'log.php';
+require_once 'config.php';
+
 function utimestamp() {
 	list($micro, $sec) = explode(' ', microtime());
 	$micro = substr($micro, 2, -2);
@@ -8,37 +11,6 @@ function utimestamp() {
 
 function get_password($name) {
 	return trim(file_get_contents("passwords/$name.password"));
-}
-
-function smart_date_fmt($uts) {
-	$tz = new DateTimeZone(ExtraServ::$output_tz);
-	$dt = new DateTime();
-	$dt->setTimestamp($uts);
-	$dt->setTimezone($tz);
-	$now = new DateTime();
-	$now->setTimezone($tz);
-	$diff = $now->diff($dt);
-	$y = (int) $diff->format('%y');
-	$m = (int) $diff->format('%m');
-	$d = (int) $diff->format('%d');
-	if ($y > 0)
-		$fmt = 'l, M jS Y \a\t G:i T';
-	elseif ($m > 0 || $d > 7)
-		$fmt = 'l, M jS \a\t G:i T';
-	elseif ($d > 2)
-		$fmt = 'l \a\t G:i T';
-	elseif ($d == 1)
-		$fmt = '\Y\e\s\t\e\r\d\a\y \a\t G:i T';
-	else
-		$fmt = '\T\o\d\a\y \a\t G:i:s T';
-	return $dt->format($fmt);
-}
-
-function date_fmt($fmt, $uts) {
-	$dt = new DateTime();
-	$dt->setTimestamp($uts);
-	$dt->setTimezone(new DateTimeZone(ExtraServ::$output_tz));
-	return $dt->format($fmt);
 }
 
 function duration_str($seconds) {
@@ -96,10 +68,6 @@ function single_quote($str) {
 	return "'$str'";
 }
 
-function dbescape($str) {
-	return pg_escape_string(ExtraServ::$db, $str);
-}
-
 function query_whitespace($query) {
 	return trim(str_replace(array("\n","\t"), array(' ', ''), $query));
 }
@@ -112,123 +80,6 @@ function smslog($level, $message) {
 	$ts = date('Y-m-d H:i:s');
 	$addr = str_pad($_SERVER['REMOTE_ADDR'], 15);
 	fwrite(log::$static->file, "[$ts.$ms] [$addr] $message\n");
-}
-
-function pg_is_prepared($stmt_name) {
-	$q = pg_query(ExtraServ::$db, 'SELECT name FROM pg_prepared_statements');
-	if ($q === false) {
-		log::error('pg_is_prepared(): query failed');
-		log::error(pg_last_error());
-		return true;
-	} else {
-		log::debug('pg_is_prepared(): query ok');
-		while ($row = pg_fetch_assoc($q)) {
-			if ($row['name'] == $stmt_name) {
-				log::debug("pg_is_prepared(): Statement $stmt_name is prepared");
-				return true;
-			}
-		}
-		log::debug("pg_is_prepared(): Statement $stmt_name is not prepared");
-		return false;
-	}
-}
-
-function pg_table_pkeys($table) {
-	static $pkeys = array();
-	if (array_key_exists($table, $pkeys)) {
-		return $pkeys[$table];
-	} else {
-		$query = "SELECT split_part(rtrim(indexdef, ')'), '(', 2) AS pkeys FROM pg_indexes WHERE right(indexname, 5)='_pkey' AND tablename=$1";
-		$q = pg_query_params(ExtraServ::$db, $query, array($table));
-		if ($q === false) {
-			log::error('pg_table_pkeys(): query failed');
-			log::error(pg_last_error());
-			return false;
-		} elseif (pg_num_rows($q) == 0) {
-			log::debug('pg_table_pkeys(): No primary keys for table');
-			$pkeys[$table] = array();
-		} else {
-			log::debug('pg_table_pkeys(): query ok');
-			$qr = pg_fetch_assoc($q);
-			$pkeys[$table] = explode(', ', $qr['pkeys']);
-		}
-		return $pkeys[$table];
-	}
-}
-
-function pg_insert_on_duplicate_key_update($table, $insert_cols, $insert_values, $updates) {
-	$multi_values = false;
-	$col_count = count($insert_cols);
-	if (count($insert_values) != $col_count) {
-		log::error('pg_insert_on_duplicate_key_update(): $insert_values must have the same number of elements as $insert_cols');
-		return false;
-	}
-
-	if (count($updates) < 1) {
-		log::error('pg_insert_on_duplicate_key_update(): At least one update must be supplied');
-		return false;
-	}
-
-	$pkeys = pg_table_pkeys($table);
-	foreach ($pkeys as $col) {
-		if (!in_array($col, $insert_cols)) {
-			log::error('pg_insert_on_duplicate_key_update(): All PRIMARY KEY columns must be in $insert_cols');
-			return false;
-		}
-	}
-
-	$vals = '(' . implode(', ', array_map('sqlify', $insert_values)) . ')';
-	$query = "INSERT INTO $table ($cols) VALUES $vals";
-	log::debug("pg_insert_on_duplicate_key_update(): insert query >>> $query");
-	if (pg_send_query(ExtraServ::$db, $query)) {
-		$q = pg_get_result(ExtraServ::$db);
-		$err = pg_result_error_field($q, PGSQL_DIAG_SQLSTATE);
-		if ($err === null || $err == '00000') {
-			$n = pg_affected_rows($q);
-			log::debug("pg_insert_on_duplicate_key_update(): insert OK (affected rows = $n)");
-			return true;
-		} elseif ($err == '23505') {
-			log::debug('pg_insert_on_duplicate_key_update(): duplicate keys, doing update');
-			$where = array();
-			foreach ($pkeys as $pkey) {
-				$i = 0;
-				foreach ($insert_cols as $col) {
-					if ($col == $pkey)
-						break;
-					$i++;
-				}
-				$val = sqlify($insert_values[$i]);
-				$where[] = "($pkey = $val)";
-			}
-			$where = implode(' AND ', $where);
-
-			$set = array();
-			foreach ($updates as $key => $val) {
-				$val = sqlify($val);
-				$set[] = "$key = $val";
-			}
-			$set = implode(', ', $set);
-
-			$query = "UPDATE $table SET $set WHERE $where";
-			log::debug("pg_insert_on_duplicate_key_update(): update query >>> $query");
-			$q = pg_query(ExtraServ::$db, $query);
-			if ($q === false) {
-				log::error('pg_insert_on_duplicate_key_update(): update query failed');
-				log::error(pg_last_error());
-				return false;
-			} else {
-				$n = pg_affected_rows($q);
-				log::debug("pg_insert_on_duplicate_key_update(): update OK (affected rows = $n)");
-				return true;
-			}
-		} else {
-			log::error("pg_insert_on_duplicate_key_update(): insert query failed ($err)");
-			return false;
-		}
-	} else {
-		log::error('pg_insert_on_duplicate_key_update(): failed to send insert query');
-		return false;
-	}
 }
 
 function sqlify($val) {

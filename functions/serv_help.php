@@ -158,6 +158,7 @@ switch (strtoupper($uarg)) {
 	case 'SET':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: SET <type> <...>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
 		$_i['handle']->notice($_i['reply_to'], 'SET changes various settings. Each type has its own help page');
 		$_i['handle']->notice($_i['reply_to'], 'describing all configurable options, just say "HELP SET <type>"');
 		$_i['handle']->notice($_i['reply_to'], ' ');
@@ -169,6 +170,7 @@ switch (strtoupper($uarg)) {
 	case 'SET PROFILE':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: SET PROFILE <field name> = <value>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
 		$_i['handle']->notice($_i['reply_to'], 'SET PROFILE allows you to store arbitrary information attached');
 		$_i['handle']->notice($_i['reply_to'], 'to your username/nicknames. This is meant to be free-form and');
 		$_i['handle']->notice($_i['reply_to'], 'can be used for things like usernames on social websites, contact');
