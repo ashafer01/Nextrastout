@@ -292,7 +292,7 @@ class ES_SlaveArrayObject extends ArrayObject {
 			$key_chain = explode(':', $message);
 
 			$lastkey = array_pop($key_chain);
-			$obj = self::$msgtype_unset_map[$mgtype];
+			$obj = self::$msgtype_unset_map[$msgtype];
 			foreach ($key_chain as $key) {
 				$obj = $obj[$key];
 			}
