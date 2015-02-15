@@ -116,7 +116,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 									exit(23);
 								} else {
 									while ($er = pg_fetch_assoc($e)) {
-										if (!in_array($er['value'], uplink::$channels[$qr['channel']][$c])) {
+										if (!in_array($er['value'], uplink::$channels[$qr['channel']][$c]->getArrayCopy())) {
 											ExtraServ::$serv_handle->send("MODE {$qr['channel']} +$c {$er['value']}");
 											uplink::$channels[$qr['channel']][$c][] = $er['value'];
 										}
@@ -266,7 +266,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 									continue;
 								}
 								if (in_array($name, $modenames)) {
-									if (!in_array($name, uplink::$channels[$chan][$c])) {
+									if (!in_array($name, uplink::$channels[$chan][$c]->getArrayCopy())) {
 										log::debug("Sending MODE +$c for sticky list");
 										ExtraServ::$serv_handle->send("MODE $chan +$c $name");
 										uplink::$channels[$chan][$c][] = $name;
@@ -330,7 +330,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				$do_stickymodes = array_key_exists($chan, ExtraServ::$chan_stickymodes);
 
 				if (array_key_exists($chan, ExtraServ::$chan_stickylists))
-					$stickylist_flags = array_keys(ExtraServ::$chan_stickylists[$chan]);
+					$stickylist_flags = array_keys(ExtraServ::$chan_stickylists[$chan]->getArrayCopy());
 				else
 					$stickylist_flags = array();
 
@@ -352,7 +352,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							# update stickylists
 							if (in_array($modechar, $stickylist_flags)) {
 								foreach ($newval as $value) {
-									if (!in_array($value, ExtraServ::$chan_stickylists[$chan][$modechar])) {
+									if (!in_array($value, ExtraServ::$chan_stickylists[$chan][$modechar]->getArrayCopy())) {
 										ExtraServ::$chan_stickylists[$chan][$modechar][] = $value;
 										$ival = dbescape($value);
 										$slists_insert_values[] = "('$chan', '$modechar', '$ival')";
@@ -372,7 +372,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 									# update stickylists
 									if (in_array($modechar, $stickylist_flags)) {
-										if (($key = array_search($param, ExtraServ::$chan_stickylists[$chan][$modechar])) !== false) {
+										if (($key = array_search($param, ExtraServ::$chan_stickylists[$chan][$modechar]->getArrayCopy())) !== false) {
 											unset(ExtraServ::$chan_stickylists[$chan][$modechar][$key]);
 											$iparam = dbescape($param);
 											$slists_delete_conds[] = "(channel='$chan' AND mode_list='$modechar' AND value='$iparam')";

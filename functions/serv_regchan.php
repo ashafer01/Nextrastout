@@ -32,7 +32,7 @@ if (!array_key_exists($channel, uplink::$channels)) {
 	return f::FALSE;
 }
 
-if (!in_array($nick, uplink::$channels[$channel]['o'])) {
+if (!in_array($nick, uplink::$channels[$channel]['o']->getArrayCopy())) {
 	log::debug('Not an op');
 	$_i['handle']->notice($_i['reply_to'], "You are not an operator on channel $channel");
 	return f::FALSE;
