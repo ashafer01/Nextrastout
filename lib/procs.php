@@ -91,6 +91,7 @@ class proc {
 				$_status = f::CALL($func, $args);
 				if ($_status === 0) {
 					log::notice("proc function f::$func() returned 0, re-running it");
+					msg_send(proc::$queue, proc::TYPE_PROC_START, '*', false);
 					continue;
 				} elseif ($_status === true) {
 					log::notice("proc function f::$func() returned true, exiting normally");
@@ -260,9 +261,14 @@ class proc {
 		if (msg_receive(proc::$queue, $type, $i_msgtype, proc::MAX_MSG_SIZE, $message, false, $flags) === true) {
 			log::trace("Got queue message (type=$i_msgtype)");
 			$message = explode('::', $message, 2);
-			$fromproc = $message[0];
 			$msgtype = $i_msgtype;
-			return $message[1];
+			if (count($message) == 1) {
+				$fromproc = null;
+				return $message[0];
+			} else {
+				$fromproc = $message[0];
+				return $message[1];
+			}
 		} else {
 			$fromproc = null;
 			$msgtype = null;
