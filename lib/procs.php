@@ -6,6 +6,8 @@ class proc {
 	private static $procs = array();
 	private static $dups = array();
 
+	private static $ready_procs = array();
+
 	public static $name = null;
 
 	const PARENT_QUEUEID = 421;
@@ -21,8 +23,25 @@ class proc {
 	const TYPE_FUNC_RELOAD = 2;
 	const TYPE_LOGLEVEL = 3;
 	const TYPE_TIMEZONE = 4;
-	const TYPE_PROCS_STARTED = 100;
-	const TYPE_NEW_PROC_QUEUE = 184;
+
+	const TYPE_PROC_START = 100;
+	const TYPE_PROC_READY = 101;
+	const TYPE_SHITSTORM_STARTING = 102;
+	const TYPE_SHITSTORM_OVER = 103;
+
+	const TYPE_STICKYLISTS_SET = 201;
+	const TYPE_STICKYLISTS_UNSET = 202;
+	const TYPE_IDENT_SET = 203;
+	const TYPE_IDENT_UNSET = 204;
+	const TYPE_STICKYMODES_SET = 205;
+	const TYPE_STICKYMODES_UNSET = 206;
+	const TYPE_NETWORK_SET = 207;
+	const TYPE_NETWORK_UNSET = 208;
+	const TYPE_CHANNELS_SET = 209;
+	const TYPE_CHANNELS_UNSET = 210;
+	const TYPE_NICKS_SET = 211;
+	const TYPE_NICKS_UNSET = 212;
+
 	const TYPE_NEW_RELAY_QUEUE = 901;
 
 	## process control
@@ -67,9 +86,6 @@ class proc {
 			proc::$name = $name;
 			proc::$parent_queue = msg_get_queue(proc::PARENT_QUEUEID);
 			proc::$queue = msg_get_queue($MQID);
-			proc::queue_sendall(proc::TYPE_NEW_PROC_QUEUE, $MQID); # tell other processes our queue id
-
-			proc::queue_get_block(proc::TYPE_PROCS_STARTED);
 
 			while (true) {
 				$_status = f::CALL($func, $args);
@@ -173,9 +189,15 @@ class proc {
 
 	## queue stuff
 
+	public static function queue_closeall() {
+		foreach (self::$queues as $queue) {
+			msg_remove_queue($queue);
+		}
+	}
+
 	# send a message to the parent queue to be relayed to siblings
 	public static function queue_sendall($type, $msg) {
-		log::debug("Sending message (type=$type)");
+		log::trace("Sending message (type=$type)");
 		$myproc = proc::$name;
 		$msg = "$myproc::$msg";
 		if (msg_send(proc::$parent_queue, $type, $msg, false) !== true) {
@@ -186,25 +208,48 @@ class proc {
 	# called in a parent process- relays message from its queue to all of its children's queues
 	public static function queue_relay() {
 		if (msg_receive(self::$parent_queue, 0, $msgtype, proc::MAX_MSG_SIZE, $message, false, MSG_IPC_NOWAIT|MSG_NOERROR) === true) {
-			if ($msgtype == proc::TYPE_NEW_RELAY_QUEUE) {
-				$name_id = explode(':', $message);
-				self::$queues[$name_id[0]] = msg_get_queue($name_id[1]);
-				log::debug("Stored new relay queue {$name_id[0]} => {$name_id[1]}");
-			} else {
-				$fields = explode('::', $message, 2);
-				$from_proc = $fields[0];
-				foreach (self::$queues as $procname => $mq) {
-					if ($procname == $from_proc) {
-						continue;
+			switch ($msgtype) {
+				case proc::TYPE_NEW_RELAY_QUEUE:
+					$name_id = explode(':', $message);
+					self::$queues[$name_id[0]] = msg_get_queue($name_id[1]);
+					log::debug("Stored new relay queue {$name_id[0]} => {$name_id[1]}");
+					break;
+				case proc::TYPE_PROC_READY:
+					self::$ready_procs[$message] = true;
+					break;
+				default:
+					$fields = explode('::', $message, 2);
+					$from_proc = $fields[0];
+					foreach (self::$queues as $procname => $mq) {
+						if ($procname == $from_proc) {
+							continue;
+						}
+						if (msg_send($mq, $msgtype, $message, false) === true) {
+							log::trace("Relayed message of type $msgtype from proc '$from_proc' to proc '$procname'");
+						} else {
+							log::error("Failed to send message from proc '$from_proc' to proc '$procname'");
+						}
 					}
-					if (msg_send($mq, $msgtype, $message, false) === true) {
-						log::debug("Relayed message of type $msgtype from proc '$from_proc' to proc '$procname'");
-					} else {
-						log::error("Failed to send message from proc '$from_proc' to proc '$procname'");
-					}
-				}
 			}
 		}
+	}
+
+	public static function wait_children_ready() {
+		log::debug('Entering wait_children_ready()');
+		while (count(self::$ready_procs) < count(self::$procs)) {
+			$proc_name = self::queue_get_block(proc::TYPE_PROC_READY);
+			if ($proc_name != null) {
+				log::debug("proc $proc_name is ready");
+				self::$ready_procs[$proc_name] = true;
+			}
+		}
+	}
+
+	public static function ready() {
+		log::debug('Sent ready message');
+		self::queue_sendall(proc::TYPE_PROC_READY, self::$name);
+		self::queue_get_block(proc::TYPE_PROC_START);
+		log::debug('Got start message');
 	}
 
 	# get a message from the current process queue
@@ -213,20 +258,11 @@ class proc {
 			$flags = MSG_IPC_NOWAIT|MSG_NOERROR;
 		}
 		if (msg_receive(proc::$queue, $type, $i_msgtype, proc::MAX_MSG_SIZE, $message, false, $flags) === true) {
+			log::trace("Got queue message (type=$i_msgtype)");
 			$message = explode('::', $message, 2);
-			if ($i_msgtype == proc::TYPE_NEW_PROC_QUEUE) {
-				# notification of new queue
-				log::debug("Recieved new queue notification {$message[0]} => {$message[1]}");
-				self::$queues[$message[0]] = msg_get_queue((int) $message[1]);
-
-				$fromproc = null;
-				$msgtype = null;
-				return null;
-			} else {
-				$fromproc = $message[0];
-				$msgtype = $i_msgtype;
-				return $message[1];
-			}
+			$fromproc = $message[0];
+			$msgtype = $i_msgtype;
+			return $message[1];
 		} else {
 			$fromproc = null;
 			$msgtype = null;

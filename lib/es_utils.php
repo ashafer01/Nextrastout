@@ -160,49 +160,63 @@ function pg_insert_on_duplicate_key_update($table, $insert_cols, $insert_values,
 class ES_NestedArrayObject extends ArrayObject {
 	private $parent_key = null;
 	private $parent = null;
-	public function __construct($parent, $parent_key) {
+	public function __construct($parent, $parent_key, $initial_data = null) {
 		$this->parent = $parent;
 		$this->parent_key = $parent_key;
+		if ($initial_data !== null) {
+			foreach ($initial_data as $key => $val) {
+				$this->offsetSet($key, $val);
+			}
+		}
+	}
+
+	public function nest($key, $initial_data = null) {
+		$this->bubbleSet(array($key), chr(7));
+		$obj = new ES_NestedArrayObject($this, $key, $initial_data);
+		parent::offsetSet($key, $obj);
+		return $obj;
 	}
 
 	public function bubbleSet($key_chain, $newval) {
-		array_unshift($this->parent_key, $key_chain);
+		array_unshift($key_chain, $this->parent_key);
 		$this->parent->bubbleSet($key_chain, $newval);
 	}
 
 	public function offsetSet($index, $newval) {
-		parent::offsetSet($index, $newval);
-		if ($index !== null) {
-			$this->bubbleSet(array($index), $newval);
+		if ($index === null) {
+			$bubble_index = chr(15);
 		} else {
-			$this->bubbleSet(array(chr(15)), $newval);
+			$bubble_index = $index;
+		}
+		if (!is_array($newval)) {
+			parent::offsetSet($index, $newval);
+			$this->bubbleSet(array($bubble_index), $newval);
+		} else {
+			log::trace('Got array, doing nest');
+			$this->nest($index, $newval);
 		}
 	}
 
 	public function bubbleUnset($key_chain) {
-		array_unshift($this->parent_key, $key_chain);
-		$this->parent->bubbleUnset($key_chain, $newval);
+		array_unshift($key_chain, $this->parent_key);
+		$this->parent->bubbleUnset($key_chain);
 	}
 
 	public function offsetUnset($index) {
 		parent::offsetUnset($index);
 		$this->bubbleUnset(array($index));
 	}
-
-	public function nest($key) {
-		$obj = new ES_NestedArrayObject($this, $key);
-		$this->offsetSet($key, $obj);
-		$this->bubbleSet(array($key), chr(7));
-		return $obj;
-	}
 }
 
 class ES_MasterArrayObject extends ES_NestedArrayObject {
 	private $msgtype_set;
 	private $msgtype_unset;
-	public function __construct($msgtype_set, $msgtype_unset) {
+	public function __construct($msgtype_set, $msgtype_unset, $initial_data = null) {
 		$this->msgtype_set = $msgtype_set;
 		$this->msgtype_unset = $msgtype_unset;
+		if ($initial_data !== null) {
+			$this->exchangeArray($initial_data);
+		}
 	}
 
 	public function bubbleSet($key_chain, $newval) {
@@ -212,46 +226,17 @@ class ES_MasterArrayObject extends ES_NestedArrayObject {
 	public function bubbleUnset($key_chain) {
 		proc::queue_sendall($this->msgtype_unset, implode(':', $key_chain));
 	}
+
+	public function toSlave() {
+		return new ES_SlaveArrayObject($this->msgtype_set, $this->msgtype_unset, $this->getArrayCopy());
+	}
+
+	public function toMaster() {
+		return $this;
+	}
 }
 
 class ES_SlaveArrayObject extends ArrayObject {
-	private static $msgtype_set_map = array();
-	private static $msgtype_unset_map = array();
-
-	public static function dispatchMessage($msgtype, $message) {
-		if (isset(self::$msgtype_set_map[$msgtype])) {
-			$keychain_val = explode('::', $message, 2);
-			$key_chain = explode(':', $keychain_val[0]);
-			$val = $keychain_val[1];
-
-			$lastkey = array_pop($key_chain);
-			$obj = self::$msgtype_set_map[$msgtype];
-			foreach ($key_chain as $key) {
-				$obj = $obj[$key];
-			}
-			if ($lastkey === chr(15)) {
-				$obj->offsetSet(null, $val);;
-			} elseif ($val === chr(7)) {
-				$obj->offsetSet($lastkey, new ArrayObject());
-			} else {
-				$obj->offsetSet($lastkey, $val);
-			}
-		} elseif (isset($self::$msgtype_unset_map[$msgtype])) {
-			$key_chain = explode(':', $message);
-
-			$lastkey = array_pop($key_chain);
-			$obj = self::$msgtype_unset_map[$mgtype];
-			foreach ($key_chain as $key) {
-				$obj = $obj[$key];
-			}
-			$obj->offsetUnset($lastkey);
-		}
-	}
-
-	public static function isChangeMessage($msgtype) {
-		return (isset(self::$msgtype_set_map[$msgtype]) || isset(self::$msgtype_unset_map[$msgtype]));
-	}
-
 	private $msgtype_set;
 	private $msgtype_unset;
 	public function __construct($msgtype_set, $msgtype_unset, $initial_data = null) {
@@ -262,6 +247,64 @@ class ES_SlaveArrayObject extends ArrayObject {
 		$this->msgtype_unset = $msgtype_unset;
 		self::$msgtype_set_map[$msgtype_set] = $this;
 		self::$msgtype_unset_map[$msgtype_unset] = $this;
+	}
+
+	public function toSlave() {
+		return $this;
+	}
+
+	public function toMaster() {
+		return new ES_MasterArrayObject($this->msgtype_set, $this->msgtype_unset, $this->getArrayCopy());
+	}
+
+	private static $msgtype_set_map = array();
+	private static $msgtype_unset_map = array();
+
+	public static function dispatchMessage($msgtype, $message) {
+		if (isset(self::$msgtype_set_map[$msgtype])) {
+			log::trace("Got set message >>> $message");
+			$keychain_val = explode('::', $message, 2);
+			$key_chain = explode(':', $keychain_val[0]);
+			$val = $keychain_val[1];
+
+			$lastkey = array_pop($key_chain);
+			$obj = self::$msgtype_set_map[$msgtype];
+			foreach ($key_chain as $key) {
+				$obj = $obj[$key];
+			}
+			if ($lastkey === chr(15)) {
+				log::trace('Doing append');
+				$obj->offsetSet(null, $val);
+			} elseif ($val === chr(7)) {
+				if (!$obj->offsetExists($lastkey)) {
+					log::trace("New array: $lastkey");
+					$obj->offsetSet($lastkey, new ArrayObject());
+				} else {
+					log::trace('key for new array already exists');
+				}
+			} else {
+				log::trace("Normal set: $lastkey");
+				$obj->offsetSet($lastkey, $val);
+			}
+			return true;
+		} elseif (isset(self::$msgtype_unset_map[$msgtype])) {
+			log::trace("Got unset message >>> $message");
+			$key_chain = explode(':', $message);
+
+			$lastkey = array_pop($key_chain);
+			$obj = self::$msgtype_unset_map[$mgtype];
+			foreach ($key_chain as $key) {
+				$obj = $obj[$key];
+			}
+			$obj->offsetUnset($lastkey);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
+	public static function isChangeMessage($msgtype) {
+		return (isset(self::$msgtype_set_map[$msgtype]) || isset(self::$msgtype_unset_map[$msgtype]));
 	}
 }
 

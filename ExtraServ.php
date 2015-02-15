@@ -19,6 +19,10 @@ pcntl_signal(SIGINT, 'parent_sigint');
 setproctitle('ExtraServ [parent]');
 proc::$name = 'parent';
 proc::$parent_queue = msg_get_queue(proc::PARENT_QUEUEID);
+proc::$queue = proc::$parent_queue;
+
+uplink::init_state_master();
+ExtraServ::$ident = new ES_MasterArrayObject(proc::TYPE_IDENT_SET, proc::TYPE_IDENT_UNSET);
 
 $_status = -10;
 while (true) {
@@ -34,7 +38,8 @@ while (true) {
 	proc::start('responder', 'main');
 	proc::start('timer', 'timer');
 
-	proc::queue_sendall(proc::TYPE_PROCS_STARTED, '*');
+	proc::wait_children_ready();
+	proc::queue_sendall(proc::TYPE_PROC_START, '*');
 
 	proc::wait_pidfile('responder');
 	$responder_pid = proc::get_proc_pid('responder');
@@ -47,7 +52,7 @@ while (true) {
 		pcntl_signal_dispatch();
 		if ($_status === -10) {
 			# no change
-			sleep(1);
+			usleep(10000);
 			proc::queue_relay();
 			continue;
 		} elseif ($_status === 0) {
@@ -106,6 +111,7 @@ function close_all() {
 	pg_close(ExtraServ::$db);
 	log::debug('stopping children');
 	proc::stop_all();
+	proc::queue_closeall();
 }
 
 function parent_sigint() {
@@ -129,7 +135,7 @@ class ExtraServ {
 	public static $serv_handle = null;
 	public static $bot_handle = null;
 
-	public static $ident = array();
+	public static $ident;
 	public static $chan_stickymodes;
 	public static $chan_stickylists;
 
@@ -149,12 +155,17 @@ class ExtraServ {
 		$conf = config::get_instance();
 		self::$conf = $conf;
 
+		if ($conf->debug) {
+			log::notice('Debug mode');
+			ini_set('xdebug.collect_params', 4);
+		}
+
 		log::$level = log::string_to_level($conf->loglevel);
 		self::dbconnect();
 
 		# populate channel stickies
-		self::$chan_stickymodes = array();
-		self::$chan_stickylists = array();
+		self::$chan_stickymodes = new ES_MasterArrayObject(proc::TYPE_STICKYMODES_SET, proc::TYPE_STICKYMODES_UNSET);
+		self::$chan_stickylists = new ES_MasterArrayObject(proc::TYPE_STICKYLISTS_SET, proc::TYPE_STICKYLISTS_UNSET);
 		$q = pg_query(self::$db, 'SELECT channel, stickymodes, stickylists, mode_flags, list_flags, mode_k, mode_l FROM chan_register');
 		if ($q === false) {
 			log::fatal('Failed to select channel register');
@@ -286,9 +297,16 @@ class uplink {
 	);
 
 	public static $server;
-	public static $network = array();
-	public static $channels = array();
-	public static $nicks = array();
+
+	public static $network;
+	public static $channels;
+	public static $nicks;
+
+	public static function init_state_master() {
+		self::$network = new ES_MasterArrayObject(proc::TYPE_NETWORK_SET, proc::TYPE_NETWORK_UNSET);
+		self::$channels = new ES_MasterArrayObject(proc::TYPE_CHANNELS_SET, proc::TYPE_CHANNELS_UNSET);
+		self::$nicks = new ES_MasterArrayObject(proc::TYPE_NICKS_SET, proc::TYPE_NICKS_UNSET);
+	}
 
 	public static function connect() {
 		$conf = config::get_instance();
@@ -305,7 +323,7 @@ class uplink {
 	}
 
 	public static function is_oper($nick) {
-		return in_array('o', uplink::$nicks[$nick]['mode']);
+		return in_array('o', uplink::$nicks[$nick]['mode']->getArrayCopy());
 	}
 
 	public static function remove_from_modelists($nick, $channel = null, $replace_with = null) {

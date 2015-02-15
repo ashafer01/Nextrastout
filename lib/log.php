@@ -59,6 +59,8 @@ class log {
 				$lvl = log::level_to_string($level);
 				$procname = sprintf('%10s', proc::$name);
 
+				$message = str_replace(array(chr(7), chr(15)), array('array()', '[]'), $message);
+
 				$lines = explode("\n", $message);
 				foreach ($lines as $line) {
 					# log to stdout

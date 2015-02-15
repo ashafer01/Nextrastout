@@ -10,6 +10,8 @@ f::ALIAS_INIT();
 $start_lists = array('b','e','I');
 $handles_re = implode('|', array_keys(ExtraServ::$handles));
 
+proc::ready();
+
 $_socket_start = null;
 $_socket_timeout = ini_get('default_socket_timeout');
 while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) < $_socket_timeout) {
@@ -37,6 +39,8 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			break;
 		case 'EOB':
 			log::debug('Got EOB');
+
+			proc::queue_sendall(proc::TYPE_SHITSTORM_OVER, '*');
 
 			# update stickymodes
 			$query = 'SELECT channel, mode_flags, mode_k, mode_l FROM chan_register WHERE stickymodes IS TRUE';
@@ -136,6 +140,8 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 			uplink::$network[$_i['args'][0]] = $server;
 			if ($_i['prefix'] === null) { # this is the SERVER line for the uplink server
+				proc::queue_sendall(proc::TYPE_SHITSTORM_STARTING, '*');
+				log::debug('Sent shitstorm start message');
 				uplink::$server = $server;
 			}
 
@@ -202,20 +208,25 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			log::debug("Got SJOIN for $chan");
 
 			# process modes
-			$cmodes = str_split(substr($_i['args'][2], 1), 1);
-			$modes_array = array();
-			foreach ($cmodes as $modechar) {
-				$modes_array[$modechar] = null;
-			}
-			end($modes_array);
-			for ($i = count($_i['args'])-1; $i >= 3; $i--) {
-				$modes_array[key($modes_array)] = $_i['args'][$i];
-				prev($modes_array);
-			}
-			if (!array_key_exists($chan, uplink::$channels)) {
-				uplink::$channels[$chan] = $modes_array;
+			$cmodes_str = substr($_i['args'][2], 1);
+			if ($cmodes_str != null) {
+				$cmodes = str_split($cmodes_str, 1);
+				$modes_array = array();
+				foreach ($cmodes as $modechar) {
+					$modes_array[$modechar] = null;
+				}
+				end($modes_array);
+				for ($i = count($_i['args'])-1; $i >= 3; $i--) {
+					$modes_array[key($modes_array)] = $_i['args'][$i];
+					prev($modes_array);
+				}
+				if (!array_key_exists($chan, uplink::$channels)) {
+					uplink::$channels[$chan] = $modes_array;
+				}
 			} else {
-				uplink::$channels[$chan] = array_merge(uplink::$channels[$chan], $modes_array);
+				if (!array_key_exists($chan, uplink::$channels)) {
+					uplink::$channels[$chan] = array();
+				}
 			}
 			foreach (uplink::$chanmode_map as $c) {
 				if (!array_key_exists($c, uplink::$channels[$chan])) {
@@ -295,7 +306,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						continue;
 					}
 					log::debug("Found $chan $op$c");
-					if (array_key_exists($c, uplink::$channels[$chan]) && is_array(uplink::$channels[$chan][$c])) {
+					if (array_key_exists($c, uplink::$channels[$chan]) && is_object(uplink::$channels[$chan][$c])) {
 						# list modes are always pre-populated with arrays
 						$param = array_shift($args);
 						log::debug("Took param for $op$c => $param");
@@ -336,7 +347,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					log::trace("Applying $op$modechar to $chan ($lnewval)");
 					if ($op == '+') {
 						if (is_array($newval)) {
-							uplink::$channels[$chan][$modechar] = array_merge(uplink::$channels[$chan][$modechar], $newval);
+							uplink::$channels[$chan][$modechar] = array_merge(uplink::$channels[$chan][$modechar]->getArrayCopy(), $newval);
 
 							# update stickylists
 							if (in_array($modechar, $stickylist_flags)) {
@@ -354,8 +365,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						}
 					} else {
 						if (is_array($newval)) {
+							$modelist = uplink::$channels[$chan][$modechar]->getArrayCopy();
 							foreach ($newval as $param) {
-								if (($key = array_search($param, uplink::$channels[$chan][$modechar])) !== false) {
+								if (($key = array_search($param, $modelist)) !== false) {
 									unset(uplink::$channels[$chan][$modechar][$key]);
 
 									# update stickylists
@@ -407,7 +419,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 				if ($do_stickymodes && $modes_updated) {
 					$updates = array();
-					$modes_array = array_filter(uplink::$channels[$chan], function($val) {
+					$modes_array = array_filter(uplink::$channels[$chan]->getArrayCopy(), function($val) {
 						return !is_array($val);
 					});
 					if (array_key_exists('k', $modes_array)) {
@@ -451,7 +463,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					}
 				}
 				if (count($remove) > 0) {
-					uplink::$nicks[$nick]['mode'] = array_diff(uplink::$nicks[$nick]['mode'], $remove);
+					uplink::$nicks[$nick]['mode'] = array_diff(uplink::$nicks[$nick]['mode']->getArrayCopy(), $remove);
 					log::debug("Applied MODE $nick -" . implode($remove));
 				}
 			}

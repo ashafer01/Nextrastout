@@ -6,6 +6,16 @@ ExtraServ::dbconnect();
 f::ALIAS_INIT();
 $conf = config::get_instance();
 
+uplink::$network = uplink::$network->toSlave();
+uplink::$channels = uplink::$channels->toSlave();
+uplink::$nicks = uplink::$nicks->toSlave();
+
+ExtraServ::$ident = ExtraServ::$ident->toSlave();
+ExtraServ::$chan_stickymodes = ExtraServ::$chan_stickymodes->toSlave();
+ExtraServ::$chan_stickylists = ExtraServ::$chan_stickylists->toSlave();
+
+proc::ready();
+
 $count = 0;
 while (true) {
 	if ($count % 1000 == 0) {
@@ -13,10 +23,25 @@ while (true) {
 	}
 
 	if (($message = proc::queue_get(0, $msgtype, $fromproc)) !== null) {
+		if ($msgtype == proc::TYPE_SHITSTORM_STARTING) {
+			log::debug('Entering shitstorm loop');
+			while (true) {
+				$message = proc::queue_get_block(0, $ss_msgtype);
+				if ($ss_msgtype == proc::TYPE_SHITSTORM_OVER) {
+					log::debug('Shitstorm is over');
+					break;
+				}
+				if (!ES_SlaveArrayObject::dispatchMessage($ss_msgtype, $message)) {
+					f::handle_ipc($ss_msgtype, $message);
+				}
+			}
+		}
 		$ret = f::handle_ipc($msgtype, $message);
-		if ($ret !== null) {
+		if (is_int($ret)) {
 			return $ret;
 		}
+
+		$ret = ES_SlaveArrayObject::dispatchMessage($msgtype, $message);
 	}
 
 	# check for new sms message
@@ -59,7 +84,7 @@ while (true) {
 					$message = $mw[1];
 					if (array_key_exists($dchan, uplink::$channels)) {
 						if (array_key_exists($qr['nick'], uplink::$nicks)) {
-							if (in_array($dchan, uplink::$nicks['channels'])) {
+							if (in_array($dchan, uplink::$nicks[$qr['nick']]['channels']->getArrayCopy())) {
 								log::debug('destination channel OK');
 								ExtraServ::$bot_handle->say($dchan, "<{$qr['nick']}> $message");
 								$did_send = true;

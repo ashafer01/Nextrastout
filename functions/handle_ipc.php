@@ -22,22 +22,22 @@ switch ($msgtype) {
 			default:
 				log::warning("Unknown simple IPC command: $message");
 		}
-		break;
+		return f::TRUE;
 	case proc::TYPE_FUNC_RELOAD:
 		# function reload
 		log::info("Got reload IPC message for f::$message()");
 		f::RELOAD($message);
-		break;
+		return f::TRUE;
 	case proc::TYPE_LOGLEVEL:
 		# log level change
 		log::info("Got log level change to $message");
 		log::$level = log::string_to_level($message);
-		break;
+		return f::TRUE;
 	case proc::TYPE_TIMEZONE:
 		# output tz change
 		log::info("Got output timezone change to $message");
 		ExtraServ::$output_tz = $message;
-		break;
+		return f::TRUE;
+	default:
+		return f::FALSE;
 }
-
-return null;
