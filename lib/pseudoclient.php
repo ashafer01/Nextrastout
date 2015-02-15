@@ -59,6 +59,8 @@ class pseudoclient {
 	public function kill($nick, $reason = null) {
 		$serv = ExtraServ::$hostname;
 		ExtraServ::usend($this->nick, "KILL $nick :$serv!{$this->host}!{$this->user}!{$this->nick} <$reason>");
+		log::info('Deleting nick for KILL');
+		f::delete_nick($nick);
 	}
 
 	public function quit($reason) {

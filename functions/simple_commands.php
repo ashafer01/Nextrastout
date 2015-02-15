@@ -12,6 +12,9 @@ switch ($_CMD) {
 		}
 		$_i['handle']->say($_i['reply_to'], $reply);
 		return f::TRUE;
+	case 'help':
+		log::debug('Got !help');
+		$_i['handle']->say($_i['reply_to'], ExtraServ::$conf->wiki_url);
 	default:
 		return f::FALSE;
 }

@@ -40,7 +40,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 		case 'EOB':
 			log::debug('Got EOB');
 
-			proc::queue_sendall(proc::TYPE_SHITSTORM_OVER, '*');
+			f::stop_shitstorm();
 
 			# update stickymodes
 			$query = 'SELECT channel, mode_flags, mode_k, mode_l FROM chan_register WHERE stickymodes IS TRUE';
@@ -140,8 +140,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 			uplink::$network[$_i['args'][0]] = $server;
 			if ($_i['prefix'] === null) { # this is the SERVER line for the uplink server
-				proc::queue_sendall(proc::TYPE_SHITSTORM_STARTING, '*');
-				log::debug('Sent shitstorm start message');
+				f::start_shitstorm();
 				uplink::$server = $server;
 			}
 
@@ -150,7 +149,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 		case 'NICK':
 			log::trace('Started NICK handling');
 			# a server is telling us about a nick
-			if ($_i['prefix'] === null || uplink::is_server($_i['prefix'])) {
+			if ($_i['prefix'] == null || uplink::is_server($_i['prefix'])) {
 				// NICK NickServ 2 1409083701 +io NickServ dot.cs.wmich.edu dot.cs.wmich.edu 0 :Nickname Services
 				uplink::$nicks[$_i['args'][0]] = array(
 					'nick' => $_i['args'][0],
@@ -182,40 +181,66 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							log::notice('Not sending ident request during dev');
 						} else {
 							log::debug('Username is already identified');
-							$newnick = $_i['args'][0];
-							$owner = f::get_nick_owner($newnick);
-							if ($owner === false) {
-								log::error('Failed to get nick owner');
-							} elseif ($owner != $user) {
-								log::notice('Invalid user of nickname');
-								$nick = uplink::get_nick_by_user($owner);
-								ExtraServ::$serv_handle->notice($nick, "User '$user' is using your nickname '$newnick'");
-								ExtraServ::$serv_handle->notice($newnick, "Your nickname is owned by someone else. Your connection may be killed depending on the owner's settings.");
-							} else {
-								log::trace('User of nickname is valid');
-							}
 						}
 					}
+				}
+				$newnick = $_i['args'][0];
+				$owner = f::get_nick_owner($newnick);
+				if ($owner === false) {
+					log::error('Failed to get nick owner');
+				} elseif ($owner == null) {
+					log::debug('Nick is not associated');
+				} elseif ($owner != $user) {
+					log::notice('Invalid user of nickname');
+					$nick = uplink::get_nick_by_user($owner);
+					ExtraServ::$serv_handle->notice($nick, "User '$user' is using your nickname '$newnick'");
+					ExtraServ::$serv_handle->notice($newnick, "Your nickname is owned by someone else. Your connection may be killed depending on the owner's settings.");
+					if (f::get_user_setting($owner, 'kill_bad_nicks') == 't') {
+						log::info("Putting nick '$newnick' on death row");
+						ExtraServ::$death_row[$newnick] = array(
+							'at_uts' => (time()+5),
+							'reason' => 'Nickname enforcement'
+						);
+					}
+				} else {
+					log::trace('User of nickname is valid');
 				}
 
 			# user has changed their nick
 			} elseif (uplink::is_nick($_i['prefix'])) {
-				$nick = uplink::$nicks[$_i['prefix']];
-				$owner = f::get_nick_owner($_i['args'][0]);
-				if (ExtraServ::is_idented($owner)) {
-					$user = uplink::get_user_by_nick($_i['prefix']);
-					if ($owner === false) {
-						log::error('Failed to get nick owner');
-					} elseif ($owner != $user) {
-						log::notice('Invalid user of nickname');
-						$onick = uplink::get_nick_by_user($owner);
-						ExtraServ::$serv_handle->notice($onick, "User '$user' has just changed to your nickname '{$_i['args'][0]}'");
-						ExtraServ::$serv_handle->notice($_i['args'][0], "This nickname is owned by someone else. Your connection may be killed depending on the owner's settings.");
+				$oldnick = $_i['prefix'];
+				$newnick = $_i['args'][0];
+				if (ExtraServ::$death_row->offsetExists($oldnick)) {
+					log::info("Death row nick '$oldnick' has been changed");
+					unset(ExtraServ::$death_row[$oldnick]);
+				}
+				$nick = uplink::$nicks[$oldnick];
+				$owner = f::get_nick_owner($newnick);
+				if (($owner !== null) && ($owner !== false)) {
+					if (ExtraServ::is_idented($owner)) {
+						$user = uplink::get_user_by_nick($oldnick);
+						if ($owner === false) {
+							log::error('Failed to get nick owner');
+						} elseif ($owner == null) {
+							log::trace('Nickname not associated with user');
+						} elseif ($owner != $user) {
+							log::notice('Invalid user of nickname');
+							$onick = uplink::get_nick_by_user($owner);
+							ExtraServ::$serv_handle->notice($onick, "User '$user' has just changed to your nickname '$newnick'");
+							ExtraServ::$serv_handle->notice($newnick, "This nickname is owned by someone else. Your connection may be killed depending on the owner's settings.");
+							if (f::get_user_setting($owner, 'kill_bad_nicks')) {
+								log::info("Putting nick '$newnick' on death row");
+								ExtraServ::$death_row[$newnick] = array(
+									'at_uts' => (time()+5),
+									'reason' => 'Nickname enforcement'
+								);
+							}
+						} else {
+							log::debug('Nick is in use by its owner');
+						}
 					} else {
-						log::debug('Nick is in use by its owner');
+						log::debug('Owner of nick is not identified');
 					}
-				} else {
-					log::debug('Owner of nick is not identified');
 				}
 				$nick['nick'] = $_i['args'][0];
 				if (count($_i['args']) > 1)
@@ -505,14 +530,8 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			log::debug("Removed {$_i['args'][1]} from {$_i['args'][0]} due to kick by {$_i['prefix']}");
 			break;
 		case 'QUIT':
-			$user = uplink::$nicks[$_i['prefix']]['user'];
-			uplink::remove_from_modelists($_i['prefix']);
-			if (array_key_exists($user, ExtraServ::$ident)) {
-				log::info("Deleted ident for user '$user' due to QUIT");
-				unset(ExtraServ::$ident[$user]);
-			}
-			unset(uplink::$nicks[$_i['prefix']]);
-			log::debug("Deleted nick {$_i['prefix']} due to QUIT");
+			log::info('Deleting nick for QUIT');
+			f::delete_nick($_i['prefix']);
 			break;
 		case 'SQUIT':
 			// [Mon 2015.02.02 23:31:55.408885+00:00] [ responder] INFO: <= :extrastout.defiant.worf.co SQUIT yakko.cs.wmich.edu :Not enough arguments 

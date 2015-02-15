@@ -53,6 +53,8 @@ class proc {
 	const TYPE_CHANNELS_UNSET = 210;
 	const TYPE_NICKS_SET = 211;
 	const TYPE_NICKS_UNSET = 212;
+	const TYPE_DEATHROW_SET = 213;
+	const TYPE_DEATHROW_UNSET = 214;
 
 	const TYPE_NEW_RELAY_QUEUE = 901;
 
@@ -249,6 +251,10 @@ class proc {
 						}
 						if (self::check_typemask($msgtype, proc::TYPEMASK_OBJECT_CHANGES)) {
 							log::trace('Not sending object change message to external proc');
+							continue;
+						}
+						if (self::check_typemask($msgtype, proc::TYPEMASK_PROC_SIGNALS)) {
+							log::trace('Not sending proc signal message to external proc');
 							continue;
 						}
 						if (msg_send($mq, $msgtype, $message, false) === true) {

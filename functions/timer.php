@@ -6,14 +6,6 @@ ExtraServ::dbconnect();
 f::ALIAS_INIT();
 $conf = config::get_instance();
 
-uplink::$network = uplink::$network->toSlave();
-uplink::$channels = uplink::$channels->toSlave();
-uplink::$nicks = uplink::$nicks->toSlave();
-
-ExtraServ::$ident = ExtraServ::$ident->toSlave();
-ExtraServ::$chan_stickymodes = ExtraServ::$chan_stickymodes->toSlave();
-ExtraServ::$chan_stickylists = ExtraServ::$chan_stickylists->toSlave();
-
 proc::ready();
 
 $count = 0;
@@ -31,7 +23,7 @@ while (true) {
 					log::debug('Shitstorm is over');
 					break;
 				}
-				if (!ES_SlaveArrayObject::dispatchMessage($ss_msgtype, $message)) {
+				if (!ES_SyncedArrayObject::dispatchMessage($ss_msgtype, $message)) {
 					f::handle_ipc($ss_msgtype, $message);
 				}
 			}
@@ -41,7 +33,7 @@ while (true) {
 			return $ret;
 		}
 
-		$ret = ES_SlaveArrayObject::dispatchMessage($msgtype, $message);
+		$ret = ES_SyncedArrayObject::dispatchMessage($msgtype, $message);
 	}
 
 	# check for new sms message

@@ -4,6 +4,7 @@
 
 require_once 'log.php';
 require_once 'procs.php';
+require_once 'functions.php';
 
 function smart_date_fmt($uts) {
 	$tz = new DateTimeZone(ExtraServ::$output_tz);
@@ -160,12 +161,27 @@ function pg_insert_on_duplicate_key_update($table, $insert_cols, $insert_values,
 class ES_NestedArrayObject extends ArrayObject {
 	private $parent_key = null;
 	private $parent = null;
-	public function __construct($parent, $parent_key, $initial_data = null) {
+	public function __construct($parent, $parent_key, $initial_data = null, $local_init = false) {
 		$this->parent = $parent;
 		$this->parent_key = $parent_key;
 		if ($initial_data !== null) {
-			foreach ($initial_data as $key => $val) {
-				$this->offsetSet($key, $val);
+			if ($local_init) {
+				log::debug('ES_NestedArrayObject Doing local init');
+				foreach ($initial_data as $key => $val) {
+					$this->localOffsetSet($key, $val);
+				}
+			} else {
+				$ct = count($initial_data);
+				$shit_started = false;
+				if ($ct > 0) {
+					$shit_started = f::start_shitstorm();
+				}
+				foreach ($initial_data as $key => $val) {
+					$this->offsetSet($key, $val);
+				}
+				if ($shit_started) {
+					f::stop_shitstorm();
+				}
 			}
 		}
 	}
@@ -173,6 +189,12 @@ class ES_NestedArrayObject extends ArrayObject {
 	public function nest($key, $initial_data = null) {
 		$this->bubbleSet(array($key), chr(7));
 		$obj = new ES_NestedArrayObject($this, $key, $initial_data);
+		parent::offsetSet($key, $obj);
+		return $obj;
+	}
+
+	public function localNest($key, $initial_data = null) {
+		$obj = new ES_NestedArrayObject($this, $key, $initial_data, true);
 		parent::offsetSet($key, $obj);
 		return $obj;
 	}
@@ -197,6 +219,14 @@ class ES_NestedArrayObject extends ArrayObject {
 		}
 	}
 
+	public function localOffsetSet($index, $newval) {
+		if (!is_array($newval)) {
+			parent::offsetSet($index, $newval);
+		} else {
+			$this->localNest($index, $newval);
+		}
+	}
+
 	public function bubbleUnset($key_chain) {
 		array_unshift($key_chain, $this->parent_key);
 		$this->parent->bubbleUnset($key_chain);
@@ -206,17 +236,20 @@ class ES_NestedArrayObject extends ArrayObject {
 		parent::offsetUnset($index);
 		$this->bubbleUnset(array($index));
 	}
+
+	public function localOffsetUnset($index) {
+		parent::offsetUnset($index);
+	}
 }
 
-class ES_MasterArrayObject extends ES_NestedArrayObject {
+class ES_SyncedArrayObject extends ES_NestedArrayObject {
 	private $msgtype_set;
 	private $msgtype_unset;
-	public function __construct($msgtype_set, $msgtype_unset, $initial_data = null) {
+	public function __construct($msgtype_set, $msgtype_unset) {
 		$this->msgtype_set = $msgtype_set;
 		$this->msgtype_unset = $msgtype_unset;
-		if ($initial_data !== null) {
-			$this->exchangeArray($initial_data);
-		}
+		self::$msgtype_set_map[$msgtype_set] = $this;
+		self::$msgtype_unset_map[$msgtype_unset] = $this;
 	}
 
 	public function bubbleSet($key_chain, $newval) {
@@ -236,36 +269,6 @@ class ES_MasterArrayObject extends ES_NestedArrayObject {
 		proc::queue_sendall($this->msgtype_unset, implode(':', $key_chain));
 	}
 
-	public function toSlave() {
-		return new ES_SlaveArrayObject($this->msgtype_set, $this->msgtype_unset, $this->getArrayCopy());
-	}
-
-	public function toMaster() {
-		return $this;
-	}
-}
-
-class ES_SlaveArrayObject extends ArrayObject {
-	private $msgtype_set;
-	private $msgtype_unset;
-	public function __construct($msgtype_set, $msgtype_unset, $initial_data = null) {
-		if ($initial_data !== null) {
-			parent::__construct($initial_data);
-		}
-		$this->msgtype_set = $msgtype_set;
-		$this->msgtype_unset = $msgtype_unset;
-		self::$msgtype_set_map[$msgtype_set] = $this;
-		self::$msgtype_unset_map[$msgtype_unset] = $this;
-	}
-
-	public function toSlave() {
-		return $this;
-	}
-
-	public function toMaster() {
-		return new ES_MasterArrayObject($this->msgtype_set, $this->msgtype_unset, $this->getArrayCopy());
-	}
-
 	private static $msgtype_set_map = array();
 	private static $msgtype_unset_map = array();
 
@@ -283,17 +286,17 @@ class ES_SlaveArrayObject extends ArrayObject {
 			}
 			if ($lastkey === chr(15)) {
 				log::trace('Doing append');
-				$obj->offsetSet(null, $val);
+				$obj->localOffsetSet(null, $val);
 			} elseif ($val === chr(7)) {
 				if (!$obj->offsetExists($lastkey)) {
 					log::trace("New array: $lastkey");
-					$obj->offsetSet($lastkey, new ArrayObject());
+					$obj->localOffsetSet($lastkey, new ES_NestedArrayObject($obj, $lastkey));
 				} else {
 					log::trace('key for new array already exists');
 				}
 			} else {
 				log::trace("Normal set: $lastkey");
-				$obj->offsetSet($lastkey, $val);
+				$obj->localOffsetSet($lastkey, $val);
 			}
 			return true;
 		} elseif (isset(self::$msgtype_unset_map[$msgtype])) {
@@ -305,15 +308,11 @@ class ES_SlaveArrayObject extends ArrayObject {
 			foreach ($key_chain as $key) {
 				$obj = $obj[$key];
 			}
-			$obj->offsetUnset($lastkey);
+			$obj->localOffsetUnset($lastkey);
 			return true;
 		} else {
 			return false;
 		}
-	}
-
-	public static function isChangeMessage($msgtype) {
-		return (isset(self::$msgtype_set_map[$msgtype]) || isset(self::$msgtype_unset_map[$msgtype]));
 	}
 }
 

@@ -85,6 +85,7 @@ CREATE TABLE user_profile (
 CREATE TABLE user_register (
 	ircuser VARCHAR(24) PRIMARY KEY,
 	password CHAR(60),
-	reg_uts BIGINT
+	reg_uts BIGINT,
+	kill_bad_nicks BOOLEAN DEFAULT TRUE
 );
 

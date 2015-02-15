@@ -6,7 +6,7 @@ list($_CMD, $uarg, $_i) = $_ARGV;
 switch (strtoupper($uarg)) {
 	case '':
 		$_i['handle']->notice($_i['reply_to'], 'This provides information about ExtraServ\'s service commands.');
-		$_i['handle']->notice($_i['reply_to'], 'Check !help for information about bot commands.');
+		$_i['handle']->notice($_i['reply_to'], 'Check !help for a wiki link including docs for bot commands.');
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], '    REGISTER   Register your username');
 		$_i['handle']->notice($_i['reply_to'], '    IDENTIFY   Identify yourself with your password');

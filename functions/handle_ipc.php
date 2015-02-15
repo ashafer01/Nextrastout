@@ -35,9 +35,14 @@ switch ($msgtype) {
 		return f::TRUE;
 	case proc::TYPE_TIMEZONE:
 		# output tz change
-		log::info("Got output timezone change to $message");
-		ExtraServ::$output_tz = $message;
-		return f::TRUE;
+		if (class_exists('ExtraServ', false)) {
+			log::info("Got output timezone change to $message");
+			ExtraServ::$output_tz = $message;
+			return f::TRUE;
+		} else {
+			log::debug('ExtraServ class is not defined for timezone change');
+			return f::FALSE;
+		}
 	default:
 		return f::FALSE;
 }
