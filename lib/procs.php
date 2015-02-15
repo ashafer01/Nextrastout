@@ -18,16 +18,28 @@ class proc {
 	public static $queue = null;
 
 	private static $queues = array();
+	private static $external_queues = array();
+
+	public static function check_typemask($msgtype, $mask) {
+		$x = $msgtype - $mask;
+		return (($x >= 1) && ($x <= 99));
+	}
+
+	const TYPEMASK_GENERAL = 0;
 
 	const TYPE_COMMAND = 1;
 	const TYPE_FUNC_RELOAD = 2;
 	const TYPE_LOGLEVEL = 3;
 	const TYPE_TIMEZONE = 4;
 
-	const TYPE_PROC_START = 100;
-	const TYPE_PROC_READY = 101;
-	const TYPE_SHITSTORM_STARTING = 102;
-	const TYPE_SHITSTORM_OVER = 103;
+	const TYPEMASK_PROC_SIGNALS = 100;
+
+	const TYPE_PROC_START = 101;
+	const TYPE_PROC_READY = 102;
+	const TYPE_SHITSTORM_STARTING = 103;
+	const TYPE_SHITSTORM_OVER = 104;
+
+	const TYPEMASK_OBJECT_CHANGES = 200;
 
 	const TYPE_STICKYLISTS_SET = 201;
 	const TYPE_STICKYLISTS_UNSET = 202;
@@ -212,7 +224,7 @@ class proc {
 			switch ($msgtype) {
 				case proc::TYPE_NEW_RELAY_QUEUE:
 					$name_id = explode(':', $message);
-					self::$queues[$name_id[0]] = msg_get_queue($name_id[1]);
+					self::$external_queues[$name_id[0]] = msg_get_queue($name_id[1]);
 					log::debug("Stored new relay queue {$name_id[0]} => {$name_id[1]}");
 					break;
 				case proc::TYPE_PROC_READY:
@@ -229,6 +241,20 @@ class proc {
 							log::trace("Relayed message of type $msgtype from proc '$from_proc' to proc '$procname'");
 						} else {
 							log::error("Failed to send message from proc '$from_proc' to proc '$procname'");
+						}
+					}
+					foreach (self::$external_queues as $procname => $mq) {
+						if ($procname == $from_proc) {
+							continue;
+						}
+						if (self::check_typemask($msgtype, proc::TYPEMASK_OBJECT_CHANGES)) {
+							log::trace('Not sending object change message to external proc');
+							continue;
+						}
+						if (msg_send($mq, $msgtype, $message, false) === true) {
+							log::trace("Relayed message of type $msgtype from proc '$from_proc' to external proc '$procname'");
+						} else {
+							log::error("Failed to send message from proc '$from_proc' to external proc '$procname'");
 						}
 					}
 			}
