@@ -220,7 +220,16 @@ class ES_MasterArrayObject extends ES_NestedArrayObject {
 	}
 
 	public function bubbleSet($key_chain, $newval) {
-		proc::queue_sendall($this->msgtype_set, implode(':', $key_chain) . '::' . $newval);
+		if (is_a($newval, 'ArrayObject')) {
+			$obj = $this;
+			$lastkey = array_pop($key_chain);
+			foreach ($key_chain as $key) {
+				$obj = $obj[$key];
+			}
+			$obj->nest($lastkey, $newval);
+		} else {
+			proc::queue_sendall($this->msgtype_set, implode(':', $key_chain) . '::' . $newval);
+		}
 	}
 
 	public function bubbleUnset($key_chain) {

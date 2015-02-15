@@ -254,6 +254,10 @@ class ExtraServ {
 		return 0;
 	}
 
+	public static function is_idented($user) {
+		return self::$ident->offsetExists($user);
+	}
+
 	# send a server command
 	public static function send($command) {
 		$hn = ExtraServ::$hostname;
@@ -324,6 +328,22 @@ class uplink {
 
 	public static function is_oper($nick) {
 		return in_array('o', uplink::$nicks[$nick]['mode']->getArrayCopy());
+	}
+
+	public static function get_user_by_nick($nick) {
+		if (self::$nicks->offsetExists($nick)) {
+			return self::$nicks[$nick]['user'];
+		}
+		return false;
+	}
+
+	public static function get_nick_by_user($user) {
+		foreach (self::$nicks as $nick => $params) {
+			if ($user == $params['user']) {
+				return $nick;
+			}
+		}
+		return false;
 	}
 
 	public static function remove_from_modelists($nick, $channel = null, $replace_with = null) {

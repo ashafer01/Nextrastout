@@ -32,7 +32,7 @@ if (!array_key_exists($channel, uplink::$channels)) {
 	return f::FALSE;
 }
 
-if (in_array($nick, uplink::$channels[$channel]['o'])) {
+if (in_array($nick, uplink::$channels[$channel]['o']->getArrayCopy())) {
 	log::debug('Already has op');
 	$_i['handle']->notice($_i['reply_to'], "You are already an operator on $channel");
 	return f::FALSE;

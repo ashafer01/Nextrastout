@@ -168,20 +168,32 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 				log::trace('Checking if username is registered');
 				$user = dbescape($_i['args'][4]);
-				$q = pg_query("SELECT count(*) FROM user_register WHERE ircuser='$user'");
+				$q = pg_query(ExtraServ::$db, "SELECT count(*) FROM user_register WHERE ircuser='$user'");
 				if ($q === false) {
 					log::error('Failed to check if username is registered');
 					log::error(pg_last_error());
 				} else {
 					$qr = pg_fetch_assoc($q);
 					if ($qr['count'] > 0) {
-						if (!array_key_exists($user, ExtraServ::$ident)) {
+						if (!ExtraServ::is_idented($user)) {
 							log::debug('Username is registered, nagging for ident');
 							$shn = ExtraServ::$serv_handle->nick;
 							//ExtraServ::$serv_handle->notice($_i['args'][0], "Your username '$user' is registered. Please '/msg $shn IDENTIFY password' to verify your identity.");
 							log::notice('Not sending ident request during dev');
 						} else {
-							log::trace('User is already identified');
+							log::debug('Username is already identified');
+							$newnick = $_i['args'][0];
+							$owner = f::get_nick_owner($newnick);
+							if ($owner === false) {
+								log::error('Failed to get nick owner');
+							} elseif ($owner != $user) {
+								log::notice('Invalid user of nickname');
+								$nick = uplink::get_nick_by_user($owner);
+								ExtraServ::$serv_handle->notice($nick, "User '$user' is using your nickname '$newnick'");
+								ExtraServ::$serv_handle->notice($newnick, "Your nickname is owned by someone else. Your connection may be killed depending on the owner's settings.");
+							} else {
+								log::trace('User of nickname is valid');
+							}
 						}
 					}
 				}
@@ -189,6 +201,22 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			# user has changed their nick
 			} elseif (uplink::is_nick($_i['prefix'])) {
 				$nick = uplink::$nicks[$_i['prefix']];
+				$owner = f::get_nick_owner($_i['args'][0]);
+				if (ExtraServ::is_idented($owner)) {
+					$user = uplink::get_user_by_nick($_i['prefix']);
+					if ($owner === false) {
+						log::error('Failed to get nick owner');
+					} elseif ($owner != $user) {
+						log::notice('Invalid user of nickname');
+						$onick = uplink::get_nick_by_user($owner);
+						ExtraServ::$serv_handle->notice($onick, "User '$user' has just changed to your nickname '{$_i['args'][0]}'");
+						ExtraServ::$serv_handle->notice($_i['args'][0], "This nickname is owned by someone else. Your connection may be killed depending on the owner's settings.");
+					} else {
+						log::debug('Nick is in use by its owner');
+					}
+				} else {
+					log::debug('Owner of nick is not identified');
+				}
 				$nick['nick'] = $_i['args'][0];
 				if (count($_i['args']) > 1)
 					$nick['modtime'] = $_i['args'][1];
@@ -540,7 +568,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				$cmdfunc = "cmd_$ucmd";
 				if (f::EXISTS($cmdfunc)) {
 					f::CALL($cmdfunc, array($ucmd, $uarg, $_i));
-				} elseif(is_admin($_i['prefix'])) {
+				} elseif(is_admin(uplink::get_user_by_nick($_i['prefix']))) {
 					switch ($ucmd) {
 						# manual/testing functions
 						case 'mqt':
@@ -590,6 +618,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							print_r(ExtraServ::$chan_stickylists);
 							echo "================== MODES ============================\n";
 							print_r(ExtraServ::$chan_stickymodes);
+							break;
+						case 'fakeident':
+							ExtraServ::$ident[$uarg] = true;
 							break;
 
 						# operational functions
