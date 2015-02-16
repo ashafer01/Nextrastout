@@ -169,9 +169,22 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					'channels' => array()
 				);
 				log::trace("Stored nick {$_i['args'][0]}");
+				$newnick = $_i['args'][0];
+				$user = dbescape($_i['args'][4]);
+
+				if (ExtraServ::is_idented($user) && (f::get_user_setting($user, 'kill_second_user') == 't')) {
+					log::info("Adding nick '$newnick' to death row because username is already idented");
+					ExtraServ::$serv_handle->notice($newnick, 'Your username is configured to kill others joining with your username. Your connection will be killed shortly.');
+					$realnick = uplink::get_nick_by_user($user); # since this function iterates the array in order, we will still find the first nick for this user
+					ExtraServ::$serv_handle->notice($realnick, "Nickname '$newnick' has come online using your username; they will be killed shortly per your configuration.");
+					ExtraServ::$death_row[$newnick] = array(
+						'at_uts' => (time()+5),
+						'reason' => 'Username enforcement'
+					);
+					break;
+				}
 
 				log::trace('Checking if username is registered');
-				$user = dbescape($_i['args'][4]);
 				$q = pg_query(ExtraServ::$db, "SELECT count(*) FROM user_register WHERE ircuser='$user'");
 				if ($q === false) {
 					log::error('Failed to check if username is registered');
@@ -189,7 +202,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						}
 					}
 				}
-				$newnick = $_i['args'][0];
 				$owner = f::get_nick_owner($newnick);
 				if ($owner === false) {
 					log::error('Failed to get nick owner');
@@ -645,6 +657,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						case 'fakeident':
 							ExtraServ::$ident[$uarg] = true;
 							break;
+						case 'dump1':
+							proc::queue_sendall(proc::TYPE_COMMAND, 'DUMP1');
+							break;
 
 						# operational functions
 						case 'es-reload':
@@ -654,7 +669,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							return 0;
 						case 'procs-reload':
 							log::notice('Got !procs-reload');
-							f::RELOAD('timer');
 							$_i['handle']->say($_i['reply_to'], 'Telling other processes to reload');
 							proc::queue_sendall(1, 'RELOAD');
 							break;

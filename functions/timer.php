@@ -16,11 +16,11 @@ while (true) {
 
 	if (($message = proc::queue_get(0, $msgtype, $fromproc)) !== null) {
 		if ($msgtype == proc::TYPE_SHITSTORM_STARTING) {
-			log::debug('Entering shitstorm loop');
+			log::trace('Entering shitstorm loop');
 			while (true) {
 				$message = proc::queue_get_block(0, $ss_msgtype);
 				if ($ss_msgtype == proc::TYPE_SHITSTORM_OVER) {
-					log::debug('Shitstorm is over');
+					log::trace('Shitstorm is over');
 					break;
 				}
 				if (!ES_SyncedArrayObject::dispatchMessage($ss_msgtype, $message)) {
@@ -34,6 +34,16 @@ while (true) {
 		}
 
 		$ret = ES_SyncedArrayObject::dispatchMessage($msgtype, $message);
+	}
+
+	while (list($nick, $params) = each(ExtraServ::$death_row)) {
+		if (ExtraServ::$death_row[$nick]->offsetExists('at_uts') && (time() > ExtraServ::$death_row[$nick]['at_uts'])) {
+			log::notice("Killing death row nick '$nick'");
+			//ExtraServ::$serv_handle->kill($nick, $params['reason']);
+			log::notice('Not killing during dev');
+
+			unset(ExtraServ::$death_row[$nick]);
+		}
 	}
 
 	# check for new sms message

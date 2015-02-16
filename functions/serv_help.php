@@ -194,6 +194,7 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], 'Examples:');
 		$_i['handle']->notice($_i['reply_to'], '   SET PROFILE steam name = mysteamname');
+		$_i['handle']->notice($_i['reply_to'], '   SET PROFILE gpu = Nvidia GT 610');
 		$_i['handle']->notice($_i['reply_to'], '   SET PROFILE favorite color = blue');
 		$_i['handle']->notice($_i['reply_to'], '   SET PROFILE about me = It all started when I was born...');
 		break;

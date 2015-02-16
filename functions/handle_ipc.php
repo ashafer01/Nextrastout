@@ -9,6 +9,7 @@ switch ($msgtype) {
 		switch ($message) {
 			case 'RELOAD':
 				log::info('Got RELOAD, returning 0');
+				f::RELOAD(proc::$func);
 				return 0;
 			case 'HUP':
 				log::info('Got HUP, reloading config');
@@ -18,6 +19,10 @@ switch ($msgtype) {
 				log::info('Got RELOAD ALL');
 				f::RELOAD_ALL();
 				config::reload_all();
+				break;
+			case 'DUMP1':
+				log::debug('Got DUMP1');
+				var_dump(ExtraServ::$death_row);
 				break;
 			default:
 				log::warning("Unknown simple IPC command: $message");

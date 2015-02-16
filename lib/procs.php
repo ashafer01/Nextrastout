@@ -9,6 +9,7 @@ class proc {
 	private static $ready_procs = array();
 
 	public static $name = null;
+	public static $func = null;
 
 	const PARENT_QUEUEID = 421;
 	const MAX_MSG_SIZE = 4096;
@@ -98,6 +99,7 @@ class proc {
 			self::$dups = array();
 
 			proc::$name = $name;
+			proc::$func = $func;
 			proc::$parent_queue = msg_get_queue(proc::PARENT_QUEUEID);
 			proc::$queue = msg_get_queue($MQID);
 
