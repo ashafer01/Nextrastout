@@ -3,6 +3,14 @@
 log::trace('entered f::serv_set()');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
+$nick = $_i['prefix'];
+$user = dbescape(uplink::get_user_by_nick($nick));
+if (!ExtraServ::is_idented($nick)) {
+	log::debug('Not identified');
+	$_i['handle']->notice($_i['reply_to'], 'You must identify before using this function');
+	return f::FALSE;
+}
+
 if ($uarg == null) {
 	log::debug('No arguments');
 	$_i['handle']->notice($_i['reply_to'], 'Please supply a type');
@@ -10,12 +18,36 @@ if ($uarg == null) {
 }
 
 $nick = strtolower($_i['prefix']);
-$user = uplink::$nicks[$nick]['user'];
+$user = uplink::get_user_by_nick($nick);
 
 $uarg = explode(' ', $uarg, 2);
 $type = strtoupper(array_shift($uarg));
 $uarg = array_shift($uarg);
 switch ($type) {
+	case 'USER':
+		log::debug('Got SET USER');
+		if ($uarg == null) {
+			log::debug('No arguments, listing fields');
+			$_i['handle']->notice($_i['reply_to'], 'Available USER settings:');
+			f::gen_setting_help('user', $_i);
+			$_i['handle']->notice($_i['reply_to'], ' ');
+			$_i['handle']->notice($_i['reply_to'], 'Check \'HELP SET USER\' for more information.');
+			break;
+		}
+		$_i['handle']->notice($_i['reply_to'], 'Not yet implemented');
+		break;
+	case 'PHONE':
+		log::debug('Got SET PHONE');
+		if ($uarg == null) {
+			log::debug('No arguments, listing fields');
+			$_i['handle']->notice($_i['reply_to'], 'Available PHONE settings:');
+			f::gen_setting_help('phone', $_i);
+			$_i['handle']->notice($_i['reply_to'], ' ');
+			$_i['handle']->notice($_i['reply_to'], 'Check \'HELP SET PHONE\' for more information.');
+			break;
+		}
+		$_i['handle']->notice($_i['reply_to'], 'Not yet implemented');
+		break;
 	case 'PROFILE':
 		log::debug('Got SET PROFILE');
 		if ($uarg == null) {

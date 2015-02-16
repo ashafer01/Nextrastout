@@ -165,22 +165,39 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], 'Register an email address for use with image uploading.');
 		break;
 	case 'SET':
+	case 'SET HELP':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: SET <type> <...>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
-		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
 		$_i['handle']->notice($_i['reply_to'], 'SET changes various settings. Each type has its own help page');
 		$_i['handle']->notice($_i['reply_to'], 'describing all configurable options, just say "HELP SET <type>"');
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], 'Types:');
 		$_i['handle']->notice($_i['reply_to'], '   USER');
 		$_i['handle']->notice($_i['reply_to'], '   PHONE');
-		$_i['handle']->notice($_i['reply_to'], '   CHAN');
 		$_i['handle']->notice($_i['reply_to'], '   PROFILE');
+		break;
+	case 'SET USER':
+		$_i['handle']->notice($_i['reply_to'], 'Usage: SET USER <setting> = <value>');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
+		$_i['handle']->notice($_i['reply_to'], 'All user settings are simple boolean on/off settings.');
+		$_i['handle']->notice($_i['reply_to'], 'For values:');
+		$_i['handle']->notice($_i['reply_to'], '  "enable", "true", "yes", and "on" are synonyms');
+		$_i['handle']->notice($_i['reply_to'], '  "disable", "false", "no", and "off" are synonyms');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], 'Available settings:');
+		f::gen_setting_help('user', $_i);
+		break;
+	case 'SET PHONE':
+		$_i['handle']->notice($_i['reply_to'], 'Usage: SET PHONE <nickname OR number> <setting> = <value>');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
+		$_i['handle']->notice($_i['reply_to'], 'Available settings:');
+		f::gen_setting_help('phone', $_i);
 		break;
 	case 'SET PROFILE':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: SET PROFILE <field name> = <value>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
-		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
 		$_i['handle']->notice($_i['reply_to'], 'SET PROFILE allows you to store arbitrary information attached');
 		$_i['handle']->notice($_i['reply_to'], 'to your username/nicknames. This is meant to be free-form and');
 		$_i['handle']->notice($_i['reply_to'], 'can be used for things like usernames on social websites, contact');

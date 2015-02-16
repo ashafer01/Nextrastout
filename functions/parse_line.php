@@ -11,7 +11,7 @@ $_i['text'] = '';
 
 $lwords = explode(' ', trim($line));
 if (substr($lwords[0], 0, 1) == ':') {
-	$_i['prefix'] = substr(array_shift($lwords), 1);
+	$_i['prefix'] = strtolower(substr(array_shift($lwords), 1));
 }
 $_i['cmd'] = array_shift($lwords);
 $twords = array();
