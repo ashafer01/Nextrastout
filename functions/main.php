@@ -228,7 +228,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							$onick = uplink::get_nick_by_user($owner);
 							ExtraServ::$serv_handle->notice($onick, "User '$user' has just changed to your nickname '$newnick'");
 							ExtraServ::$serv_handle->notice($newnick, "This nickname is owned by someone else. Your connection may be killed depending on the owner's settings.");
-							if (f::get_user_setting($owner, 'kill_bad_nicks')) {
+							if (f::get_user_setting($owner, 'kill_bad_nicks') == 't') {
 								log::info("Putting nick '$newnick' on death row");
 								ExtraServ::$death_row[$newnick] = array(
 									'at_uts' => (time()+5),
@@ -655,8 +655,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							proc::queue_sendall(1, 'RELOAD');
 							break;
 						case 'reload':
-						case 'f-reload':
-							log::notice('Got !f-reload');
+							log::notice('Got !reload');
 							if (f::EXISTS($uarg)) {
 								f::RELOAD($uarg);
 								proc::queue_sendall(2, $uarg);
@@ -666,7 +665,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							}
 							break;
 						case 'creload':
-						case 'c-reload':
 							log::notice('Got !creload');
 							if (f::EXISTS("cmd_$uarg")) {
 								f::RELOAD("cmd_$uarg");

@@ -5,7 +5,7 @@ list($ucmd, $uarg, $_i) = $_ARGV;
 
 $nick = strtolower($_i['prefix']);
 $user = uplink::$nicks[$nick]['user'];
-if (!array_key_exists($user, ExtraServ::$ident)) {
+if (!ExtraServ::is_idented($user)) {
 	log::debug('Not identified');
 	$_i['handle']->notice($_i['reply_to'], 'You must identify before using this function');
 	return f::FALSE;

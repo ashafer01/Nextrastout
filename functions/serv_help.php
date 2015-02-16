@@ -21,6 +21,7 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], ' STICKYLISTS   Make mode lists on a registered channel "sticky"');
 		$_i['handle']->notice($_i['reply_to'], ' VERIFYPHONE   Verify your phone number and associate with your username');
 		$_i['handle']->notice($_i['reply_to'], '    REGPHONE   Associate a verified phone number with a nickname');
+		$_i['handle']->notice($_i['reply_to'], '    DELPHONE   Delete a phone registration');
 		$_i['handle']->notice($_i['reply_to'], '    REGEMAIL   Register an email addresss');
 		$_i['handle']->notice($_i['reply_to'], '         SET   Change various settings');
 		$_i['handle']->notice($_i['reply_to'], ' ');
@@ -134,20 +135,28 @@ switch (strtoupper($uarg)) {
 	case 'VERIFYPHONE':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: VERIFYPHONE <phone number>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
-		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
 		$_i['handle']->notice($_i['reply_to'], 'Send a verification code to the specified number. Once verified');
 		$_i['handle']->notice($_i['reply_to'], 'the number will be associated with your username.');
 		$_i['handle']->notice($_i['reply_to'], 'Before it can be used, you must associate with one of your');
 		$_i['handle']->notice($_i['reply_to'], 'nicknames using REGPHONE.');
 		break;
 	case 'REGPHONE':
-		$_i['handle']->notice($_i['reply_to'], 'Usage: REGPHONE <nick> <phone number>');
+		$_i['handle']->notice($_i['reply_to'], 'Usage: REGPHONE <phone number> [verification code]');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], 'Associate a phone number with your current nickname. You can');
+		$_i['handle']->notice($_i['reply_to'], 'only have one number per nick, but you can have as many nicks');
+		$_i['handle']->notice($_i['reply_to'], 'as you like.');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], 'Once you have used VERIFYPHONE to get a verification code, you');
+		$_i['handle']->notice($_i['reply_to'], 'must include it the first time only.');
+		break;
+	case 'DELPHONE':
+		$_i['handle']->notice($_i['reply_to'], 'Usage: DELPHONE <phone number OR nickname>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], '*** NOT YET IMPLEMENTED');
-		$_i['handle']->notice($_i['reply_to'], 'Associate a phone number with one of your nicknames. You can');
-		$_i['handle']->notice($_i['reply_to'], 'only have one number per nick, but you can have as many nicks');
-		$_i['handle']->notice($_i['reply_to'], 'as you like. The phone number must already be associated with');
-		$_i['handle']->notice($_i['reply_to'], 'your username by verifying it with VERIFYPHONE.');
+		$_i['handle']->notice($_i['reply_to'], 'Delete a phone number registration. This only deletes the');
+		$_i['handle']->notice($_i['reply_to'], 'number/nick association and any altered user settings. The');
+		$_i['handle']->notice($_i['reply_to'], 'verification and association with your username is permanent.');
 		break;
 	case 'REGEMAIL':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: REGEMAIL <email address>');

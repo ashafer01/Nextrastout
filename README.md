@@ -9,6 +9,7 @@ There is a `config/private.ini` for config options that can't be comitted public
 below. You can keep them in private.ini or put them in the main config; the two files are merged into one object.
 
     admins = []
+	wiki_url =
     
     twilio.account_sid =
     twilio.auth_token =
