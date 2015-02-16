@@ -10,9 +10,9 @@ if ($q === false) {
 	log::error(pg_last_error());
 	return f::FALSE;
 } elseif (pg_num_rows($q) == 0) {
-	log::debug('Nickname is not associated');
+	log::trace('Nickname is not associated');
 	return null;
 } else {
-	log::debug('get_nick_owner query ok');
+	log::trace('get_nick_owner query ok');
 	return pg_fetch_assoc($q)['ircuser'];
 }

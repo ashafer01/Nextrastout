@@ -9,6 +9,11 @@ f::ALIAS_INIT();
 # static data
 $start_lists = array('b','e','I');
 $handles_re = implode('|', array_keys(ExtraServ::$handles));
+$mode_words = array(
+	'o' => 'op',
+	'h' => 'half-op',
+	'v' => 'voice'
+);
 
 proc::ready();
 
@@ -307,28 +312,27 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				}
 
 				if (array_key_exists($name, uplink::$nicks)) {
-					$user = uplink::$nicks[$name]['user'];
-					if (array_key_exists($user, ExtraServ::$ident)) {
-						log::debug("$name!$user is identified");
-						# check sticky lists
-						if (array_key_exists($chan, ExtraServ::$chan_stickylists)) {
-							log::debug("Channel $chan has sticky lists");
-							foreach (ExtraServ::$chan_stickylists[$chan] as $c => $modenames) {
-								if (!in_array($c, uplink::$chanmode_map)) {
-									log::trace("skipped non-joinlist mode $c");
-									continue;
-								}
-								if (in_array($name, $modenames)) {
-									if (!in_array($name, uplink::$channels[$chan][$c]->getArrayCopy())) {
-										log::debug("Sending MODE +$c for sticky list");
-										ExtraServ::$serv_handle->send("MODE $chan +$c $name");
-										uplink::$channels[$chan][$c][] = $name;
-									}
+					$user = uplink::get_user_by_nick($name);
+					# check sticky lists
+					if (array_key_exists($chan, ExtraServ::$chan_stickylists)) {
+						log::debug("Channel $chan has sticky lists");
+						foreach (ExtraServ::$chan_stickylists[$chan] as $c => $modenames) {
+							if (!in_array($c, uplink::$chanmode_map)) {
+								log::trace("skipped non-joinlist mode $c");
+								continue;
+							}
+							if (in_array($name, $modenames) && !in_array($name, uplink::$channels[$chan][$c]->getArrayCopy())) {
+								if (ExtraServ::is_idented($user)) {
+									log::debug("User is identified, sending MODE +$c for sticky list");
+									ExtraServ::$serv_handle->send("MODE $chan +$c $name");
+									uplink::$channels[$chan][$c][] = $name;
+								} else {
+									log::debug('User is not identified');
+									$shn = ExtraServ::$serv_handle->nick;
+									ExtraServ::$serv_handle->notice($name, "You must identify to get {$mode_words[$c]} on $chan. '/msg $shn IDENTIFY password'");
 								}
 							}
 						}
-					} else {
-						log::trace("$name!$user is not identified");
 					}
 
 					uplink::$nicks[$name]['channels'][] = $chan;

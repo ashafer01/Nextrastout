@@ -172,9 +172,10 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], 'describing all configurable options, just say "HELP SET <type>"');
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], 'Types:');
-		$_i['handle']->notice($_i['reply_to'], '    PHONE  Phone-related settings');
-		$_i['handle']->notice($_i['reply_to'], '     CHAN  Channel-related settings');
-		$_i['handle']->notice($_i['reply_to'], '  PROFILE  General purpose public profile information');
+		$_i['handle']->notice($_i['reply_to'], '   USER');
+		$_i['handle']->notice($_i['reply_to'], '   PHONE');
+		$_i['handle']->notice($_i['reply_to'], '   CHAN');
+		$_i['handle']->notice($_i['reply_to'], '   PROFILE');
 		break;
 	case 'SET PROFILE':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: SET PROFILE <field name> = <value>');

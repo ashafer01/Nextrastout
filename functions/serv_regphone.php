@@ -126,7 +126,7 @@ if ($q === false) {
 		log::debug('Number is already verified');
 		$q = pg_query(ExtraServ::$db, "SELECT count(*) FROM phone_register WHERE phone_number='$reg_number' OR nick=$inick");
 		if ($q === false) {
-			log::error('Failed to look up existing regitration');
+			log::error('Failed to look up existing registration');
 			log::error(pg_last_error());
 			$_i['handle']->notice($_i['reply_to'], 'Query failed');
 			return f::FALSE;

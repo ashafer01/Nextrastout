@@ -2,3 +2,4 @@
 *.password
 *.pid
 private.ini
+*.log
