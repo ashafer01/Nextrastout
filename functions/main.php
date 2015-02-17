@@ -20,6 +20,9 @@ proc::ready();
 $_socket_start = null;
 $_socket_timeout = ini_get('default_socket_timeout');
 while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) < $_socket_timeout) {
+	if (($message = proc::queue_get(0, $msgtype, $fromproc)) !== null) {
+		ES_SyncedArrayObject::dispatchMessage($msgtype, $message);
+	}
 	$line = uplink::readline();
 	if ($line != null) {
 		$lline = color_formatting::escape($line);
