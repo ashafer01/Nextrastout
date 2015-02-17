@@ -6,7 +6,8 @@ list($_CMD, $_ARG, $_i) = $_ARGV;
 $channel = $_i['sent_to'];
 $fc = substr($channel, 0, 1);
 if ($fc != '#' && $fc != '&') {
-	$_i['handle']->say($_i['reply_to'], 'seen in PM coming soon');
+	log::debug('Got seen in PM, using default_channel');
+	$channel = ExtraServ::$conf->default_channel;
 }
 
 $inick = pg_escape_string(ExtraServ::$db, strtolower($_ARG));
@@ -18,7 +19,7 @@ SELECT uts, command, nick, message,
 FROM log
 WHERE
 	((split_part(args, ' ', 1) = '$channel') OR (split_part(args, ' ', 1) = ''))
-	AND ( ((command IN ('PRIVMSG','PART','QUIT','KICK','MODE','TOPIC')) AND (nick = '$inick'))
+	AND ( ((command IN ('PRIVMSG','PART','QUIT','KICK','MODE','TOPIC','AWAY')) AND (nick = '$inick'))
 		OR ((command = 'KICK') AND (split_part(args, ' ', 2) = '$inick'))
 		OR ((command = 'JOIN') AND (message = '$channel') AND (nick = '$inick'))
 		)
@@ -67,6 +68,13 @@ if ($q === false) {
 			break;
 		case 'TOPIC':
 			$_i['handle']->say($_i['reply_to'], "{$qr['nick']} was last seen $ago ago changing the topic of {$qr['channel']} ($date)");
+			break;
+		case 'AWAY':
+			if ($qr['message'] == null) {
+				$_i['handle']->say($_i['reply_to'], "{$qr['nick']} was last seen $ago ago returning from away ($date)");
+			} else {
+				$_i['handle']->say($_i['reply_to'], "{$qr['nick']} went away $ago ago with message \"{$qr['message']}\" ($date)");
+			}
 			break;
 		default:
 			log::notice("Unhandled command '{$qr['command']}' found for seen '{$qr['nick']}'");

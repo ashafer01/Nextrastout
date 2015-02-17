@@ -42,6 +42,24 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 		case 'PING':
 			uplink::send("PONG :{$_i['text']}");
 			break;
+		case 'AWAY':
+			log::debug('Got AWAY');
+
+			# slip AWAY's into the log
+			$ts = time();
+			$nick = $_i['prefix'];
+			$q = pg_query_params(ExtraServ::$db, "INSERT INTO log (uts, nick, ircuser, irchost, command, args, message) VALUES ($1, $2, $3, $4, 'AWAY', '', $5)", array(
+				$ts,
+				$nick,
+				uplink::get_user_by_nick($nick),
+				uplink::$nicks[$nick]['host'],
+				$_i['text']
+			));
+			if ($q === false) {
+				log::error('Failed to add AWAY message to log');
+				log::error(pg_last_error());
+			}
+			break;
 		case 'EOB':
 			log::debug('Got EOB');
 
@@ -539,7 +557,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			break;
 		case 'KICK':
 			log::trace('Started KICK handling');
-			$params = uplink::$nicks[$_i['args'][1]];
+			$params = uplink::$nicks[$_i['args'][1]]->getArrayCopy();
 			$params['channels'] = array_diff($params['channels'], array($_i['args'][0]));
 			uplink::$nicks[$_i['args'][1]] = $params;
 			uplink::remove_from_modelists($_i['args'][1], $_i['args'][0]);
