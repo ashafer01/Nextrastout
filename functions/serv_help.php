@@ -50,7 +50,7 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], 'Destroy your identification for this connection.');
 		break;
 	case 'ASSOCIATE':
-		$_i['handle']->notice($_i['reply_to'], 'Usage: ASSOCIATE');
+		$_i['handle']->notice($_i['reply_to'], 'Usage: ASSOCIATE <password>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], 'Associates your current nickname with your username if you are identfied and');
 		$_i['handle']->notice($_i['reply_to'], 'the nickname isn\'t already associated with another user.');
@@ -58,7 +58,7 @@ switch (strtoupper($uarg)) {
 	case 'SETPASS':
 		$_i['handle']->notice($_i['reply_to'], 'Usage: SETPASS <password>');
 		$_i['handle']->notice($_i['reply_to'], ' ');
-		$_i['handle']->notice($_i['reply_to'], 'Change your password. Has the same restrictions as REGISTER- 6 to 72 characters,');
+		$_i['handle']->notice($_i['reply_to'], 'Change your password. Has the same restrictions as REGISTER- 4 to 72 characters,');
 		$_i['handle']->notice($_i['reply_to'], 'all letters, numbers, symbols, and whitespace are allowed.');
 		$_i['handle']->notice($_i['reply_to'], 'You must already be identified to use this function.');
 		break;

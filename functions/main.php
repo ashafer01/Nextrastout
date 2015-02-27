@@ -26,7 +26,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 	$line = uplink::readline();
 	if ($line != null) {
 		$lline = color_formatting::escape($line);
-		if (preg_match("/^(:.+? PRIVMSG ($handles_re) [^:]*:(REGISTER|SETPASS|IDENTIFY) )(.+)$/i", $lline, $matches) === 1) {
+		if (preg_match("/^(:.+? PRIVMSG ($handles_re) [^:]*:(REGISTER|SETPASS|IDENTIFY|ASSOCIATE) )(.+)$/i", $lline, $matches) === 1) {
 			log::debug('Hiding password from log');
 			$lline = "{$matches[1]}**********";
 		}

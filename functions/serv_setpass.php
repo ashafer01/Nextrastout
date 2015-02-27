@@ -11,6 +11,19 @@ if (!array_key_exists($user, ExtraServ::$ident)) {
 	return f::FALSE;
 }
 
+$q = pg_query_params(ExtraServ::$db, 'SELECT true FROM user_nick_map WHERE ircuser=$1 AND nick=$2', array($user, $nick));
+if ($q === false) {
+	log::error('Query failed');
+	log::error(pg_last_error());
+	$_i['handle']->notice($_i['reply_to'], 'Query failed');
+} elseif (pg_num_rows($q) == 0) {
+	log::info('Nick not associated');
+	$_i['handle']->notice($_i['reply_to'], 'You must be using one of your associated nicknames to use this function');
+	return f::FALSE;
+} else {
+	log::info('Current nick is associated');
+}
+
 if (strlen($uarg) > 72) {
 	log::debug('Password is too long');
 	$_i['handle']->notice($_i['reply_to'], 'Password must be no longer than 72 characters');
