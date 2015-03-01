@@ -177,8 +177,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			# a server is telling us about a nick
 			if ($_i['prefix'] == null || uplink::is_server($_i['prefix'])) {
 				// NICK NickServ 2 1409083701 +io NickServ dot.cs.wmich.edu dot.cs.wmich.edu 0 :Nickname Services
-				uplink::$nicks[$_i['args'][0]] = array(
-					'nick' => $_i['args'][0],
+				$newnick = strtolower($_i['args'][0]);
+				uplink::$nicks[$newnick] = array(
+					'nick' => $newnick,
 					'hopcount' => $_i['args'][1]+1,
 					'jointime' => $_i['args'][2],
 					'mode' => str_split(substr($_i['args'][3], 1), 1),
@@ -190,7 +191,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					'channels' => array()
 				);
 				log::trace("Stored nick {$_i['args'][0]}");
-				$newnick = $_i['args'][0];
 				$user = dbescape($_i['args'][4]);
 
 				if (ExtraServ::is_idented($user) && (f::get_user_setting($user, 'kill_second_user') == 't')) {
@@ -245,48 +245,45 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				}
 
 			# user has changed their nick
-			} elseif (uplink::is_nick($_i['prefix'])) {
-				$oldnick = $_i['prefix'];
-				$newnick = $_i['args'][0];
+			} elseif (uplink::is_nick(strtolower($_i['prefix']))) {
+				$oldnick = strtolower($_i['prefix']);
+				$newnick = strtolower($_i['args'][0]);
 				if (ExtraServ::$death_row->offsetExists($oldnick)) {
 					log::info("Death row nick '$oldnick' has been changed");
 					unset(ExtraServ::$death_row[$oldnick]);
 				}
-				$nick = uplink::$nicks[$oldnick];
 				$owner = f::get_nick_owner($newnick);
-				if (($owner !== null) && ($owner !== false)) {
-					if (ExtraServ::is_idented($owner)) {
-						$user = uplink::get_user_by_nick($oldnick);
-						if ($owner === false) {
-							log::error('Failed to get nick owner');
-						} elseif ($owner == null) {
-							log::trace('Nickname not associated with user');
-						} elseif ($owner != $user) {
-							log::notice('Invalid user of nickname');
-							$onick = uplink::get_nick_by_user($owner);
-							ExtraServ::$serv_handle->notice($onick, "User '$user' has just changed to your nickname '$newnick'");
-							ExtraServ::$serv_handle->notice($newnick, "This nickname is owned by someone else. Your connection may be killed depending on the owner's settings.");
-							if (f::get_user_setting($owner, 'kill_bad_nicks') == 't') {
-								log::info("Putting nick '$newnick' on death row");
-								ExtraServ::$death_row[$newnick] = array(
-									'at_uts' => (time()+5),
-									'reason' => 'Nickname enforcement'
-								);
-							}
-						} else {
-							log::debug('Nick is in use by its owner');
+				if ($owner === false) {
+					log::error('Failed to get nick owner');
+				} elseif ($owner == null) {
+					log::trace('Nickname not associated with user');
+				} elseif (ExtraServ::is_idented($owner)) {
+					$user = uplink::get_user_by_nick($oldnick);
+					if ($owner != $user) {
+						log::notice('Invalid user of nickname');
+						$onick = uplink::get_nick_by_user($owner);
+						ExtraServ::$serv_handle->notice($onick, "User '$user' has just changed to your nickname '$newnick'");
+						ExtraServ::$serv_handle->notice($newnick, "This nickname is owned by someone else. Your connection may be killed depending on the owner's settings.");
+						if (f::get_user_setting($owner, 'kill_bad_nicks') == 't') {
+							log::info("Putting nick '$newnick' on death row");
+							ExtraServ::$death_row[$newnick] = array(
+								'at_uts' => (time()+5),
+								'reason' => 'Nickname enforcement'
+							);
 						}
 					} else {
-						log::debug('Owner of nick is not identified');
+						log::debug('Nick is in use by its owner');
 					}
+				} else {
+					log::debug('Owner of nick is not identified');
 				}
-				$nick['nick'] = $_i['args'][0];
-				if (count($_i['args']) > 1)
-					$nick['modtime'] = $_i['args'][1];
-				uplink::$nicks[$_i['args'][0]] = $nick;
-				unset(uplink::$nicks[$_i['prefix']]);
-				uplink::rename_in_modelists($_i['prefix'], $_i['args'][0]);
-				log::debug("Nick change {$_i['prefix']} => {$_i['args'][0]}");
+				
+				$nick_obj = uplink::$nicks[$oldnick]->getArrayCopy();
+				unset(uplink::$nicks[$oldnick]);
+				$nick_obj['nick'] = $newnick;
+				uplink::$nicks[$newnick] = $nick_obj;
+				uplink::rename_in_modelists($oldnick, $newnick);
+				log::debug("Nick change {$oldnick} => {$newnick}");
 
 			# unhandled input
 			} else {
@@ -335,6 +332,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			$names = explode(' ', $_i['text']);
 			$modesymbols = array_keys(uplink::$chanmode_map);
 			foreach ($names as $name) {
+				$name = strtolower($name);
 				$chanmode = array();
 				while (in_array(($c = substr($name, 0, 1)), $modesymbols)) {
 					$chanmode[] = uplink::$chanmode_map[$c];
@@ -561,7 +559,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 		case 'KICK':
 			log::trace('Started KICK handling');
 			$params = uplink::$nicks[$_i['args'][1]]->getArrayCopy();
-			$params['channels'] = array_diff($params['channels'], array($_i['args'][0]));
+			$params['channels'] = array_diff($params['channels']->getArrayCopy(), array($_i['args'][0]));
 			uplink::$nicks[$_i['args'][1]] = $params;
 			uplink::remove_from_modelists($_i['args'][1], $_i['args'][0]);
 			log::debug("Removed {$_i['args'][1]} from {$_i['args'][0]} due to kick by {$_i['prefix']}");
@@ -747,6 +745,8 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						default:
 							log::trace('Not an admin command');
 					}
+				} else {
+					log::debug('Not an admin, and not a known command');
 				}
 			} # --- end commands
 

@@ -100,6 +100,33 @@ while (true) {
 				continue;
 			}
 
+			if ($_i['cmd'] == 'PRIVMSG') {
+				$karma = f::parse_karma($_i['text']);
+				foreach ($karma as $thing => $changes) {
+					$query_params = array(
+						$changes['++'],
+						$changes['--'],
+						$_i['args'][0],
+						$handle->nick,
+						$thing
+					);
+					$q = pg_query_params($_sql, 'UPDATE karma_cache SET up = up + $1, down = down + $2 WHERE channel=$3 AND nick=$4 AND thing=$5', $query_params);
+					if ($q === false) {
+						log::error('Failed to update karma cache');
+					} elseif (pg_affected_rows($q) == 0) {
+						# need to do insert
+						$q = pg_query_params($_sql, 'INSERT INTO karma_cache (channel, nick, thing, up, down) VALUES ($3,$4,$5,$1,$2)', $query_params);
+						if ($q === false) {
+							log::error('Failed to insert new karma');
+						} else {
+							log::info("Inserted new karma for '$thing' (+{$changes['++']}; -{$changes['--']}; nick={$_i['prefix']})");
+						}
+					} else {
+						log::info("Updated karma for '$thing' (+{$changes['++']}; -{$changes['--']}; nick={$_i['prefix']})");
+					}
+				}
+			}
+
 			$itext = pg_escape_string($_sql, $_i['text']);
 			$iargs = pg_escape_string($_sql, implode(' ', $_i['args']));
 			$icmd = pg_escape_string($_sql, $_i['cmd']);

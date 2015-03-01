@@ -8,11 +8,12 @@ require_once 'lib/config.php';
 require_once 'lib/procs.php';
 require_once 'lib/es_utils.php';
 
+set_error_handler('error_logger', E_ALL);
+
 function is_admin($nick) {
 	return in_array($nick, ExtraServ::$conf->admins);
 }
 
-error_reporting(E_ALL);
 date_default_timezone_set('UTC');
 pcntl_signal(SIGINT, 'parent_sigint');
 
@@ -160,7 +161,10 @@ class ExtraServ {
 
 		if ($conf->debug) {
 			log::notice('Debug mode');
-			ini_set('xdebug.collect_params', 4);
+			ini_set('xdebug.collect_params', 3);
+			ini_set('xdebug.var_max_display_children', 1);
+			ini_set('xdebug.var_max_display_data', -1);
+			ini_set('xdebug.var_max_display_depth', 0);
 		}
 
 		log::$level = log::string_to_level($conf->loglevel);

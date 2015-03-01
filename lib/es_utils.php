@@ -240,6 +240,17 @@ class ES_NestedArrayObject extends ArrayObject {
 	public function localOffsetUnset($index) {
 		parent::offsetUnset($index);
 	}
+
+	public function getArrayCopy() {
+		$ret = array();
+		foreach ($this as $key => $val) {
+			if (is_a($val, 'ArrayObject')) {
+				$val = $val->getArrayCopy();
+			}
+			$ret[$key] = $val;
+		}
+		return $ret;
+	}
 }
 
 class ES_SyncedArrayObject extends ES_NestedArrayObject {

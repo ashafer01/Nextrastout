@@ -75,24 +75,30 @@ class log {
 		self::_do_log($level, $message);
 	}
 
+	private static function color_lines($format, $message) {
+		return implode("\n", array_map(function($line) use ($format) {
+			return "$format$line%0";
+		}, explode("\n", $message)));
+	}
+
 	public static function fatal($m) {
 		$m = color_formatting::escape($m);
-		self::_do_log(log::FATAL, "%r$m%0");
+		self::_do_log(log::FATAL, self::color_lines('%r', $m));
 	}
 
 	public static function error($m) {
 		$m = color_formatting::escape($m);
-		self::_do_log(log::ERROR, "%r$m%0");
+		self::_do_log(log::ERROR, self::color_lines('%r', $m));
 	}
 
 	public static function warning($m) {
 		$m = color_formatting::escape($m);
-		self::_do_log(log::WARNING, "%y$m%0");
+		self::_do_log(log::WARNING, self::color_lines('%y', $m));
 	}
 
 	public static function notice($m) {
 		$m = color_formatting::escape($m);
-		self::_do_log(log::NOTICE, "%y$m%0");
+		self::_do_log(log::NOTICE, self::color_lines('%y', $m));
 	}
 
 	public static function info($m) {

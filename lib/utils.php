@@ -3,6 +3,57 @@
 require_once 'log.php';
 require_once 'config.php';
 
+function php_error_message($prefix, $e) {
+	return "$prefix: {$e->getMessage()}\nStack Trace:\n{$e->getTraceAsString()}\n";
+}
+
+function error_logger($errno, $errstr, $errfile, $errline) {
+	$e = new ErrorException($errstr, 0, $errno, $errline);
+	switch ($errno) {
+		case E_PARSE:
+			log::fatal(php_error_message('PHP Parse Error', $e));
+			throw $e;
+		case E_ERROR:
+		case E_USER_ERROR:
+			log::fatal(php_error_message('PHP Error', $e));
+			throw $e;
+		case E_RECOVERABLE_ERROR:
+			log::fatal(php_error_message('PHP Recoverable Error', $e));
+			throw $e;
+		case E_CORE_ERROR:
+			log::fatal(php_error_message('PHP Core Error', $e));
+			throw $e;
+		case E_COMPILE_ERROR:
+			log::fatal(php_error_message('PHP Compile Error', $e));
+			throw $e;
+		case E_WARNING:
+		case E_USER_WARNING:
+			log::warning(php_error_message('PHP Warning', $e));
+			break;
+		case E_CORE_WARNING:
+			log::warning(php_error_message('PHP Core Warning', $e));
+			break;
+		case E_COMPILE_WARNING:
+			log::warning(php_error_message('PHP Compile Warning', $e));
+			break;
+		case E_NOTICE:
+		case E_USER_NOTICE:
+			log::notice(php_error_message('PHP Notice', $e));
+			break;
+		case E_STRICT:
+			log::info(php_error_message('PHP Strict', $e));
+			break;
+		case E_DEPRECATED:
+		case E_USER_DEPRECATED:
+			log::notice(php_error_message('PHP Deprecated', $e));
+			break;
+		default:
+			log::error('Unknown PHP Error');
+			log::fatal(php_error_message('PHP Unknown', $e));
+			throw $e;
+	}
+}
+
 function utimestamp() {
 	list($micro, $sec) = explode(' ', microtime());
 	$micro = substr($micro, 2, -2);

@@ -204,10 +204,13 @@ switch (strtoupper($uarg)) {
 		$_i['handle']->notice($_i['reply_to'], 'information, biographical information, anything. This is a');
 		$_i['handle']->notice($_i['reply_to'], 'completely opt-in feature. All information stored will be public');
 		$_i['handle']->notice($_i['reply_to'], 'to anyone on IRC.');
+		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], 'Field names are limited to 48 characters, values are limited by');
 		$_i['handle']->notice($_i['reply_to'], 'the length of an IRC message. You may store more than one value');
-		$_i['handle']->notice($_i['reply_to'], 'per field name. The same field name and value pair cannot be');
-		$_i['handle']->notice($_i['reply_to'], 'stored more than once across all users.');
+		$_i['handle']->notice($_i['reply_to'], 'per field name.');
+		$_i['handle']->notice($_i['reply_to'], ' ');
+		$_i['handle']->notice($_i['reply_to'], 'The same field name and value pair cannot be stored more than');
+		$_i['handle']->notice($_i['reply_to'], 'once across all users.');
 		$_i['handle']->notice($_i['reply_to'], ' ');
 		$_i['handle']->notice($_i['reply_to'], 'Examples:');
 		$_i['handle']->notice($_i['reply_to'], '   SET PROFILE steam name = mysteamname');
