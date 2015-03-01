@@ -4,7 +4,6 @@ log::trace('entered f::cmd_karma()');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
 $channel = $_i['sent_to'];
-$channel = '#geekboy';
 
 $where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout')";
 $q = pg_query_params(ExtraServ::$db, "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel=$1 AND (thing=$2 AND nick!=$2) AND $where_notme", array(

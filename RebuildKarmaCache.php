@@ -64,6 +64,7 @@ while ($qr = pg_fetch_assoc($irclog)) {
 		}
 	}
 }
+log::debug("Inserted $i rows");
 
 pg_result_seek($irclog, 0);
 
@@ -89,5 +90,6 @@ while ($qr = pg_fetch_assoc($irclog)) {
 		}
 	}
 }
+log::debug("Updated $i rows");
 
 log::info('Done');
