@@ -3,7 +3,9 @@
 log::trace('entered f::cmd_karmastats.php');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
-if ($uarg != null) {
+if ($uarg == '*') {
+	log::debug('Doing total karma');
+} elseif ($uarg != null) {
 	$uarg = strtolower($uarg);
 	$things = array_map('trim', explode(',', $uarg));
 } else {
@@ -15,17 +17,23 @@ $channel = $_i['sent_to'];
 
 $where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout')";
 
-if (count($things) == 1) {
-	$sayprefix = "Karma stats for '$uarg' in $channel: ";
+if ($uarg == '*') {
+	$sayprefix = "All karma in $channel: ";
+} elseif (count($things) == 1) {
+	$sayprefix = "Karma for '$uarg' in $channel: ";
 } else {
-	$sayprefix = "Combined karma stats in $channel: ";
+	$sayprefix = "Combined karma in $channel: ";
 }
 $sayparts = array();
 
-$where_things_karma = '(' . implode(' OR ', array_map(function($thing) {
-	$thing = pg_escape_literal($thing);
-	return "(thing=$thing AND nick!=$thing)";
-}, $things)) . ')';
+if ($uarg != '*') {
+	$where_things_karma = '(' . implode(' OR ', array_map(function($thing) {
+		$thing = pg_escape_literal($thing);
+		return "(thing=$thing AND nick!=$thing)";
+	}, $things)) . ')';
+} else {
+	$where_things_karma = '1=1';
+}
 
 $q = pg_query_params(ExtraServ::$db, "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme", array(
 	$channel
@@ -72,10 +80,12 @@ if ($q === false) {
 	$voters = array();
 
 	$qr = pg_fetch_assoc($q);
-	$voters[] = "%g{$qr['nick']}%0 (+{$qr['up']})";
+	$fv = number_format($qr['up']);
+	$voters[] = "%g{$qr['nick']}%0 (+$fv)";
 
 	while ($qr = pg_fetch_assoc($q)) {
-		$voters[] = "{$qr['nick']} (+{$qr['up']})";
+		$fv = number_format($qr['up']);
+		$voters[] = "{$qr['nick']} (+$fv)";
 	}
 	$sayparts[] = 'Top upvoters: ' . implode(', ', $voters);
 }
@@ -98,10 +108,12 @@ if ($q === false) {
 	$voters = array();
 
 	$qr = pg_fetch_assoc($q);
-	$voters[] = "%r{$qr['nick']}%0 (-{$qr['down']})";
+	$fv = number_format($qr['down']);
+	$voters[] = "%r{$qr['nick']}%0 (-$fv)";
 
 	while ($qr = pg_fetch_assoc($q)) {
-		$voters[] = "{$qr['nick']} (-{$qr['down']})";
+		$fv = number_format($qr['down']);
+		$voters[] = "{$qr['nick']} (-$fv)";
 	}
 	$sayparts[] = 'Top downvoters: ' . implode(', ', $voters);
 }

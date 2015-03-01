@@ -22,6 +22,7 @@ $_port = 9999;
 $table = 'log';
 
 $_channels = config::channels();
+$_channels[] = '#geekboy';
 
 date_default_timezone_set('UTC');
 

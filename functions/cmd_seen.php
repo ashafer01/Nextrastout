@@ -23,7 +23,7 @@ WHERE
 		OR ((command = 'KICK') AND (split_part(args, ' ', 2) = '$inick'))
 		OR ((command = 'JOIN') AND (message = '$channel') AND (nick = '$inick'))
 		)
-ORDER BY ts DESC
+ORDER BY uts DESC
 LIMIT 1
 QUERY
 );
