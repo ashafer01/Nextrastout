@@ -45,24 +45,6 @@ if ($params != null) {
 $nicks = array_map('strtolower', $nicks);
 $nicks = array_map('dbescape', $nicks);
 
-$have_cached_stats = false;
-$cache_after = 0;
-$new_cache = array('last_update_uts' => time());
-$stat_cache = pg_query_params(ExtraServ::$db, 'SELECT * FROM stat_cache WHERE query_md5sum=$1', array($query_md5sum));
-if ($stat_cache === false) {
-	log::error('stat cache lookup query failed');
-	log::error(pg_last_error());
-	$_i['handle']->say($_i['reply_to'], 'Query failed');
-	return f::FALSE;
-} elseif (pg_num_rows($stat_cache) == 0) {
-	log::debug('No cached stats');
-} else {
-	log::debug('Have cached stats');
-	$have_cached_stats = true;
-	$stat_cache = pg_fetch_assoc($stat_cache);
-	$cache_after = $stat_cache['last_update_uts'];
-}
-
 $sayprefix = '';
 $sayparts = array();
 $b = chr(2);
@@ -72,7 +54,6 @@ log::debug('Starting nickstats queries');
 #########################
 
 # Total number of lines matching the query
-# Not cached
 
 $ref = 'nickstats total lines query';
 $query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where_nonick";
@@ -98,7 +79,6 @@ if ($q === false) {
 #########################
 
 # Total number of lines matching the query by the given nick(s)
-# Not cached
 
 $ref = 'nickstats total nick lines query';
 $query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where";
@@ -122,7 +102,6 @@ if ($q === false) {
 #########################
 
 # Find the rank of the line count
-# Not cached
 
 $ref = 'nickstats rank query';
 $query = "SELECT nick, count(uts) FROM log WHERE $where_privmsg AND $where_nonick GROUP BY nick ORDER BY count DESC";
@@ -168,58 +147,51 @@ $sayparts[] = "%C$fntl%0 lines / $ftl total ($fpcnt%)";
 #########################
 
 # Find the first usage of the given nick(s)
-$cache_col = 'first_join_uts';
 
 $where_nickonly = f::log_where_nick($nicks, $channel, false);
 
-if ($have_cached_stats) {
-	$first_join_uts = $stat_cache[$cache_col];
+$ref = 'nickstats first use query';
+$query = "SELECT uts, nick, ircuser FROM log WHERE $where_nickonly ORDER BY uts ASC LIMIT 1";
+log::debug("$ref >>> $query");
+$q = pg_query(ExtraServ::$db, $query);
+if ($q === false) {
+	log::error("$ref failed");
+	log::error(pg_last_error());
+	$sayparts[] = 'Query failed';
+	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
+	return f::FALSE;
 } else {
-	$ref = 'nickstats first use query';
-	$query = "SELECT uts, nick, ircuser FROM log WHERE $where_nickonly ORDER BY uts ASC LIMIT 1";
-	log::debug("$ref >>> $query");
-	$q = pg_query(ExtraServ::$db, $query);
-	if ($q === false) {
-		log::error("$ref failed");
-		log::error(pg_last_error());
-		$sayparts[] = 'Query failed';
-		$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
-		return f::FALSE;
-	} else {
-		log::debug("$ref OK");
-		$qr = pg_fetch_assoc($q);
+	log::debug("$ref OK");
+	$qr = pg_fetch_assoc($q);
 
-		$first_join_uts = $qr['uts'];
-		$new_cache[$cache_col] = $first_join_uts;
+	$first_join_uts = $qr['uts'];
+
+	$elapsed_days = round((time()-$first_join_uts)/(24 * 60 * 60));
+	if ($elapsed_days == 0) {
+		$elapsed_days = 1;
 	}
-}
 
-$elapsed_days = round((time()-$first_join_uts)/(24 * 60 * 60));
-if ($elapsed_days == 0) {
-	$elapsed_days = 1;
-}
+	$fdate = date('Y-m-d', $first_join_uts);
+	$fed = number_format($elapsed_days);
+	$days = 'days';
+	if ($elapsed_days == 1) {
+		$days = 'day';
+	}
 
-$fdate = date('Y-m-d', $first_join_uts);
-$fed = number_format($elapsed_days);
-$days = 'days';
-if ($elapsed_days == 1) {
-	$days = 'day';
-}
+	if (count($nicks) == 1) {
+		$as = "as user {$qr['ircuser']}";
+	} else {
+		$as = "by nick {$qr['nick']}";
+	}
+	$sayparts[] = "First join: $fdate ($fed $days ago $as)";
 
-if (count($nicks) == 1) {
-	$as = "as user {$qr['ircuser']}";
-} else {
-	$as = "by nick {$qr['nick']}";
+	$flpd = number_format($nick_total_lines / $elapsed_days, 3);
+	$sayparts[] = "$flpd lines/day";
 }
-$sayparts[] = "First join: $fdate ($fed $days ago $as)";
-
-$flpd = number_format($nick_total_lines / $elapsed_days, 3);
-$sayparts[] = "$flpd lines/day";
 
 #########################
 
 # Get big list of words
-# Not cached
 
 $ref = 'nickstats word list query';
 $query = "SELECT * FROM (SELECT regexp_split_to_table(lower(message), '\s+') AS word, count(uts) FROM log WHERE $where_privmsg AND $where GROUP BY word ORDER BY count DESC) AS t1 WHERE word !~ '^\x01'";
@@ -255,16 +227,15 @@ pg_result_seek($q, 0);
 
 #########################
 
-# Find upvotes of the nickname
-$cache_col = 'upvotes';
+# Find the nickname(s) karma
 
-$ref = 'nickstats upvote query';
-$up_conds = array();
-foreach ($nicks as $nick) {
-	$up_conds[] = "(message ~* '[[:<:]]\(?$nick\)?\+\+(?![!-~])' AND nick != '$nick')";
-}
-$up_conds = implode(' OR ', $up_conds);
-$query = "SELECT count(uts) FROM log WHERE uts >= $cache_after AND $where_privmsg AND ($up_conds) AND $where_notme";
+$where_nicks_karma = '(' . implode(' OR ', array_map(function($nick) {
+	return "(thing='$nick' AND nick!='$nick')";
+}, $nicks));
+$where_nicks_karma .= ')';
+
+$ref = 'karma lookup';
+$query = "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_nicks_karma AND $where_notme";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -273,66 +244,33 @@ if ($q === false) {
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
+} elseif (pg_num_rows($q) == 0) {
+	log::debug('No matching rows');
+	$sayparts[] = 'no votes';
 } else {
 	log::debug("$ref OK");
-
 	$qr = pg_fetch_assoc($q);
-	$up_votes = $qr['count'];
-	if ($have_cached_stats) {
-		$up_votes += $stat_cache[$cache_col];
-	}
 
-	$new_cache[$cache_col] = $up_votes;
+	$up_votes = $qr['up'];
+	$down_votes = $qr['down'];
+	$net_votes = $up_votes - $down_votes;
+	$fnv = number_format($net_votes);
+	$fuv = number_format($up_votes);
+	$fdv = number_format($down_votes);
+	$fpli = number_format((($up_votes + 0.0 ) / ($up_votes + $down_votes + 0.0)) * 100, 1);
+	$fakpd = number_format(($net_votes + 0.0) / ($elapsed_days + 0.0), 5);
+
+	$sayparts[] = "Net karma: %C$fnv%0 (+$fuv/-$fdv; $fpli% like it; $fakpd net votes/day)";
 }
-
-# Find downvotes of the nickname
-$cache_col = 'downvotes';
-
-$ref = 'nickstats downvote query';
-$down_conds = array();
-foreach ($nicks as $nick) {
-	$down_conds[] = "(message ~* '[[:<:]]\(?$nick\)?--(?![!-~])' AND nick != '$nick')";
-}
-$down_conds = implode(' OR ', $down_conds);
-$query = "SELECT count(uts) FROM log WHERE uts >= $cache_after AND $where_privmsg AND ($down_conds) AND $where_notme";
-log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
-if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
-	$sayparts[] = 'Query failed';
-	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
-	return f::FALSE;
-} else {
-	log::debug("$ref OK");
-
-	$qr = pg_fetch_assoc($q);
-	$down_votes = $qr['count'];
-	if ($have_cached_stats) {
-		$down_votes += $stat_cache[$cache_col];
-	}
-
-	$new_cache[$cache_col] = $down_votes;
-}
-
-$net_votes = $up_votes - $down_votes;
-$fnv = number_format($net_votes);
-$fuv = number_format($up_votes);
-$fdv = number_format($down_votes);
-$fpli = number_format((($up_votes + 0.0 ) / ($up_votes + $down_votes + 0.0)) * 100, 1);
-$fakpd = number_format(($net_votes + 0.0) / ($elapsed_days + 0.0), 5);
-
-$sayparts[] = "Net karma: %C$fnv%0 (+$fuv/-$fdv; $fpli% like it; $fakpd net votes/day)";
 
 #########################
 
 # Find the top voters of the nickname
-# Is cached
 
 $saypart = 'Top voters:';
 
-$ref = 'nickstats top voters upvote query';
-$query = "SELECT nick, count(uts) FROM log WHERE ((nick != '{$stat_cache['top_upvoter_nick']}') OR uts >= $cache_after)) AND $where_privmsg AND ($up_conds) AND $where_notme GROUP BY nick ORDER BY count DESC LIMIT 2";
+$ref = 'top upvoter query';
+$query = "SELECT nick, sum(up) AS up FROM karma_cache WHERE channel='$channel' AND $where_nicks_karma AND $where_notme GROUP BY nick ORDER BY up DESC LIMIT 1";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -342,23 +280,18 @@ if ($q === false) {
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } elseif (pg_num_rows($q) == 0) {
-	log::debug("$ref - No results");
-	$saypart .= ' no upvotes;';
+	log::debug('No matching rows');
+	$sayparts[] = 'no upvoters;';
 } else {
 	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
-	if ($have_cached_stats && ($qr['top_upvoter_nick'] == $stat_cache['top_upvoter_nick'])) {
-		$qr['count'] += $stat_cache['top_upvoter_count'];
-	}
-	$fuvc = number_format($qr['count']);
-	$saypart .= " {$qr['nick']} (+$fuvc);";
 
-	$new_cache['top_upvoter_nick'] = $qr['nick'];
-	$new_cache['top_upvoter_count'] = $qr['count'];
+	$fuvc = number_format($qr['up']);
+	$saypart .= " {$qr['nick']} (+$fuvc);";
 }
 
-$ref = 'nickstats top voters downvote query';
-$query = "SELECT nick, count(uts) FROM log WHERE uts >= $cache_after AND $where_privmsg AND ($down_conds) AND $where_notme GROUP BY nick ORDER BY count DESC LIMIT 1";
+$ref = 'top downvoter query';
+$query = "SELECT nick, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_nicks_karma AND $where_notme GROUP BY nick ORDER BY down DESC LIMIT 1";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -368,134 +301,69 @@ if ($q === false) {
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } elseif (pg_num_rows($q) == 0) {
-	log::debug("$ref - No results");
-	$saypart .= ' no downvotes;';
+	log::debug('No matching rows');
+	$sayparts[] = ' no downvoters';
 } else {
 	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
-	if ($have_cached_stats && ($qr['top_downvoter_nick'] == $stat_cache['top_downvoter_nick'])) {
-		$qr['count'] += $stat_cache['top_downvoter_count'];
-	}
-	$fuvc = number_format($qr['count']);
-	$saypart .= " {$qr['nick']} (-$fuvc);";
 
-	$new_cache['top_downvoter_nick'] = $qr['nick'];
-	$new_cache['top_downvoter_count'] = $qr['count'];
+	$fuvc = number_format($qr['down']);
+	$saypart .= " {$qr['nick']} (-$fuvc)";
 }
 
 $sayparts[] = $saypart;
 
 #########################
 
-$upvote_max_count = 0;
-$upvote_max_thing = null;
-
-$ref = 'nickstats karma upvote without parens query';
-$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '[[:<:]]([!-&*-~]+?)(\+\+|--)(?![!-~])') AS karma FROM log WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='++' GROUP BY karma[1]";
-log::debug("$ref >>> $query");
-$q1 = pg_query(ExtraServ::$db, $query);
-if ($q1 === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
-	$sayparts[] = 'Query failed';
-	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
-	return f::FALSE;
-} else {
-	log::debug("$ref OK");
-}
-
-$ref = 'nickstats karma upvote with parens query';
-$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '\(([!-~]+?)\)(\+\+|--)(?![!-~])') AS karma FROM log WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='++' GROUP BY karma[1]";
-log::debug("$ref >>> $query");
-$q2 = pg_query(ExtraServ::$db, $query);
-if ($q2 === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
-	$sayparts[] = 'Query failed';
-	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
-	return f::FALSE;
-} else {
-	log::debug("$ref OK");
-}
-
-while ($row = pg_fetch_assoc($q1)) {
-	if ($row['count'] > $upvote_max_count) {
-		$upvote_max_count = $row['count'];
-		$upvote_max_thing = $row['thing'];
-	}
-}
-
-while ($row = pg_fetch_assoc($q2)) {
-	if ($row['count'] > $upvote_max_count) {
-		$upvote_max_count = $row['count'];
-		$upvote_max_thing = $row['thing'];
-	}
-}
-
-if ($have_cached_stats) {
-	$upvote_max_count
-}
-
-$downvote_max_count = 0;
-$downvote_max_thing = null;
-
-$ref = 'nickstats karma downvote without parens query';
-$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '[[:<:]]([!-&*-~]+?)(\+\+|--)(?![!-~])') AS karma FROM log WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='--' GROUP BY karma[1]";
-log::debug("$ref >>> $query");
-$q1 = pg_query(ExtraServ::$db, $query);
-if ($q1 === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
-	$sayparts[] = 'Query failed';
-	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
-	return f::FALSE;
-} else {
-	log::debug("$ref OK");
-}
-
-$ref = 'nickstats karma downvote with parens query';
-$query = "SELECT karma[1] AS thing, count(karma[1]) FROM (SELECT regexp_matches(message, '\(([ -~]+?)\)(\+\+|--)(?![!-~])') AS karma FROM log WHERE $where_privmsg AND $where) AS t1 WHERE karma[2]='--' GROUP BY karma[1]";
-log::debug("$ref >>> $query");
-$q2 = pg_query(ExtraServ::$db, $query);
-if ($q2 === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
-	$sayparts[] = 'Query failed';
-	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
-	return f::FALSE;
-} else {
-	log::debug("$ref OK");
-}
-
-while ($row = pg_fetch_assoc($q1)) {
-	if ($row['count'] > $downvote_max_count) {
-		$downvote_max_count = $row['count'];
-		$downvote_max_thing = $row['thing'];
-	}
-}
-
-while ($row = pg_fetch_assoc($q2)) {
-	if ($row['count'] > $downvote_max_count) {
-		$downvote_max_count = $row['count'];
-		$downvote_max_thing = $row['thing'];
-	}
-}
-
-$fdvmc = number_format($downvote_max_count);
+# Find most voted things
 
 $saypart = 'Most voted: ';
-if ($upvote_max_thing == null) {
-	$saypart .= 'no upvotes; ';
+
+$where_things_karma = '(' . implode(' OR ', array_map(function($nick) {
+	return "(nick='$nick' AND thing!='$nick')";
+}, $nicks));
+$where_things_karma .= ')';
+
+$ret = 'most upvoted thing query';
+$query = "SELECT thing, sum(up) AS up FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing ORDER BY up DESC LIMIT 1";
+log::debug("$ref >>> $query");
+$q = pg_query(ExtraServ::$db, $query);
+if ($q === false) {
+	log::error("$ref failed");
+	log::error(pg_last_error());
+	$sayparts[] = 'Query failed';
+	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
+	return f::FALSE;
+} elseif (pg_num_rows($q) == 0) {
+	log::debug('No matching rows');
+	$sayparts[] = 'no upvotes;';
 } else {
-	$fuvmc = number_format($upvote_max_count);
-	$saypart .= "$upvote_max_thing (+$fuvmc); ";
+	log::debug("$ref OK");
+	$qr = pg_fetch_assoc($q);
+
+	$fuvmc = number_format($qr['up']);
+	$saypart .= "{$qr['thing']} (+$fuvmc);";
 }
 
-if ($downvote_max_thing == null) {
-	$saypart .= 'no downvotes';
+$ret = 'most downvoted thing query';
+$query = "SELECT thing, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing ORDER BY down DESC LIMIT 1";
+log::debug("$ref >>> $query");
+$q = pg_query(ExtraServ::$db, $query);
+if ($q === false) {
+	log::error("$ref failed");
+	log::error(pg_last_error());
+	$sayparts[] = 'Query failed';
+	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
+	return f::FALSE;
+} elseif (pg_num_rows($q) == 0) {
+	log::debug('No matching rows');
+	$sayparts[] = ' no downvotes';
 } else {
-	$fdvmc = number_format($downvote_max_count);
-	$saypart .= "$downvote_max_thing (-$fdvmc)";
+	log::debug("$ref OK");
+	$qr = pg_fetch_assoc($q);
+
+	$fdvmc = number_format($qr['down']);
+	$saypart .= " {$qr['thing']} (+$fdvmc)";
 }
 
 $sayparts[] = $saypart;

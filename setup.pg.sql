@@ -25,6 +25,15 @@ CREATE TABLE chan_stickylists (
 	value VARCHAR(72)
 );
 
+CREATE TABLE karma_cache (
+	channel VARCHAR(48),
+	nick VARCHAR(24),
+	thing VARCHAR(512),
+	up INTEGER,
+	down INTEGER,
+	PRIMARY KEY (channel, nick, thing)
+);
+
 CREATE TABLE log (
 	ts TIMESTAMP WITHOUT TIME ZONE DEFAULT now(),
 	uts BIGINT,
@@ -86,6 +95,7 @@ CREATE TABLE user_register (
 	ircuser VARCHAR(24) PRIMARY KEY,
 	password CHAR(60),
 	reg_uts BIGINT,
-	kill_bad_nicks BOOLEAN DEFAULT TRUE
+	kill_bad_nicks BOOLEAN DEFAULT TRUE,
+	kill_second_user BOOLEAN DEFAULT TRUE
 );
 
