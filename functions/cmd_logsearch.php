@@ -7,7 +7,13 @@ list($command, $params, $_i) = $_ARGV;
 $where = '';
 $rainbow = false;
 $capswhere = " AND message SIMILAR TO '[A-Z][A-Z!,\?\.''\" ]{3,}'";
+$req_nicks = null;
 switch ($command) {
+	case 'fn':
+		$params = explode(' ', $params, 2);
+		$req_nicks = $params[0];
+		$params[] = '';
+		$params = $params[1];
 	case 'first':
 	case 'f':
 		$orderby = 'ORDER BY uts ASC';
@@ -18,6 +24,11 @@ switch ($command) {
 			$params = trim($matches[2]);
 		}
 		break;
+	case 'ln':
+		$params = explode(' ', $params, 2);
+		$req_nicks = $params[0];
+		$params[] = '';
+		$params = $params[1];
 	case 'last':
 	case 'l':
 		$orderby = 'ORDER BY uts DESC';
@@ -62,7 +73,12 @@ switch ($command) {
 		break;
 }
 
-$query = "SELECT uts, nick, message FROM log WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}')" . f::log_where($params) . "$where $orderby $limit";
+$query_params = f::parse_logquery($params);
+if ($req_nicks != null) {
+	$query_params->req_nicks[] = array($req_nicks);
+}
+
+$query = "SELECT uts, nick, message FROM log WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}')" . f::log_where($query_params) . "$where $orderby $limit";
 log::debug("log search query >>> $query");
 
 $q = pg_query(ExtraServ::$db, $query);
