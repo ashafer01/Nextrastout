@@ -3,16 +3,32 @@
 log::trace('entered f::cmd_karmastats.php');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
+if ($uarg != null) {
+	$uarg = strtolower($uarg);
+	$things = array_map('trim', explode(',', $uarg));
+} else {
+	$uarg = strtolower($_i['prefix']);
+	$things = array($uarg);
+}
+
 $channel = $_i['sent_to'];
 
 $where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout')";
 
-$sayprefix = "Karma stats for '$uarg' in $channel: ";
+if (count($things) == 1) {
+	$sayprefix = "Karma stats for '$uarg' in $channel: ";
+} else {
+	$sayprefix = "Combined karma stats in $channel: ";
+}
 $sayparts = array();
 
-$q = pg_query_params(ExtraServ::$db, "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel=$1 AND (thing=$2 AND nick!=$2) AND $where_notme", array(
-	$channel,
-	$uarg
+$where_things_karma = '(' . implode(' OR ', array_map(function($thing) {
+	$thing = pg_escape_literal($thing);
+	return "(thing=$thing AND nick!=$thing)";
+}, $things)) . ')';
+
+$q = pg_query_params(ExtraServ::$db, "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme", array(
+	$channel
 ));
 if ($q === false) {
 	log::error('Failed to look up karma for cmd_karma()');
@@ -39,9 +55,8 @@ if ($q === false) {
 }
 
 # top upvoters
-$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up FROM karma_cache WHERE channel=$1 AND (thing=$2 AND nick!=$2) AND $where_notme GROUP BY nick ORDER BY up DESC LIMIT 5", array(
-	$channel,
-	$uarg
+$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick ORDER BY up DESC LIMIT 5", array(
+	$channel
 ));
 if ($q === false) {
 	log::error('Failed to get top upvoters for cmd_karmastats()');
@@ -66,13 +81,13 @@ if ($q === false) {
 }
 
 # top downvoters
-$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(down) AS down FROM karma_cache WHERE channel=$1 AND (thing=$2 AND nick!=$2) AND $where_notme GROUP BY nick ORDER BY down DESC LIMIT 5", array(
-	$channel,
-	$uarg
+$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(down) AS down FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick ORDER BY down DESC LIMIT 5", array(
+	$channel
 ));
 if ($q === false) {
 	log::error('Failed to get top downvoters for cmd_karmastats()');
 	log::error(pg_last_error());
+	$sayparts[] = 'Query Failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } elseif (pg_num_rows($q) == 0) {

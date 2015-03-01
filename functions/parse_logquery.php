@@ -63,14 +63,14 @@ foreach ($params as $param) {
 			$current_var = 'req_nicks';
 			$current_index = count($ret->req_nicks);
 
-			$ret->req_nicks[$current_index] = array(substr($param, 1));
+			$ret->req_nicks[$current_index] = array(substr(strtolower($param), 1));
 			break;
 		case '^':
 			# new exclude nick list
 			$current_var = 'exc_nicks';
 			$current_index = count($ret->exc_nicks);
 
-			$ret->exc_nicks[$current_index] = array(substr($param, 1));
+			$ret->exc_nicks[$current_index] = array(substr(strtolower($param), 1));
 			break;
 		case '<':
 			# new before time

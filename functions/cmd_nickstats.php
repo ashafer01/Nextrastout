@@ -29,7 +29,7 @@ if ($params != null) {
 		}
 		$where = f::log_where($p, false, null, false);
 	} else {
-		$nicks = array($params);
+		$nicks = array(strtolower($params));
 		$where_nonick = 'TRUE';
 		$nick = dbescape(strtolower($nicks[0]));
 		$where = "nick='$nick'";

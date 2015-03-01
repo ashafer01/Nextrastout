@@ -19,6 +19,7 @@ foreach ($karma_patterns as $pattern) {
 		log::trace("No matches for pattern $pattern");
 	} else {
 		foreach ($matches as $match) {
+			$match[1] = strtolower($match[1]);
 			if (!array_key_exists($match[1], $ret)) {
 				$ret[$match[1]] = array('++' => 0, '--' => 0);
 			}

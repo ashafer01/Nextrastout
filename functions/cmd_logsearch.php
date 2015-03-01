@@ -11,7 +11,7 @@ $req_nicks = null;
 switch ($command) {
 	case 'fn':
 		$params = explode(' ', $params, 2);
-		$req_nicks = $params[0];
+		$req_nicks = strtolower($params[0]);
 		$params[] = '';
 		$params = $params[1];
 	case 'first':
@@ -26,7 +26,7 @@ switch ($command) {
 		break;
 	case 'ln':
 		$params = explode(' ', $params, 2);
-		$req_nicks = $params[0];
+		$req_nicks = strtolower($params[0]);
 		$params[] = '';
 		$params = $params[1];
 	case 'last':
