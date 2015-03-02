@@ -254,9 +254,7 @@ class ExtraServ {
 			$handle->init();
 		}
 
-		foreach (config::channels() as $channel) {
-			self::$bot_handle->join($channel);
-		}
+		self::$bot_handle->update_conf_channels();
 
 		return 0;
 	}

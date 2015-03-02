@@ -625,13 +625,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				} elseif(is_admin(uplink::get_user_by_nick($_i['prefix']))) {
 					switch ($ucmd) {
 						# manual/testing functions
-						case 'mqt':
-							log::trace('Got !mqt');
-							proc::queue_sendall(42, $uarg);
-							break;
-						case 'dbt':
-							pg_query(ExtraServ::$db, 'SELECT pg_sleep(15)');
-							break;
 						case 'serv':
 							log::trace('Got !serv');
 							ExtraServ::send($uarg);
@@ -648,36 +641,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							$ts = time();
 							ExtraServ::send("$uarg $ts");
 							break;
-						case 'dumpconf':
-							var_dump(config::get_instance());
-							break;
-						case 'dumpchans':
-							if ($uarg == null)
-								print_r(uplink::$channels);
-							else
-								print_r(uplink::$channels[$uarg]);
-							break;
-						case 'dumpnicks':
-							if ($uarg == null)
-								print_r(uplink::$nicks);
-							else
-								print_r(uplink::$nicks[$uarg]);
-							break;
 						case 'kill':
 							$uarg = explode(' ', $uarg, 2);
 							ExtraServ::$serv_handle->kill($uarg[0], $uarg[1]);
-							break;
-						case 'dumpstickies':
-							echo "================== LISTS ============================\n";
-							print_r(ExtraServ::$chan_stickylists);
-							echo "================== MODES ============================\n";
-							print_r(ExtraServ::$chan_stickymodes);
-							break;
-						case 'fakeident':
-							ExtraServ::$ident[$uarg] = true;
-							break;
-						case 'dump1':
-							proc::queue_sendall(proc::TYPE_COMMAND, 'DUMP1');
 							break;
 
 						# operational functions
@@ -715,6 +681,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							log::notice('Got !hup');
 							config::reload_all();
 							$_i['handle']->say($_i['reply_to'], 'Reloaded config');
+							ExtraServ::$bot_handle->update_conf_channels();
 							proc::queue_sendall(1, 'HUP');
 							break;
 						case 'reload-all':
@@ -722,6 +689,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading and reloading conf');
 							f::RELOAD_ALL();
 							config::reload_all();
+							ExtraServ::$bot_handle->update_conf_channels();
 							proc::queue_sendall(1, 'RELOAD ALL');
 							break;
 						case 'es-stop':
@@ -741,6 +709,10 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							ExtraServ::$output_tz = $uarg;
 							$_i['handle']->say($_i['reply_to'], 'Changed output timezone');
 							proc::queue_sendall(4, $uarg);
+							break;
+						case 'part':
+							log::notice('Got !part');
+							ExtraServ::$bot_handle->part($uarg);
 							break;
 						default:
 							log::trace('Not an admin command');

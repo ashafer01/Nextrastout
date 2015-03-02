@@ -252,15 +252,15 @@ class proc {
 							continue;
 						}
 						if (self::check_typemask($msgtype, proc::TYPEMASK_OBJECT_CHANGES)) {
-							log::trace('Not sending object change message to external proc');
+							log::debug('Not sending object change message to external proc');
 							continue;
 						}
 						if (self::check_typemask($msgtype, proc::TYPEMASK_PROC_SIGNALS)) {
-							log::trace('Not sending proc signal message to external proc');
+							log::debug('Not sending proc signal message to external proc');
 							continue;
 						}
 						if (msg_send($mq, $msgtype, $message, false) === true) {
-							log::trace("Relayed message of type $msgtype from proc '$from_proc' to external proc '$procname'");
+							log::debug("Relayed message of type $msgtype from proc '$from_proc' to external proc '$procname'");
 						} else {
 							log::error("Failed to send message from proc '$from_proc' to external proc '$procname'");
 						}
@@ -292,7 +292,8 @@ class proc {
 		if ($flags === null) {
 			$flags = MSG_IPC_NOWAIT|MSG_NOERROR;
 		}
-		if (msg_receive(proc::$queue, $type, $i_msgtype, proc::MAX_MSG_SIZE, $message, false, $flags) === true) {
+		$rcv = msg_receive(proc::$queue, $type, $i_msgtype, proc::MAX_MSG_SIZE, $message, false, $flags, $msg_error);
+		if ($rcv === true) {
 			log::trace("Got queue message (type=$i_msgtype)");
 			$message = explode('::', $message, 2);
 			$msgtype = $i_msgtype;
@@ -303,10 +304,15 @@ class proc {
 				$fromproc = $message[0];
 				return $message[1];
 			}
-		} else {
+		} elseif ($msg_error === MSG_ENOMSG) {
 			$fromproc = null;
 			$msgtype = null;
 			return null;
+		} else {
+			log::error("Failed to get message from queue ($msg_error)");
+			$fromproc = null;
+			$msgtype = null;
+			return false;
 		}
 	}
 

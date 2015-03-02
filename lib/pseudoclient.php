@@ -12,7 +12,7 @@ class pseudoclient {
 		foreach ($params['channels'] as $chan) {
 			if ($chan == null)
 				continue;
-			$this->channels[] = $chan;
+			$this->join($chan);
 		}
 		unset($params['channels']);
 		$this->params = $params;
@@ -50,10 +50,35 @@ class pseudoclient {
 		ExtraServ::usend($this->nick, "NOTICE $to :$message");
 	}
 
+	public function update_conf_channels() {
+		$conf_channels = config::channels();
+		foreach ($conf_channels as $channel) {
+			$this->join($channel);
+		}
+		foreach ($this->channels as $channel) {
+			if (!in_array($channel, $conf_channels)) {
+				$this->part($channel);
+			}
+		}
+	}
+
 	public function join($channel) {
-		ExtraServ::sjoin($this->nick, $channel);
 		if (!in_array($channel, $this->channels)) {
+			log::debug("Joining $channel");
+			ExtraServ::sjoin($this->nick, $channel);
 			$this->channels[] = $channel;
+		} else {
+			log::debug("Already joined to $channel");
+		}
+	}
+
+	public function part($channel, $reason = 'By admin request') {
+		if (($key = array_search($channel, $this->channels) !== false)) {
+			log::debug("Parting channel $channel");
+			$this->send("PART $channel :$reason");
+			unset($this->channels[$key]);
+		} else {
+			log::debug("Not joined to $channel");
 		}
 	}
 
