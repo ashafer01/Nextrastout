@@ -3,8 +3,23 @@
 log::trace('entered f::cmd_karmastats.php');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
-if ($uarg == '*') {
+$uarg = dbescape($uarg);
+$channel = $_i['sent_to'];
+
+$do_total = false;
+$where_nicks = null;
+if (($uarg == '*') || ($ucmd == 'chankarma')) {
 	log::debug('Doing total karma');
+	$do_total = true;
+} elseif ($ucmd == 'nickkarma' || $ucmd == 'nickarma') {
+	$uargs = explode(' ', strtolower($uarg), 2);
+	if (count($uargs) < 2) {
+		$_i['handle']->say($_i['reply_to'], 'Please specify a nickname and a word/phrase (or a comma-separated list of either/both)');
+		return f::FALSE;
+	}
+	$where_nicks = '(nick IN (' . implode(',', array_map('single_quote', explode(',', $uargs[0]))) . '))';
+	$things = array_map('trim', explode(',', $uargs[1]));
+	$uarg = $uargs[1];
 } elseif ($uarg != null) {
 	$uarg = strtolower($uarg);
 	$things = array_map('trim', explode(',', $uarg));
@@ -13,11 +28,9 @@ if ($uarg == '*') {
 	$things = array($uarg);
 }
 
-$channel = $_i['sent_to'];
-
 $where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout')";
 
-if ($uarg == '*') {
+if ($do_total) {
 	$sayprefix = "All karma in $channel: ";
 } elseif (count($things) == 1) {
 	$sayprefix = "Karma for '$uarg' in $channel: ";
@@ -26,13 +39,17 @@ if ($uarg == '*') {
 }
 $sayparts = array();
 
-if ($uarg != '*') {
+if (!$do_total) {
 	$where_things_karma = '(' . implode(' OR ', array_map(function($thing) {
 		$thing = pg_escape_literal($thing);
 		return "(thing=$thing AND nick!=$thing)";
 	}, $things)) . ')';
 } else {
 	$where_things_karma = '1=1';
+}
+
+if ($where_nicks !== null) {
+	$where_things_karma .= " AND $where_nicks";
 }
 
 $q = pg_query_params(ExtraServ::$db, "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme", array(

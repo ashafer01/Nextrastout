@@ -37,6 +37,19 @@ class f {
 		}
 	}
 
+	public static function RESOLVE_ALIAS($alias) {
+		if (array_key_exists($alias, self::$aliases)) {
+			return self::$aliases[$alias];
+		} else {
+			log::warning("Not an alias: RESOLVE_ALIAS($alias)");
+			return null;
+		}
+	}
+
+	public static function IS_ALIAS($alias) {
+		return array_key_exists($alias, self::$aliases);
+	}
+
 	private static function _reload($func) {
 		log::trace('f::_reload()');
 		if (in_array($func, get_class_methods('f'))) {
@@ -134,13 +147,9 @@ class f {
 	}
 
 	public static function RELOAD($func) {
-		/*
-		if (in_array($func, self::$aliases)) {
-			$orig = $func;
-			$func = self::$aliases[$func];
-			log::debug("Mapping alias function '$orig' to '$func' for reload mark");
+		if (self::IS_ALIAS($func)) {
+			$func = self::RESOLVE_ALIAS($func);
 		}
-		*/
 		log::info("Marking $func() for reloading");
 		self::$reload[$func] = true;
 		return true;

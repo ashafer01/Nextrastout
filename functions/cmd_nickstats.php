@@ -10,7 +10,6 @@ $where_privmsg = "(command='PRIVMSG' AND args='$channel')";
 $where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout')";
 
 if ($params != null) {
-	$query_md5sum = md5($params);
 	$p = f::parse_logquery($params, 'req_nicks');
 	if (count($p->req_nicks) > 0) {
 		$req_nicks = $p->req_nicks;
@@ -35,7 +34,6 @@ if ($params != null) {
 		$where = "nick='$nick'";
 	}
 } else {
-	$query_md5sum = md5($_i['prefix']);
 	$nicks = array($_i['prefix']);
 	$where_nonick = 'TRUE';
 	$nick = dbescape(strtolower($nicks[0]));

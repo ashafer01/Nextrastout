@@ -647,8 +647,15 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							break;
 
 						# operational functions
+						case 'esreload':
 						case 'es-reload':
 							log::notice('Got !es-reload, reloading main()');
+							if ($uarg == '-hup') {
+								log::debug('Doing hup option on es-reload');
+								config::reload_all();
+								$_i['handle']->say($_i['reply_to'], 'Reloaded config');
+								ExtraServ::$bot_handle->update_conf_channels();
+							}
 							$_i['handle']->say($_i['reply_to'], 'Reloading main');
 							f::RELOAD('main');
 							return 0;
@@ -660,6 +667,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						case 'reload':
 							log::notice('Got !reload');
 							if (f::EXISTS($uarg)) {
+								if (f::IS_ALIAS($uarg)) {
+									$uarg = f::RESOLVE_ALIAS($uarg);
+								}
 								f::RELOAD($uarg);
 								proc::queue_sendall(2, $uarg);
 								$_i['handle']->say($_i['reply_to'], "Reloading f::$uarg()");
@@ -669,12 +679,16 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							break;
 						case 'creload':
 							log::notice('Got !creload');
-							if (f::EXISTS("cmd_$uarg")) {
-								f::RELOAD("cmd_$uarg");
-								proc::queue_sendall(2, "cmd_$uarg");
-								$_i['handle']->say($_i['reply_to'], "Reloading f::cmd_$uarg()");
+							$cmdfunc = "cmd_$uarg";
+							if (f::EXISTS($cmdfunc)) {
+								if (f::IS_ALIAS($cmdfunc)) {
+									$cmdfunc = f::RESOLVE_ALIAS($cmdfunc);
+								}
+								f::RELOAD($cmdfunc);
+								proc::queue_sendall(2, $cmdfunc);
+								$_i['handle']->say($_i['reply_to'], "Reloading f::$cmdfunc()");
 							} else {
-								$_i['handle']->say($_i['reply_to'], "Function cmd_$uarg does not exist");
+								$_i['handle']->say($_i['reply_to'], "Function $cmdfunc does not exist");
 							}
 							break;
 						case 'hup':
