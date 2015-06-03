@@ -89,16 +89,24 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 								$adds[] = $c;
 							}
 						}
-						$adds = array_chunk($adds, 4);
-						foreach ($adds as $modechars) {
-							$modechars = implode($modechars);
-							ExtraServ::$serv_handle->send("MODE $channel +$modechars");
-						}
-						foreach (array('k','l') as $c) {
-							if (in_array($c, $modes) && ($qr["mode_$c"] != null)) {
-								ExtraServ::$serv_handle->send("MODE $channel +$c {$qr["mode_$c"]}");
-								uplink::$channels[$channel][$c] = $qr["mode_$c"];
+						if (count($adds) > 0) {
+							$adds = array_chunk($adds, 4);
+							foreach ($adds as $modechars) {
+								$modechars = implode($modechars);
+								if ($modechars != null) {
+									ExtraServ::$serv_handle->send("MODE $channel +$modechars");
+								} else {
+									log::notice("Generated empty mode change");
+								}
 							}
+							foreach (array('k','l') as $c) {
+								if (in_array($c, $modes) && ($qr["mode_$c"] != null)) {
+									ExtraServ::$serv_handle->send("MODE $channel +$c {$qr["mode_$c"]}");
+									uplink::$channels[$channel][$c] = $qr["mode_$c"];
+								}
+							}
+						} else {
+							log::debug("No stickymode changes needed");
 						}
 					} else {
 						log::trace('Channel does not currently exist');
@@ -348,20 +356,29 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					if (array_key_exists($chan, ExtraServ::$chan_stickylists)) {
 						log::debug("Channel $chan has sticky lists");
 						foreach (ExtraServ::$chan_stickylists[$chan] as $c => $modenames) {
+							$modenames = $modenames->getArrayCopy();
 							if (!in_array($c, uplink::$chanmode_map)) {
 								log::trace("skipped non-joinlist mode $c");
 								continue;
 							}
-							if (in_array($name, $modenames) && !in_array($name, uplink::$channels[$chan][$c]->getArrayCopy())) {
-								if (ExtraServ::is_idented($user)) {
-									log::debug("User is identified, sending MODE +$c for sticky list");
-									ExtraServ::$serv_handle->send("MODE $chan +$c $name");
-									uplink::$channels[$chan][$c][] = $name;
+							log::trace("Checking +$c's");
+							if (in_array($name, $modenames)) {
+								log::debug("Nick $name is on sticky list for +$c");
+								if (!in_array($name, uplink::$channels[$chan][$c]->getArrayCopy())) {
+									if (ExtraServ::is_idented($user)) {
+										log::debug("User is identified, sending MODE +$c for sticky list");
+										ExtraServ::$serv_handle->send("MODE $chan +$c $name");
+										uplink::$channels[$chan][$c][] = $name;
+									} else {
+										log::debug('User is not identified');
+										$shn = ExtraServ::$serv_handle->nick;
+										ExtraServ::$serv_handle->notice($name, "You must identify to get {$mode_words[$c]} on $chan. '/msg $shn IDENTIFY password'");
+									}
 								} else {
-									log::debug('User is not identified');
-									$shn = ExtraServ::$serv_handle->nick;
-									ExtraServ::$serv_handle->notice($name, "You must identify to get {$mode_words[$c]} on $chan. '/msg $shn IDENTIFY password'");
+									log::debug("Nick $name already has +$c");
 								}
+							} else {
+								log::debug("Nick $name is not on sticky list");
 							}
 						}
 					}
@@ -378,6 +395,18 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			log::trace('Started JOIN handling');
 			uplink::$nicks[$_i['prefix']]['channels'][] = $_i['args'][0];
 			log::debug("{$_i['prefix']} joined {$_i['args'][0]}");
+			break;
+		case 'PART':
+			log::trace('Started PART handling');
+			$nick = $_i['prefix'];
+			$chan = $_i['args'][0];
+			if (($key = array_search($chan, uplink::$nicks[$nick]['channels']->getArrayCopy())) !== false) {
+				log::debug("Removing $nick from $chan due to PART");
+				unset(uplink::$nicks[$nick]['channels'][$key]);
+				uplink::remove_from_modelists($nick, $chan);
+			} else {
+				log::warning("Got PART for nick '$nick' from not-joined channel '$channel'");
+			}
 			break;
 		case 'MODE':
 			log::trace('Started MODE handling');
@@ -559,7 +588,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 		case 'KICK':
 			log::trace('Started KICK handling');
 			$params = uplink::$nicks[$_i['args'][1]]->getArrayCopy();
-			$params['channels'] = array_diff($params['channels']->getArrayCopy(), array($_i['args'][0]));
+			$params['channels'] = array_diff($params['channels'], array($_i['args'][0]));
 			uplink::$nicks[$_i['args'][1]] = $params;
 			uplink::remove_from_modelists($_i['args'][1], $_i['args'][0]);
 			log::debug("Removed {$_i['args'][1]} from {$_i['args'][0]} due to kick by {$_i['prefix']}");

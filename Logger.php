@@ -137,10 +137,10 @@ while (true) {
 						if ($q === false) {
 							log::error('Failed to insert new karma');
 						} else {
-							log::info("Inserted new karma for '$thing' (+{$changes['++']}; -{$changes['--']}; nick={$_i['prefix']})");
+							log::info("Inserted new karma for '$thing' (+{$changes['++']}; -{$changes['--']}; nick={$handle->nick})");
 						}
 					} else {
-						log::info("Updated karma for '$thing' (+{$changes['++']}; -{$changes['--']}; nick={$_i['prefix']})");
+						log::info("Updated karma for '$thing' (+{$changes['++']}; -{$changes['--']}; nick={$handle->nick})");
 					}
 				}
 			}

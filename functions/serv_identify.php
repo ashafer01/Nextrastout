@@ -33,6 +33,29 @@ if ($q === false) {
 		if (uplink::is_oper($nick)) {
 			$_i['handle']->notice($_i['reply_to'], 'Welcome, operator.');
 		}
+
+		$in_chans = implode(',', array_map('single_quote', uplink::$nicks[$nick]['channels']->getArrayCopy()));
+		$q = pg_query(ExtraServ::$db, "SELECT channel, mode_list FROM chan_stickylists WHERE channel IN ($in_chans) AND mode_list IN ('o','h','v') AND value='$nick'");
+		if ($q === false) {
+			log::error("Failed to look up sticky lists for ident");
+			log::error(pg_last_error());
+			$_i['handle']->notice($_i['reply_to'], 'Failed to look up sticky lists');
+		} elseif (pg_num_rows($q) == 0) {
+			log::debug('No sticky lists for ident');
+		} else {
+			while ($qr = pg_fetch_assoc($q)) {
+				$c = $qr['mode_list'];
+				$chan = $qr['channel'];
+				if (!in_array($nick, uplink::$channels[$chan][$c]->getArrayCopy())) {
+					log::debug("Sending $chan +$c $nick on ident");
+					ExtraServ::$serv_handle->send("MODE $chan +$c $nick");
+					var_dump(uplink::$channels[$chan]);
+					uplink::$channels[$chan][$c][] = $nick;
+				} else {
+					log::debug("Nick $nick already has $chan +$c on ident");
+				}
+			}
+		}
 	} else {
 		log::info('Password incorrect');
 		$_i['handle']->notice($_i['reply_to'], 'Password incorrect');

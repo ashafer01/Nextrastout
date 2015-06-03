@@ -171,8 +171,10 @@ class ExtraServ {
 		self::dbconnect();
 
 		# populate channel stickies
-		self::$chan_stickymodes = new ES_SyncedArrayObject(proc::TYPE_STICKYMODES_SET, proc::TYPE_STICKYMODES_UNSET);
-		self::$chan_stickylists = new ES_SyncedArrayObject(proc::TYPE_STICKYLISTS_SET, proc::TYPE_STICKYLISTS_UNSET);
+		#self::$chan_stickymodes = new ES_SyncedArrayObject(proc::TYPE_STICKYMODES_SET, proc::TYPE_STICKYMODES_UNSET);
+		#self::$chan_stickylists = new ES_SyncedArrayObject(proc::TYPE_STICKYLISTS_SET, proc::TYPE_STICKYLISTS_UNSET);
+		self::$chan_stickymodes = new NestedArrayObject();
+		self::$chan_stickylists = new NestedArrayObject();
 		$q = pg_query(self::$db, 'SELECT channel, stickymodes, stickylists, mode_flags, list_flags, mode_k, mode_l FROM chan_register');
 		if ($q === false) {
 			log::fatal('Failed to select channel register');
@@ -181,7 +183,7 @@ class ExtraServ {
 		} else {
 			while ($qr = pg_fetch_assoc($q)) {
 				if ($qr['stickymodes'] == 't') {
-					log::debug("Doing stickymodes for channel '{$qr['channel']}'");
+					log::debug("Populating stickymodes for channel '{$qr['channel']}'");
 					$modechars = str_split($qr['mode_flags'], 1);
 					$val = array();
 					foreach ($modechars as $c) {
@@ -194,7 +196,7 @@ class ExtraServ {
 					self::$chan_stickymodes[$qr['channel']] = $val;
 				}
 				if ($qr['stickylists'] == 't') {
-					log::debug("Doing stickylists for channel '{$qr['channel']}'");
+					log::debug("Populating stickylists for channel '{$qr['channel']}'");
 					self::$chan_stickylists[$qr['channel']] = array();
 					$q0 = pg_query(self::$db, "SELECT mode_list, value FROM chan_stickylists WHERE channel='{$qr['channel']}'");
 					if ($qr === false) {
@@ -361,8 +363,9 @@ class uplink {
 			}
 			return $ret;
 		} elseif (array_key_exists($channel, self::$channels)) {
-			reset(uplink::$channels[$channel]);
-			while (list($modechar, $value) = each(uplink::$channels[$channel])) {
+			$chan_modes = self::$channels[$channel]->getArrayCopy();
+			reset($chan_modes);
+			while (list($modechar, $value) = each($chan_modes)) {
 				if (is_array($value)) {
 					$bc = count($value);
 					$newval = array_diff($value, array($nick));

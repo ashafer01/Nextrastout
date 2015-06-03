@@ -23,7 +23,7 @@ if ($params == null) {
 	}
 	$stop_uts = $start_uts + $day_s;
 
-	$today = date_fmt('Y-m-d');
+	$today = date_fmt('Y-m-d', strtotime('midnight'));
 	$start_str = date_fmt('Y-m-d', $start_uts);
 	$start_time = date_fmt('G:i', $start_uts);
 	if ($start_str != $today) {
@@ -43,7 +43,9 @@ if ($params == null) {
 }
 date_default_timezone_set('UTC');
 
-$where = "(command='PRIVMSG') AND (args='{$_i['sent_to']}') AND (uts > $start_uts) AND (uts < $stop_uts)";
+$channel = $_i['sent_to'];
+
+$where = "(command='PRIVMSG') AND (args='$channel') AND (uts > $start_uts) AND (uts < $stop_uts)";
 
 $total = "SELECT count(uts) FROM log WHERE $where";
 log::debug("total query >>> $total");
@@ -115,7 +117,7 @@ $num_nicks_str = number_format($NUM_NICKS);
 $lpn = number_format($TOTAL / $NUM_NICKS, 2);
 $lph = number_format($TOTAL / 24, 2);
 
-$say .= "$total_str lines by $NUM_NICKS nicks in {$_i['sent_to']} (average $lpn lines/nick, $lph lines/hour). Top 3 nicks: ";
+$say .= "$total_str lines by $NUM_NICKS nicks in $channel (average $lpn lines/nick, $lph lines/hour). Top 3 nicks: ";
 
 $b = chr(2);
 $top_nick_strs = array();
