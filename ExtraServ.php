@@ -22,6 +22,7 @@ proc::$name = 'parent';
 proc::$parent_queue = msg_get_queue(proc::PARENT_QUEUEID);
 proc::$queue = proc::$parent_queue;
 
+uplink::init_state_master();
 ExtraServ::$ident = new ES_SyncedArrayObject(proc::TYPE_IDENT_SET, proc::TYPE_IDENT_UNSET);
 ExtraServ::$death_row = new ES_SyncedArrayObject(proc::TYPE_DEATHROW_SET, proc::TYPE_DEATHROW_UNSET);
 
@@ -142,6 +143,8 @@ class ExtraServ {
 	public static $chan_stickymodes;
 	public static $chan_stickylists;
 
+	protected static $memcache_keys;
+
 	public static function dbconnect() {
 		log::info('Opening database connection');
 		$conf = config::get_instance();
@@ -154,9 +157,23 @@ class ExtraServ {
 		}
 	}
 
+	public static function add_memcache_key($key) {
+		if (self::$memcache_keys->valueExists($key)) {
+			throw new RuntimeException('Memcache key already exists');
+		}
+		self::$memcache_keys[] = $key;
+	}
+
+	public static function init_memcache_keylist() {
+		$keylist_key = 'ExtraServ_memcache_key_list';
+		self::$memcache_keys = new ES_MemcachedArrayObject($keylist_key, array($keylist_key));
+	}
+
 	public static function init() {
 		$conf = config::get_instance();
 		self::$conf = $conf;
+
+		self::init_memcache_keylist();
 
 		if ($conf->debug) {
 			log::notice('Debug mode');
@@ -310,7 +327,7 @@ class uplink {
 	public static $channels;
 	public static $nicks;
 
-	public static function init() {
+	public static function init_state_master() {
 		self::$network = new irc_server_collection();
 		self::$channels = new irc_channel_collection();
 		self::$nicks = new irc_nick_collection();

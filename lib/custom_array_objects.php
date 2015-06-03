@@ -11,7 +11,7 @@ class LinkedArrayObject extends ArrayObject {
 		$this->fill($data);
 	}
 
-	protected function fill($data) {
+	public function fill($data) {
 		if (is_array($data) || is_object($data)) {
 			foreach ($data as $key => $value) {
 				$this->offsetSet($key, $value);
@@ -48,6 +48,15 @@ class LinkedArrayObject extends ArrayObject {
 
 	public function exchangeArray($_ = null) {
 		throw new RuntimeException('Method not supported in subclass');
+	}
+
+	public function valueExists($value) {
+		foreach ($this as $val) {
+			if ($val == $value) {
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
@@ -138,6 +147,10 @@ abstract class NotifiedLinkedArrayObject extends LinkedArrayObject {
 		return parent::offsetGet($index);
 	}
 
+	public function valueExists($value) {
+		$this->readNotify();
+		return parent::valueExists($value);
+	}
 }
 
 class BubbleNotifyLinkedArrayObject extends NotifiedLinkedArrayObject {
@@ -148,6 +161,5 @@ class BubbleNotifyLinkedArrayObject extends NotifiedLinkedArrayObject {
 	public function readNotify() {
 		$this->parent->readNotify();
 	}
-
 }
 

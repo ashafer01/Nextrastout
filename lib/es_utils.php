@@ -63,6 +63,7 @@ function dbescape($str) {
 class ES_MemcachedArrayObject extends NotifiedLinkedArrayObject {
 	private $memcache_key;
 	public function __construct($memcache_key, $data = null) {
+		ExtraServ::add_memcache_key($mckey);
 		$this->memcache_key = $memcache_key;
 		$this->fill($data);
 	}

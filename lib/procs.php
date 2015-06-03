@@ -44,6 +44,7 @@ class proc {
 	const TYPE_PROC_READY = 102;
 	const TYPE_SHITSTORM_STARTING = 103;
 	const TYPE_SHITSTORM_OVER = 104;
+	const TYPE_MEMCACHE_LOCK = 105;
 
 	const TYPE_NEW_RELAY_QUEUE = 901;
 

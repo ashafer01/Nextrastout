@@ -15,8 +15,6 @@ abstract class Memcache_irc_info_collection {
 
 	public static $memcache_prefix = 'ExtraServ';
 
-	protected static $memcache_keys = array();
-
 	protected $items;
 	protected $item_class;
 
@@ -24,17 +22,15 @@ abstract class Memcache_irc_info_collection {
 		$my_class = get_class($this);
 		$this->item_class = substr($my_class, 0, -11); // strip off "_collection"
 
-		$mckey = self::$memcache_prefix . '_' . $my_class;
-		self::$memcache_keys[] = $mckey;
-
+		$mckey = self::$memcache_prefix . "_$my_class";
 		$this->items = new ES_MemcachedArrayObject($mckey);
 	}
 
-	public function add($key, $obj) {
+	public function add($obj) {
 		if (!$this->is_item_class($obj)) {
-			throw new InvalidArgumentException("Items must be {$this->item_class}");
+			throw new InvalidArgumentException("Items must be {$this->item_class} and a subclass of irc_info_item");
 		}
-		$this->items[$key] = $obj;
+		$this->items[$obj->name()] = $obj;
 	}
 
 	public function get($key) {
@@ -54,35 +50,74 @@ abstract class Memcache_irc_info_collection {
 	}
 
 	protected function is_item_class($obj) {
-		return is_a($obj, $this->item_class);
+		return (is_a($obj, $this->item_class) && is_a($obj, 'irc_info_item'));
+	}
+}
+
+abstract class Memcache_irc_info_item extends irc_info_item {
+	protected $__memcache_key;
+	public function __construct($name) {
+		$class = get_class($this);
+		$this->__memcache_key = Memcache_irc_info_collection::$memcache_prefix . "_{$class}_{$name}";
+		$this->__name = "$name";
+		$this->__props = new ES_MemcachedArrayObject($this->__memcache_key);
+	}
+
+	public function set_props($props) {
+		if (!is_array($props) && !is_a($props, 'ArrayObject')) {
+			throw new InvalidArgumentException('Must be array or ArrayObject');
+		}
+		if (is_a($props, 'ES_MemcachedArrayObject')) {
+			$this->__props = $props;
+		} else {
+			$this->__props->fill($props);
+			$this->__props->writeNotify();
+		}
 	}
 }
 
 abstract class irc_info_item {
-	protected $props = array();
+	protected $__props;
+	protected $__name;
+
+	public function __construct($name) {
+		$this->__name = "$name";
+		$this->__props = array();
+	}
+
+	public function name() {
+		return $this->__name;
+	}
+
+	public function __toString() {
+		return $this->__name;
+	}
 
 	public function __get($key) {
-		if (array_key_exists($key, $this->props)) {
-			return $this->props[$key];
+		if (array_key_exists($key, $this->__props)) {
+			return $this->__props[$key];
 		} else {
 			return null;
 		}
 	}
 
 	public function __set($key, $val) {
-		$this->props[$key] = $val;
+		$this->__props[$key] = $val;
 	}
 
 	public function __isset($key) {
-		return isset($this->props[$key]);
+		return isset($this->__props[$key]);
 	}
 
 	public function __unset($key) {
-		unset($this->props[$key]);
+		unset($this->__props[$key]);
 	}
 
 	public function set_props($props) {
-		$this->props = $props;
+		if (!is_array($props) && !is_a($props, 'ArrayObject')) {
+			throw new InvalidArgumentException('Must be array or ArrayObject');
+		}
+		$this->__props = $props;
 	}
 }
 
