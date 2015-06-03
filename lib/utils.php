@@ -2,6 +2,7 @@
 
 require_once 'log.php';
 require_once 'config.php';
+require_once 'custom_array_objects.php';
 
 function php_error_message($prefix, $e) {
 	return "$prefix: {$e->getMessage()}\nStack Trace:\n{$e->getTraceAsString()}\n";
@@ -348,24 +349,3 @@ class color_formatting {
 		return color_formatting::unescape(str_replace($codes, '', $text));
 	}
 }
-
-class NestedArrayObject extends ArrayObject {
-	public function offsetSet($key, $value) {
-		if (is_array($value)) {
-			$value = new NestedArrayObject($value);
-		}
-		parent::offsetSet($key, $value);
-	}
-
-	public function getArrayCopy() {
-		$ret = array();
-		foreach ($this as $key => $val) {
-			if (is_a($val, 'ArrayObject')) {
-				$val = $val->getArrayCopy();
-			}
-			$ret[$key] = $val;
-		}
-		return $ret;
-	}
-}
-

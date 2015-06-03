@@ -22,7 +22,6 @@ proc::$name = 'parent';
 proc::$parent_queue = msg_get_queue(proc::PARENT_QUEUEID);
 proc::$queue = proc::$parent_queue;
 
-uplink::init_state_master();
 ExtraServ::$ident = new ES_SyncedArrayObject(proc::TYPE_IDENT_SET, proc::TYPE_IDENT_UNSET);
 ExtraServ::$death_row = new ES_SyncedArrayObject(proc::TYPE_DEATHROW_SET, proc::TYPE_DEATHROW_UNSET);
 
@@ -171,8 +170,6 @@ class ExtraServ {
 		self::dbconnect();
 
 		# populate channel stickies
-		#self::$chan_stickymodes = new ES_SyncedArrayObject(proc::TYPE_STICKYMODES_SET, proc::TYPE_STICKYMODES_UNSET);
-		#self::$chan_stickylists = new ES_SyncedArrayObject(proc::TYPE_STICKYLISTS_SET, proc::TYPE_STICKYLISTS_UNSET);
 		self::$chan_stickymodes = new NestedArrayObject();
 		self::$chan_stickylists = new NestedArrayObject();
 		$q = pg_query(self::$db, 'SELECT channel, stickymodes, stickylists, mode_flags, list_flags, mode_k, mode_l FROM chan_register');
@@ -313,10 +310,10 @@ class uplink {
 	public static $channels;
 	public static $nicks;
 
-	public static function init_state_master() {
-		self::$network = new ES_SyncedArrayObject(proc::TYPE_NETWORK_SET, proc::TYPE_NETWORK_UNSET);
-		self::$channels = new ES_SyncedArrayObject(proc::TYPE_CHANNELS_SET, proc::TYPE_CHANNELS_UNSET);
-		self::$nicks = new ES_SyncedArrayObject(proc::TYPE_NICKS_SET, proc::TYPE_NICKS_UNSET);
+	public static function init() {
+		self::$network = new irc_server_collection();
+		self::$channels = new irc_channel_collection();
+		self::$nicks = new irc_nick_collection();
 	}
 
 	public static function connect() {

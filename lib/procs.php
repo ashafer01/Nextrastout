@@ -15,6 +15,11 @@ class proc {
 	const MAX_MSG_SIZE = 4096;
 	private static $mqid = 422;
 
+	private static $memcache;
+	public static function memcache() {
+		return self::$memcache;
+	}
+
 	public static $parent_queue = null;
 	public static $queue = null;
 
@@ -39,23 +44,6 @@ class proc {
 	const TYPE_PROC_READY = 102;
 	const TYPE_SHITSTORM_STARTING = 103;
 	const TYPE_SHITSTORM_OVER = 104;
-
-	const TYPEMASK_OBJECT_CHANGES = 200;
-
-	const TYPE_STICKYLISTS_SET = 201;
-	const TYPE_STICKYLISTS_UNSET = 202;
-	const TYPE_IDENT_SET = 203;
-	const TYPE_IDENT_UNSET = 204;
-	const TYPE_STICKYMODES_SET = 205;
-	const TYPE_STICKYMODES_UNSET = 206;
-	const TYPE_NETWORK_SET = 207;
-	const TYPE_NETWORK_UNSET = 208;
-	const TYPE_CHANNELS_SET = 209;
-	const TYPE_CHANNELS_UNSET = 210;
-	const TYPE_NICKS_SET = 211;
-	const TYPE_NICKS_UNSET = 212;
-	const TYPE_DEATHROW_SET = 213;
-	const TYPE_DEATHROW_UNSET = 214;
 
 	const TYPE_NEW_RELAY_QUEUE = 901;
 
@@ -97,6 +85,9 @@ class proc {
 
 			self::$procs = array();
 			self::$dups = array();
+
+			self::$memcache = new Memcache;
+			self::$memcache->addServer(config::get_instance()->memcache->host);
 
 			proc::$name = $name;
 			proc::$func = $func;
