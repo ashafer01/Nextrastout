@@ -4,7 +4,6 @@ log::trace('entered f::cmd_chanstats()');
 list($ucmd, $uarg, $_i) = $_ARGV;
 
 $channel = $_i['sent_to'];
-$channel = '#geekboy';
 $len = strlen($channel);
 $where_channel = "(substr(args, 1, $len) = '$channel')";
 

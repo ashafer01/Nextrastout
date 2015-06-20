@@ -2,7 +2,7 @@
 
 require_once 'log.php';
 require_once 'config.php';
-require_once 'custom_array_objects.php';
+#require_once 'custom_array_objects.php';
 
 function php_error_message($prefix, $e) {
 	return "$prefix: {$e->getMessage()}\nStack Trace:\n{$e->getTraceAsString()}\n";

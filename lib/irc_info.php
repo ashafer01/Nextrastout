@@ -125,6 +125,9 @@ class irc_nick_collection extends Memcache_irc_info_collection {
 	public function quit($nick) {
 	}
 
+	public function rename($oldnick, $newnick) {
+	}
+
 	public function get_nick_by_user($user) {
 		foreach ($this->items as $nick => $nick_obj) {
 			if ($nick_obj->user == $user) {
@@ -135,11 +138,45 @@ class irc_nick_collection extends Memcache_irc_info_collection {
 	}
 }
 
-class irc_nick extends irc_info_item {
-	protected $usermodes = array();
+class irc_nick extends Memcache_irc_info_item {
+	public function __construct($nick) {
+		parent::__construct($nick);
+		$this->usermodes = array();
+		$this->channels = array();
+	}
 
 	public function has_mode($modechar) {
 		return in_array($modechar, $this->usermodes);
 	}
+
+	public function add_mode($modechar) {
+		$this->usermodes[] = $modechar;
+	}
+
+	public function remove_mode($modechar) {
+		$this->usermodes = array_diff($this->usermodes, array($modechar));
+	}
+
+	public function join($channel) {
+		if (!in_array($channel, $this->channels)) {
+			
+		}
+	}
+
+	public function part($channel) {
+	}
+
+	public function in_channel($channel) {
+	}
+
+	public function add_to_modelist($channel, $modechar) {
+	}
+
+	public function remove_from_modelist($channel, $modechar) {
+	}
 }
 
+class irc_channel extends Memcache_irc_info_item {
+	public function has_mode($modechar) {
+	}
+}

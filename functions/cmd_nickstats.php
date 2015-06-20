@@ -34,7 +34,8 @@ if ($params != null) {
 		$where = "nick='$nick'";
 	}
 } else {
-	$nicks = array($_i['prefix']);
+	#$nicks = array($_i['prefix']);
+	$nicks = array($_i['hostmask']->nick);
 	$where_nonick = 'TRUE';
 	$nick = dbescape(strtolower($nicks[0]));
 	$where = "nick='$nick'";

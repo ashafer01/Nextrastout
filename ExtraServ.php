@@ -1,12 +1,12 @@
 <?php
 
-require_once 'lib/utils.php';
-require_once 'lib/log.php';
-require_once 'lib/functions.php';
-require_once 'lib/pseudoclient.php';
-require_once 'lib/config.php';
-require_once 'lib/procs.php';
-require_once 'lib/es_utils.php';
+require_once __DIR__ . '/lib/utils.php';
+require_once __DIR__ . '/lib/log.php';
+require_once __DIR__ . '/lib/functions.php';
+require_once __DIR__ . '/lib/pseudoclient.php';
+require_once __DIR__ . '/lib/config.php';
+require_once __DIR__ . '/lib/procs.php';
+require_once __DIR__ . '/lib/es_utils.php';
 
 set_error_handler('error_logger', E_ALL);
 

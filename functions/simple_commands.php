@@ -6,7 +6,8 @@ list($_CMD, $_ARG, $_i) = $_ARGV;
 switch ($_CMD) {
 	case 'test':
 		log::info('Got !test');
-		$reply = "Hello, {$_i['prefix']}";
+		#$reply = "Hello, {$_i['prefix']}";
+		$reply = "Hello, {$_i['hostmask']->nick}";
 		if ($_ARG != null) {
 			$reply .= " - $_ARG";
 		}

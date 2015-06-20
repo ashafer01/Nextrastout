@@ -8,10 +8,20 @@ $_i['prefix'] = null;
 $_i['cmd'] = null;
 $_i['args'] = array();
 $_i['text'] = '';
+$_i['hostmask'] = (object) array(
+	'nick' => null,
+	'user' => null,
+	'host' => null
+);
 
 $lwords = explode(' ', trim($line));
 if (substr($lwords[0], 0, 1) == ':') {
 	$_i['prefix'] = strtolower(substr(array_shift($lwords), 1));
+
+	$hm = f::parse_hostmask($_i['prefix']);
+	if (is_object($hm)) {
+		$_i['hostmask'] = $hm;
+	}
 }
 $_i['cmd'] = array_shift($lwords);
 $twords = array();
