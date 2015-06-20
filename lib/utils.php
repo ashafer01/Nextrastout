@@ -151,7 +151,7 @@ function sqlify($val) {
 }
 
 function rainbow($string) {
-	static $colors = array('0', '4', '8', '9', '11', '12', '13');
+	static $colors = array('00', '04', '08', '09', '11', '12', '13');
 	$len = strlen($string);
 	$newstr = '';
 	$last = 255;

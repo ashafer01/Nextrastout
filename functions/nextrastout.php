@@ -39,7 +39,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			foreach (ExtraServ::$handles as $handle) {
 				if ($_i['reply_to'] == $handle->nick) {
 					log::trace('Received private message');
-					#$_i['reply_to'] = $_i['prefix'];
 					$_i['reply_to'] = $_i['hostmask']->nick;
 					$_i['handle'] = $handle;
 					$in_pm = true;
@@ -60,7 +59,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				$cmdfunc = "cmd_$ucmd";
 				if (f::EXISTS($cmdfunc)) {
 					f::CALL($cmdfunc, array($ucmd, $uarg, $_i));
-				#} elseif(is_admin(uplink::get_user_by_nick($_i['prefix']))) {
 				} elseif(is_admin($_i['hostmask']->user)) {
 					switch ($ucmd) {
 						# operational functions
@@ -76,10 +74,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							$_i['handle']->say($_i['reply_to'], 'Reloading nextrastout');
 							f::RELOAD('nextrastout');
 							return 0;
-						case 'procs-reload':
-							log::notice('Got !procs-reload');
-							$_i['handle']->say($_i['reply_to'], 'Telling other processes to reload');
-							break;
 						case 'reload':
 							log::notice('Got !reload');
 							if (f::EXISTS($uarg)) {
@@ -134,8 +128,12 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							ExtraServ::$output_tz = $uarg;
 							$_i['handle']->say($_i['reply_to'], 'Changed output timezone');
 							break;
-						case 'part':
-							log::notice('Got !part');
+						case 'es-join':
+							log::notice('Got !es-join');
+							ExtraServ::$bot_handle->join($uarg);
+							break;
+						case 'es-part':
+							log::notice('Got !es-part');
 							ExtraServ::$bot_handle->part($uarg);
 							break;
 						default:

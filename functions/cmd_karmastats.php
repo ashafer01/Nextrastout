@@ -81,7 +81,7 @@ if ($q === false) {
 }
 
 # top upvoters
-$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick ORDER BY up DESC LIMIT 5", array(
+$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme AND up>0 GROUP BY nick ORDER BY up DESC LIMIT 5", array(
 	$channel
 ));
 if ($q === false) {
@@ -109,7 +109,7 @@ if ($q === false) {
 }
 
 # top downvoters
-$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(down) AS down FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick ORDER BY down DESC LIMIT 5", array(
+$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(down) AS down FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme AND down>0 GROUP BY nick ORDER BY down DESC LIMIT 5", array(
 	$channel
 ));
 if ($q === false) {
