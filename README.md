@@ -1,7 +1,7 @@
-# ExtraServ
-To use: run `php ExtraServ.php` to start primary functionality
+# Nextrastout
+To use: run `php Nextrastout.php` to start primary functionality
 
-`php Logger.php` acts as a client and appends the IRC log
+`php Logger.php` appends the IRC log
 
 Make `TwilioReceiver.php` web accessible and then configure it as your Messaging request URL for one of your numbers.
 

@@ -26,7 +26,6 @@ if ($params == null) {
 		while ($qr = pg_fetch_assoc($q)) {
 			$nicks[] = $qr['nick'];
 		}
-		#$say = f::pack_list("{$_i['prefix']}: said results: ", $nicks, $_i);
 		$say = f::pack_list("{$_i['hostmask']->nick}: said results: ", $nicks, $_i);
 	}
 }

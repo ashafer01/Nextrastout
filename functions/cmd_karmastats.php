@@ -24,7 +24,6 @@ if (($uarg == '*') || ($ucmd == 'chankarma')) {
 	$uarg = strtolower($uarg);
 	$things = array_map('trim', explode(',', $uarg));
 } else {
-	#$uarg = strtolower($_i['prefix']);
 	$uarg = strtolower($_i['hostmask']->nick);
 	$things = array($uarg);
 }

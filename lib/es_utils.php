@@ -60,27 +60,3 @@ function dbescape($str) {
 	return pg_escape_string(ExtraServ::$db, $str);
 }
 
-#class ES_MemcachedArrayObject extends NotifiedLinkedArrayObject {
-#	private $memcache_key;
-#	public function __construct($memcache_key, $data = null) {
-#		ExtraServ::add_memcache_key($memcache_key);
-#		$this->memcache_key = $memcache_key;
-#		$this->fill($data);
-#	}
-#
-#	public function offsetSet($key, $value) {
-#		if (is_array($value)) {
-#			$value = new BubbleNotifyLinkedArrayObject($this, $value);
-#		}
-#		parent::offsetSet($key, $value);
-#	}
-#
-#	public function writeNotify() {
-#		proc::memcache()->set($this->memcache_key, $this);
-#	}
-#
-#	public function readNotify() {
-#		$this->fill(proc::memcache()->get($this->memcache_key));
-#	}
-#}
-
