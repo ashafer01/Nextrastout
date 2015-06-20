@@ -158,7 +158,7 @@ class f {
 	public static function RELOAD_ALL() {
 		log::info("Doing f::RELOAD_ALL");
 		foreach (self::$reload as $func => $_) {
-			if (!in_array($func, array('main', 'timer'))) {
+			if (!in_array($func, array('main', 'timer', 'nextrastout'))) {
 				self::RELOAD($func);
 			} else {
 				log::debug("Skipping $func() for RELOAD_ALL");

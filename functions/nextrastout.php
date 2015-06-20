@@ -48,6 +48,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			}
 	
 			# Normal commands
+			$_i['text'] = trim($_i['text']);
 			if (substr($_i['text'], 0, 1) == $leader) {
 				log::trace('Detected command');
 				$ucmd = explode(' ', $_i['text'], 2);
@@ -72,8 +73,8 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 								$_i['handle']->say($_i['reply_to'], 'Reloaded config');
 								ExtraServ::$bot_handle->update_conf_channels();
 							}
-							$_i['handle']->say($_i['reply_to'], 'Reloading main');
-							f::RELOAD('main');
+							$_i['handle']->say($_i['reply_to'], 'Reloading nextrastout');
+							f::RELOAD('nextrastout');
 							return 0;
 						case 'procs-reload':
 							log::notice('Got !procs-reload');
