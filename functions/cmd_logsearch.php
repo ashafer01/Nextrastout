@@ -78,7 +78,16 @@ if ($req_nicks != null) {
 	$query_params->req_nicks[] = array($req_nicks);
 }
 
-$query = "SELECT uts, nick, message FROM log WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}')" . f::log_where($query_params) . "$where $orderby $limit";
+$cmds = f::LISTALL();
+$cmds = array_filter($cmds, function($e) {
+	return (substr($e, 0, 4) == 'cmd_');
+});
+$cmds = array_map(function($e) {
+	return '!' . substr($e, 4);
+}, $cmds);
+$cmd_in = implode('|', $cmds);
+
+$query = "SELECT uts, nick, message FROM log WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}') AND (message NOT SIMILAR TO '($cmd_in)%')" . f::log_where($query_params) . "$where $orderby $limit";
 log::debug("log search query >>> $query");
 
 $q = pg_query(ExtraServ::$db, $query);

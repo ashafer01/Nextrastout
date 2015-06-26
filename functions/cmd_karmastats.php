@@ -90,8 +90,8 @@ if ($q === false) {
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } elseif (pg_num_rows($q) == 0) {
-	log::debug('No upvotes');
-	$sayparts[] = 'no upvotes';
+	log::debug('No upvoters');
+	$sayparts[] = 'no upvoters';
 } else {
 	log::debug('query OK');
 	$voters = array();
@@ -118,8 +118,8 @@ if ($q === false) {
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } elseif (pg_num_rows($q) == 0) {
-	log::debug('No downvotes');
-	$sayparts[] = 'no downvotes';
+	log::debug('No downvoters');
+	$sayparts[] = 'no downvoters';
 } else {
 	log::debug('query OK');
 	$voters = array();

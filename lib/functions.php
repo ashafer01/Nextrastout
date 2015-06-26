@@ -13,6 +13,10 @@ class f {
 
 	const FUNC_DIR = 'functions/';
 
+	public static function LISTALL() {
+		return array_merge(array_keys(self::$functions), array_keys(self::$aliases));
+	}
+
 	public static function EXISTS($func) {
 		log::trace('f::EXISTS()');
 		$func_file = self::FUNC_DIR."$func.php";
