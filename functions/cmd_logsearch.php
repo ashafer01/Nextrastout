@@ -78,6 +78,9 @@ if ($req_nicks != null) {
 	$query_params->req_nicks[] = array($req_nicks);
 }
 
+$conf = config::get_instance();
+$query_params->exc_nicks[] = array($conf->bot_handle);
+
 $cmds = f::LISTALL();
 $cmds = array_filter($cmds, function($e) {
 	return (substr($e, 0, 4) == 'cmd_');
@@ -85,6 +88,16 @@ $cmds = array_filter($cmds, function($e) {
 $cmds = array_map(function($e) {
 	return '!' . substr($e, 4);
 }, $cmds);
+$cmds = array_filter($cmds, function($e) use ($query_params) {
+	foreach (array('likes', 'req_wordbound') as $var) {
+		foreach ($query_params->$var as $list) {
+			if (in_array($e, $list)) {
+				return false;
+			}
+		}
+	}
+	return true;
+});
 $cmd_in = implode('|', $cmds);
 
 $query = "SELECT uts, nick, message FROM log WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}') AND (message NOT SIMILAR TO '($cmd_in)%')" . f::log_where($query_params) . "$where $orderby $limit";

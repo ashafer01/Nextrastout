@@ -72,9 +72,11 @@ if (!$no_nicks) {
 
 	if (count($p->exc_nicks) > 0) {
 		$nicks = array();
-		foreach ($p->exc_nicks as $nickstr) {
-			$nicklist = explode(',', strtolower($nickstr));
-			$nicks = array_merge($nicks, $nicklist);
+		foreach ($p->exc_nicks as $nickgrp) {
+			foreach ($nickgrp as $nickstr) {
+				$nicklist = explode(',', strtolower($nickstr));
+				$nicks = array_merge($nicks, $nicklist);
+			}
 		}
 		$nicks = array_unique($nicks);
 		$nicks = array_map('dbescape', $nicks);

@@ -2,6 +2,8 @@
 require_once 'log.php';
 require_once 'utils.php';
 
+define('FUNC_DIR', __DIR__ . '/../functions/');
+
 class f {
 	private static $reload = array();
 	private static $functions = array();
@@ -11,7 +13,7 @@ class f {
 	const FALSE = '___false___';
 	const RELOAD_FAIL = '___reload_failure___';
 
-	const FUNC_DIR = 'functions/';
+	const FUNC_DIR = FUNC_DIR;
 
 	public static function LISTALL() {
 		return array_merge(array_keys(self::$functions), array_keys(self::$aliases));
