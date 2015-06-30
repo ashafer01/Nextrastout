@@ -28,7 +28,7 @@ if ($params != null) {
 
 $day_s = 24 * 60 * 60;
 $stop_uts = time();
-$start_uts = strtotime('midnight');
+$start_uts = f::local_strtotime('midnight');
 $reply = array();
 $b = chr(2);
 $er = pg_execute(ExtraServ::$db, 'dailylines', array($start_uts, $stop_uts, $qnick, $qchan));
