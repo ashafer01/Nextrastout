@@ -73,6 +73,7 @@ class f {
 			if (is_readable($func_file)) {
 				# Check syntax of file
 				$s_func_file = escapeshellarg($func_file);
+				$ret = -1;
 				ob_start();
 				system("php -l $s_func_file", $ret);
 				$out = trim(ob_get_clean());
@@ -83,6 +84,9 @@ class f {
 					$func_code = file_get_contents($func_file);
 					if ($func_code !== false) {
 						log::notice("Reloaded fx function: $func()");
+						if (self::$functions[$func] == $func_code) {
+							log::notice("No code change for $func()");
+						}
 						self::$functions[$func] = $func_code;
 						self::$reload[$func] = false;
 						return true;

@@ -78,6 +78,17 @@ if ($req_nicks != null) {
 	$query_params->req_nicks[] = array($req_nicks);
 }
 
+foreach ($query_params->notlikes as $nl) {
+	if ((count($nl) >= 2) && ($nl[0] == 'n')) {
+		$plus = '';
+		if (count($nl) >= 3) {
+			$plus = ' +' . implode(' ', array_slice($nl, 2));
+		}
+		$_i['handle']->say($_i['reply_to'], "You may be looking for @{$nl[1]}$plus");
+		break;
+	}
+}
+
 $conf = config::get_instance();
 $query_params->exc_nicks[] = array($conf->bot_handle);
 
