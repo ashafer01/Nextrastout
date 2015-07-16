@@ -29,6 +29,7 @@ class f {
 	}
 
 	public static function ALIAS_INIT() {
+		self::$aliases = array();
 		$conf = config::get_instance();
 		foreach ($conf->alias as $alias => $real) {
 			f::ALIAS($alias, $real);

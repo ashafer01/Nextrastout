@@ -64,11 +64,12 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						# operational functions
 						case 'esreload':
 						case 'es-reload':
-							log::notice('Got !es-reload, reloading main()');
+							log::notice('Got !es-reload, reloading nextrastout()');
 							if ($uarg == '-hup') {
 								log::debug('Doing hup option on es-reload');
 								config::reload_all();
 								$_i['handle']->say($_i['reply_to'], 'Reloaded config');
+								f::ALIAS_INIT();
 								ExtraServ::$bot_handle->update_conf_channels();
 							}
 							$_i['handle']->say($_i['reply_to'], 'Reloading nextrastout');
@@ -103,6 +104,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							log::notice('Got !hup');
 							config::reload_all();
 							$_i['handle']->say($_i['reply_to'], 'Reloaded config');
+							f::ALIAS_INIT();
 							ExtraServ::$bot_handle->update_conf_channels();
 							break;
 						case 'reload-all':

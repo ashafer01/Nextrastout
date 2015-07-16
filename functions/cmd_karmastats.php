@@ -11,6 +11,7 @@ $where_nicks = null;
 if (($uarg == '*') || ($ucmd == 'chankarma')) {
 	log::debug('Doing total karma');
 	$do_total = true;
+/*
 } elseif ($ucmd == 'nickkarma' || $ucmd == 'nickarma') {
 	$uargs = explode(' ', strtolower($uarg), 2);
 	if (count($uargs) < 2) {
@@ -20,6 +21,7 @@ if (($uarg == '*') || ($ucmd == 'chankarma')) {
 	$where_nicks = '(nick IN (' . implode(',', array_map('single_quote', explode(',', $uargs[0]))) . '))';
 	$things = array_map('trim', explode(',', $uargs[1]));
 	$uarg = $uargs[1];
+*/
 } elseif ($uarg != null) {
 	$uarg = strtolower($uarg);
 	$things = array_map('trim', explode(',', $uarg));
@@ -80,7 +82,7 @@ if ($q === false) {
 }
 
 # top upvoters
-$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme AND up>0 GROUP BY nick ORDER BY up DESC LIMIT 5", array(
+$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme AND up>0 GROUP BY nick ORDER BY net DESC LIMIT 5", array(
 	$channel
 ));
 if ($q === false) {
@@ -97,18 +99,24 @@ if ($q === false) {
 	$voters = array();
 
 	$qr = pg_fetch_assoc($q);
-	$fv = number_format($qr['up']);
-	$voters[] = "%g{$qr['nick']}%0 (+$fv)";
+	$sign = ($qr['net'] >= 0) ? '+' : '';
+	$fv = number_format($qr['net']);
+	$fuv = number_format($qr['up']);
+	$fdv = number_format($qr['down']);
+	$voters[] = "%g{$qr['nick']}%0 $sign$fv (+$fuv/-$fdv)";
 
 	while ($qr = pg_fetch_assoc($q)) {
-		$fv = number_format($qr['up']);
-		$voters[] = "{$qr['nick']} (+$fv)";
+		$sign = ($qr['net'] >= 0) ? '+' : '';
+		$fv = number_format($qr['net']);
+		$fuv = number_format($qr['up']);
+		$fdv = number_format($qr['down']);
+		$voters[] = "{$qr['nick']} $sign$fv (+$fuv/-$fdv)";
 	}
 	$sayparts[] = 'Top upvoters: ' . implode(', ', $voters);
 }
 
 # top downvoters
-$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(down) AS down FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme AND down>0 GROUP BY nick ORDER BY down DESC LIMIT 5", array(
+$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme AND down>0 GROUP BY nick ORDER BY net LIMIT 5", array(
 	$channel
 ));
 if ($q === false) {
@@ -125,12 +133,18 @@ if ($q === false) {
 	$voters = array();
 
 	$qr = pg_fetch_assoc($q);
-	$fv = number_format($qr['down']);
-	$voters[] = "%r{$qr['nick']}%0 (-$fv)";
+	$sign = ($qr['net'] >= 0) ? '+' : '';
+	$fv = number_format($qr['net']);
+	$fuv = number_format($qr['up']);
+	$fdv = number_format($qr['down']);
+	$voters[] = "%r{$qr['nick']}%0 $sign$fv (+$fuv/-$fdv)";
 
 	while ($qr = pg_fetch_assoc($q)) {
-		$fv = number_format($qr['down']);
-		$voters[] = "{$qr['nick']} (-$fv)";
+		$sign = ($qr['net'] >= 0) ? '+' : '';
+		$fv = number_format($qr['net']);
+		$fuv = number_format($qr['up']);
+		$fdv = number_format($qr['down']);
+		$voters[] = "{$qr['nick']} $sign$fv (+$fuv/-$fdv)";
 	}
 	$sayparts[] = 'Top downvoters: ' . implode(', ', $voters);
 }

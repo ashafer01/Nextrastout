@@ -16,17 +16,27 @@ function smart_date_fmt($uts) {
 	$diff = $now->diff($dt);
 	$y = (int) $diff->format('%y');
 	$m = (int) $diff->format('%m');
-	$d = (int) $diff->format('%d');
+	$d = (int) $diff->format('%a');
 	if ($y > 0)
 		$fmt = 'l, M jS Y \a\t G:i T';
 	elseif ($m > 0 || $d > 7)
 		$fmt = 'l, M jS \a\t G:i T';
-	elseif ($d > 2)
+	elseif ($d > 1)
 		$fmt = 'l \a\t G:i T';
-	elseif ($d == 1)
-		$fmt = '\Y\e\s\t\e\r\d\a\y \a\t G:i T';
-	else
-		$fmt = '\T\o\d\a\y \a\t G:i:s T';
+	else {
+		$my = clone $dt;
+		$my->setTime(0, 0, 0);
+		$mt = clone $now;
+		$mt->setTime(0, 0, 0);
+		$mdiff = $mt->diff($my);
+		$mdiff = $mdiff->format('%R%a');
+		if ($mdiff == -1)
+			$fmt = '\Y\e\s\t\e\r\d\a\y \a\t G:i T';
+		elseif ($mdiff == 0)
+			$fmt = '\T\o\d\a\y \a\t G:i:s T';
+		else
+			$fmt = '\w\h\o \k\n\o\w\s';
+	}
 	return $dt->format($fmt);
 }
 
@@ -35,6 +45,14 @@ function date_fmt($fmt, $uts) {
 	$dt->setTimestamp($uts);
 	$dt->setTimezone(new DateTimeZone(ExtraServ::$output_tz));
 	return $dt->format($fmt);
+}
+
+function local_strtotime($time_str) {
+	$tz = date_default_timezone_get();
+	date_default_timezone_set(ExtraServ::$output_tz);
+	$ret = strtotime($time_str);
+	date_default_timezone_set($tz);
+	return $ret;
 }
 
 function pg_is_prepared($stmt_name) {
