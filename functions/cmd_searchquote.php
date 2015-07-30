@@ -29,7 +29,12 @@ if ($q === false) {
 		$ids[] = $qr['id'];
 	}
 
-	$say = f::pack_list("$num_results Matching quotes: ", $ids, $_i);
+	if (count($ids) > 1) {
+		$say = f::pack_list("$num_results Matching quotes: ", $ids, $_i);
+	} else {
+		log::debug('Only one searchquote result, calling getquote');
+		return f::cmd_getquote($_CMD, $ids[0], $_i);
+	}
 }
 
 $_i['handle']->say($_i['reply_to'], $say);
