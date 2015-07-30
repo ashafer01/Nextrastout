@@ -68,10 +68,13 @@ function error_row($error) {
 				$dbpw = get_password('db');
 				$db = pg_connect("host=localhost dbname=extraserv user=alex password=$dbpw application_name=QuoteDBWebViewer");
 				if ($db === false) {
+					echo error_row('DB connection failed');
 				} else {
 					$quotes = pg_query($db, "SELECT * FROM quotedb ORDER BY id");
 					if ($quotes === false) {
-						echo error_row('DB connection failed');
+						echo error_row('Query failed');
+					} elseif (pg_num_rows($quotes) == 0) {
+						echo error_row('No quotes found');
 					} else {
 
 						echo "\n";
