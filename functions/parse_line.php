@@ -13,6 +13,7 @@ $_i['hostmask'] = (object) array(
 	'user' => null,
 	'host' => null
 );
+$_i['in_pm'] = false;
 
 $lwords = explode(' ', trim($line));
 if (substr($lwords[0], 0, 1) == ':') {

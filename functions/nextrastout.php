@@ -4,6 +4,10 @@ ExtraServ::dbconnect();
 f::ALIAS_INIT();
 
 $handles_re = implode('|', array_keys(ExtraServ::$handles));
+$topicdata = array();
+
+$cmd_globals = new stdClass;
+$cmd_globals->topic_nicks = array();
 
 $_socket_start = null;
 $_socket_timeout = ini_get('default_socket_timeout');
@@ -30,6 +34,64 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 		case 'PING':
 			uplink::send("PONG :{$_i['text']}");
 			break;
+
+		# handle topic from server
+		case '332':
+			$topicchan = dbescape($_i['args'][1]);
+			log::debug("got topic for $topicchan");
+			$topicdata[$topicchan] = dbescape($_i['text']);
+			break;
+		case '333':
+			$topicchan = dbescape($_i['args'][1]);
+			log::debug('got topic metadata');
+			$topicsetter = f::parse_hostmask($_i['args'][2]);
+			$nick = dbescape($topicsetter->nick);
+			$uts = dbescape($_i['args'][3]);
+
+			if (array_key_exists($topicchan, $topicdata)) {
+				$query = "INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '{$topicdata[$topicchan]}', '$nick', '$topicchan')";
+				log::debug("New topic query >> $query");
+				$q = pg_query(ExtraServ::$db, $query);
+				if ($q === false) {
+					log::error('Query failed');
+					log::error(pg_last_error());
+					ExtraServ::$bot_handle->say($_i['reply_to'], 'Failed to store new topic');
+				} else {
+					log::debug("Stored new topic for $topicchan");
+				}
+				unset($topicdata[$topicchan]);
+			} else {
+				log::warning("Got 333 topic metadata for $topicchan before 332, ignoring");
+			}
+			break;
+
+		# handle topic from user
+		case 'TOPIC':
+			$topicchan = dbescape($_i['args'][0]);
+			log::debug("Got TOPIC for $topicchan");
+
+			$topic = dbescape($_i['text']);
+			if (array_key_exists($topicchan, $cmd_globals->topic_nicks)) {
+				$nick = dbescape($cmd_globals->topic_nicks[$topicchan]);
+				unset($cmd_globals->topic_nicks[$topicchan]);
+			} else {
+				$nick = dbescape($_i['hostmask']->nick);
+			}
+			$uts = time();
+
+			$query = "INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '$topic', '$nick', '$topicchan')";
+			log::debug("New topic query >> $query");
+			$q = pg_query(ExtraServ::$db, $query);
+			if ($q === false) {
+				log::error('Query failed');
+				log::error(pg_last_error());
+				ExtraServ::$bot_handle->say($_i['args'][0], 'Failed to store new topic');
+			} else {
+				log::debug("Stored new topic for $topicchan");
+			}
+			break;
+
+		# handle commands, etc.
 		case 'PRIVMSG':
 			$leader = '!';
 			$_i['sent_to'] = $_i['args'][0];
@@ -42,6 +104,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					$_i['reply_to'] = $_i['hostmask']->nick;
 					$_i['handle'] = $handle;
 					$in_pm = true;
+					$_i['in_pm'] = true;
 					break;
 				}
 			}
@@ -58,7 +121,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 				$cmdfunc = "cmd_$ucmd";
 				if (f::EXISTS($cmdfunc)) {
-					f::CALL($cmdfunc, array($ucmd, $uarg, $_i));
+					f::CALL($cmdfunc, array($ucmd, $uarg, $_i, $cmd_globals));
 				} elseif(is_admin($_i['hostmask']->user)) {
 					switch ($ucmd) {
 						# operational functions
