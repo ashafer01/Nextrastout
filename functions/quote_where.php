@@ -3,6 +3,8 @@
 log::trace('entered f::quote_where()');
 list($params) = $_ARGV;
 
+$conds = array();
+
 if (is_string($params)) {
 	$p = f::parse_logquery($params);
 } elseif (is_object($params)) {

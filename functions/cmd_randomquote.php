@@ -3,7 +3,13 @@
 log::trace('entered f::cmd_randomquote()');
 list($_CMD, $params, $_i) = $_ARGV;
 
-$query = 'SELECT * FROM quotedb ORDER BY RANDOM() LIMIT 1';
+$quote_where = f::quote_where($params);
+
+if ($quote_where === null) {
+	$quote_where = '1=1';
+}
+
+$query = "SELECT * FROM quotedb WHERE $quote_where ORDER BY RANDOM() LIMIT 1";
 log::debug("randomquote query >> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
