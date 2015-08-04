@@ -4,13 +4,14 @@ log::trace('entered f::cmd_searchquote()');
 list($_CMD, $params, $_i) = $_ARGV;
 
 $quote_where = f::quote_where($params);
+$channel = dbescape($_i['args'][0]);
 
 if ($quote_where === null) {
 	$_i['handle']->say($_i['reply_to'], 'Please specify a log-style query');
 	return f::FALSE;
 }
 
-$query = "SELECT id FROM quotedb WHERE $quote_where ORDER BY id";
+$query = "SELECT id FROM quotedb WHERE channel='$channel' AND $quote_where ORDER BY id";
 log::debug("searchquote query >> $query");
 $q = pg_query(ExtraServ::$db, $query);
 

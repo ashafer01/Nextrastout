@@ -9,8 +9,9 @@ if (preg_match('/^(\d+)$/', $params) !== 1) {
 }
 
 $quote_id = dbescape($params);
+$channel = dbescape($_i['args'][0]);
 
-$query = "SELECT * FROM quotedb WHERE id=$quote_id";
+$query = "SELECT * FROM quotedb WHERE id=$quote_id AND channel='$channel'";
 log::debug("getquote query >> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {

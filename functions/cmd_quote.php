@@ -12,8 +12,9 @@ log::trace('Storing new quote');
 
 $quote = dbescape($params);
 $set_by = dbescape($_i['hostmask']->nick);
+$channel = dbescape($_i['args'][0]);
 
-$query = "INSERT INTO quotedb (quote, set_by) VALUES ('$quote', '$set_by') RETURNING id";
+$query = "INSERT INTO quotedb (quote, set_by, channel) VALUES ('$quote', '$set_by', '$channel') RETURNING id";
 log::debug("new quote query >> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
