@@ -1,5 +1,7 @@
 <?php
 
+date_default_timezone_set('UTC');
+
 require_once 'lib/procs.php';
 require_once 'lib/log.php';
 
@@ -10,8 +12,10 @@ require_once 'lib/utils.php';
 require_once 'lib/functions.php';
 require_once 'lib/config.php';
 
-$_nick = 'newLogger';
-$_user = 'newLogger';
+$conf = config::get_instance();
+
+$_nick = 'logger';
+$_user = 'logger';
 $_name = 'New Log Bot c/o alex';
 $_host = 'localhost';
 $_port = 9999;
@@ -19,8 +23,6 @@ $_port = 9999;
 $table = 'log';
 
 $_channels = config::channels();
-
-date_default_timezone_set('UTC');
 
 function send($text) {
 	global $_irc;
@@ -45,7 +47,7 @@ while (true) {
 
 	log::info('Connecting to database');
 	$dbpw = get_password('db');
-	$_sql = pg_connect("host=localhost dbname=extraserv user=alex password=$dbpw application_name=Logger");
+	$_sql = pg_connect("host={$conf->db->host} dbname={$conf->db->name} user={$conf->db->user} password=$dbpw application_name=Logger");
 	if ($_sql === false) {
 		log::fatal('Failed to connect to database, exiting');
 		exit(1);
