@@ -221,6 +221,11 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						break;
 					default:
 						log::trace('Not a non-leader command');
+						if (f::nonpublic_stuff($_i)) {
+							log::trace('Handled by nonpublic_stuff');
+						} else {
+							log::trace('Line unhandled');
+						}
 				}
 			}
 			break; # --- end privmsg handling
