@@ -20,3 +20,4 @@ below. You can keep them in private.ini or put them in the main config; the two 
     bitly.api_key =
     
     quotes.web_channel =
+    quotes.admins = []
