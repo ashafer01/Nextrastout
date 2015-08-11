@@ -65,6 +65,11 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			}
 			break;
 
+		# need op privileges
+		case '482':
+			ExtraServ::$bot_handle->say($_i['args'][1], "I'll need op privileges to do that");
+			break;
+
 		# handle topic from user
 		case 'TOPIC':
 			$topicchan = dbescape($_i['args'][0]);
