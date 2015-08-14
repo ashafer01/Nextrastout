@@ -150,7 +150,8 @@ function sqlify($val) {
 }
 
 function rainbow($string) {
-	static $colors = array('00', '04', '08', '09', '11', '12', '13');
+	static $colors = array('05','04','07','08','03','09','10','11','02','12','06','13');
+	static $cindex = 0;
 	$len = strlen($string);
 	$newstr = '';
 	$last = 255;
@@ -162,8 +163,8 @@ function rainbow($string) {
 			$newstr .= $char;
 			continue;
 		}
-		while (($color = $colors[array_rand($colors)]) == $last) {}
-		$last = $color;
+		$color = $colors[ $cindex % count($colors) ];
+		$cindex++;
 		$newstr .= "\x03$color";
 		$newstr .= $char;
 	}
