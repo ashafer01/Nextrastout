@@ -9,11 +9,6 @@ class client {
 			$params = (array) $params;
 		}
 		$this->channels = array();
-		#foreach ($params['channels'] as $chan) {
-		#	if ($chan == null)
-		#		continue;
-		#	$this->join($chan);
-		#}
 		unset($params['channels']);
 		$this->params = $params;
 	}
@@ -32,6 +27,14 @@ class client {
 		}
 		uplink::send("NICK {$this->nick}");
 		uplink::send("USER {$this->user} dot dot :{$this->name}");
+
+		$this->sent_nickserv_ident = false;
+		if (isset(ExtraServ::$conf->nickserv_passwords->{$this->nick})) {
+			$this->say('NickServ', 'IDENTIFY ' . ExtraServ::$conf->nickserv_passwords->{$this->nick});
+			$this->sent_nickserv_ident = true;
+		}
+
+		var_dump($this);
 
 		foreach ($this->channels as $chan) {
 			$this->join($chan);
@@ -67,6 +70,11 @@ class client {
 			log::debug("Joining $channel");
 			ExtraServ::sjoin($this->nick, $channel);
 			$this->channels[] = $channel;
+			if ($this->sent_nickserv_ident === true) {
+				$this->say('ChanServ', "OP $channel");
+			} else {
+				log::debug("Not sending OP request for $channel");
+			}
 		} else {
 			log::debug("Already joined to $channel");
 		}

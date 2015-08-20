@@ -206,6 +206,14 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							log::notice('Got !es-part');
 							ExtraServ::$bot_handle->part($uarg);
 							break;
+						case 'chanserv':
+							log::notice('Got !chanserv');
+							ExtraServ::$bot_handle->say('ChanServ', $uarg);
+							break;
+						case 'nickserv':
+							log::notice('Got !nickserv');
+							ExtraServ::$bot_handle->say('NickServ', $uarg);
+							break;
 						default:
 							log::trace('Not an admin command');
 					}
