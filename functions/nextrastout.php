@@ -244,3 +244,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			break; # --- end privmsg handling
 	}
 }
+
+ExtraServ::$bot_handle->del_all_channels();
+exit(1);

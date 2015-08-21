@@ -97,4 +97,8 @@ class client {
 	public function del_channel($channel) {
 		$this->channels = array_diff($this->channels, array($channel));
 	}
+
+	public function del_all_channels() {
+		$this->channels = array();
+	}
 }
