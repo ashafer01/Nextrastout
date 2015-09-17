@@ -49,15 +49,34 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			$uts = dbescape($_i['args'][3]);
 
 			if (array_key_exists($topicchan, $topicdata)) {
-				$query = "INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '{$topicdata[$topicchan]}', '$nick', '$topicchan')";
-				log::debug("New topic query >> $query");
+				$query = "SELECT count(*) AS count from topic WHERE channel='$topicchan'";
+				log::debug("Check topic query >> $query");
 				$q = pg_query(ExtraServ::$db, $query);
 				if ($q === false) {
 					log::error('Query failed');
 					log::error(pg_last_error());
-					ExtraServ::$bot_handle->say($_i['reply_to'], 'Failed to store new topic');
+					$doit = true;
+				} elseif (pg_num_rows($q) == 0) {
+					$doit = true;
 				} else {
-					log::debug("Stored new topic for $topicchan");
+					$qr = pg_fetch_assoc($q);
+					if ($qr['count'] > 0) {
+						log::debug('Not inserting server topic, we already have topics for this channel');
+						$doit = false;
+					}
+					$doit = true;
+				}
+				if ($doit) {
+					$query = "INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '{$topicdata[$topicchan]}', '$nick', '$topicchan')";
+					log::debug("New topic query >> $query");
+					$q = pg_query(ExtraServ::$db, $query);
+					if ($q === false) {
+						log::error('Query failed');
+						log::error(pg_last_error());
+						ExtraServ::$bot_handle->say($_i['reply_to'], 'Failed to store new topic');
+					} else {
+						log::debug("Stored new topic for $topicchan");
+					}
 				}
 				unset($topicdata[$topicchan]);
 			} else {
