@@ -11,17 +11,6 @@ $where_nicks = null;
 if (($uarg == '*') || ($ucmd == 'chankarma')) {
 	log::debug('Doing total karma');
 	$do_total = true;
-/*
-} elseif ($ucmd == 'nickkarma' || $ucmd == 'nickarma') {
-	$uargs = explode(' ', strtolower($uarg), 2);
-	if (count($uargs) < 2) {
-		$_i['handle']->say($_i['reply_to'], 'Please specify a nickname and a word/phrase (or a comma-separated list of either/both)');
-		return f::FALSE;
-	}
-	$where_nicks = '(nick IN (' . implode(',', array_map('single_quote', explode(',', $uargs[0]))) . '))';
-	$things = array_map('trim', explode(',', $uargs[1]));
-	$uarg = $uargs[1];
-*/
 } elseif ($uarg != null) {
 	$uarg = strtolower($uarg);
 	$things = array_map('trim', explode(',', $uarg));
@@ -82,7 +71,7 @@ if ($q === false) {
 }
 
 # top upvoters
-$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme AND up>0 GROUP BY nick ORDER BY net DESC LIMIT 5", array(
+$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) >= 0 ORDER BY net DESC LIMIT 5", array(
 	$channel
 ));
 if ($q === false) {
@@ -116,7 +105,7 @@ if ($q === false) {
 }
 
 # top downvoters
-$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme AND down>0 GROUP BY nick ORDER BY net LIMIT 5", array(
+$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5", array(
 	$channel
 ));
 if ($q === false) {

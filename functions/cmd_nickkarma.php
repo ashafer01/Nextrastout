@@ -27,30 +27,10 @@ if (count($nicks) == 1) {
 }
 $sayparts = array();
 $b = chr(2);
-
-#########################
-
-# Total number of lines matching the query by the given nick(s)
-
-$ref = 'nickstats total nick lines query';
-$query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where";
-log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
-if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
-	$sayparts[] = 'Query failed';
-	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
-	return f::FALSE;
-} else {
-	log::debug("$ref OK");
-	$qr = pg_fetch_assoc($q);
-
-	$nick_total_lines = $qr['count'];
-	$fntl = number_format($nick_total_lines);
-}
-
-$saypart = "$fntl lines logged";
+$green = "\x0303";
+$red = "\x0304";
+$lgreen = "\x0309";
+$orange = "\x0307";
 
 #########################
 
@@ -79,16 +59,12 @@ if ($q === false) {
 		$elapsed_days = 1;
 	}
 
-	$fdate = date('Y-m-d', $first_join_uts);
 	$fed = number_format($elapsed_days);
 	$days = 'days';
 	if ($elapsed_days == 1) {
 		$days = 'day';
 	}
 }
-
-$saypart .= " over $fed $days";
-$sayparts[] = $saypart;
 
 #########################
 
@@ -125,7 +101,7 @@ if ($q === false) {
 	$fpli = number_format((($up_votes + 0.0 ) / ($up_votes + $down_votes + 0.0)) * 100, 1);
 	$fakpd = number_format(($net_votes + 0.0) / ($elapsed_days + 0.0), 5);
 
-	$sayparts[] = "Net karma: %C$fnv%0 (+$fuv/-$fdv; $fpli% like it; $fakpd net votes/day)";
+	$sayparts[] = "Net karma: %C$fnv%0 (+$fuv/-$fdv; $fpli% like it; $fakpd net votes/day over $fed $days)";
 }
 
 #########################
@@ -133,7 +109,7 @@ if ($q === false) {
 # Find the top voters of the nickname
 
 $ref = 'top upvoter query';
-$query = "SELECT nick, sum(up) AS up FROM karma_cache WHERE channel='$channel' AND $where_nicks_karma AND $where_notme GROUP BY nick ORDER BY up DESC LIMIT 3";
+$query = "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_nicks_karma AND $where_notme GROUP BY nick ORDER BY net DESC LIMIT 3";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -150,7 +126,9 @@ if ($q === false) {
 	$saypart = array();
 	while ($qr = pg_fetch_assoc($q)) {
 		$fuvc = number_format($qr['up']);
-		$saypart[] = "{$qr['nick']} (+$fuvc)";
+		$fdvc = number_format($qr['down']);
+		$fnvc = number_format($qr['net']);
+		$saypart[] = "{$qr['nick']} $fnvc (+$fuvc/-$fdvc)";
 	}
 	$sayparts[] = 'Top upvoters: ' . implode(', ', $saypart);
 }
@@ -158,7 +136,7 @@ if ($q === false) {
 #########################
 
 $ref = 'top downvoter query';
-$query = "SELECT nick, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_nicks_karma AND $where_notme GROUP BY nick ORDER BY down DESC LIMIT 3";
+$query = "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_nicks_karma AND $where_notme GROUP BY nick ORDER BY net LIMIT 3";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -169,13 +147,15 @@ if ($q === false) {
 	return f::FALSE;
 } elseif (pg_num_rows($q) == 0) {
 	log::debug('No matching rows');
-	$sayparts[] = ' no downvoters';
+	$sayparts[] = 'no downvoters';
 } else {
 	log::debug("$ref OK");
 	$saypart = array();
 	while ($qr = pg_fetch_assoc($q)) {
-		$fuvc = number_format($qr['down']);
-		$saypart[] = "{$qr['nick']} (-$fuvc)";
+		$fuvc = number_format($qr['up']);
+		$fdvc = number_format($qr['down']);
+		$fnvc = number_format($qr['net']);
+		$saypart[] = "{$qr['nick']} $fnvc (+$fuvc/-$fdvc)";
 	}
 	$sayparts[] = 'Top downvoters: ' . implode(', ', $saypart);
 }
@@ -189,7 +169,7 @@ $where_things_karma = '(' . implode(' OR ', array_map(function($nick) {
 }, $nicks));
 $where_things_karma .= ')';
 
-$ret = 'vote totals query';
+$ref = 'vote totals query';
 $query = "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_things_karma";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
@@ -221,8 +201,8 @@ if ($q === false) {
 
 # Find most voted things
 
-$ret = 'most upvoted thing query';
-$query = "SELECT thing, sum(up) AS up FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing ORDER BY up DESC LIMIT 3";
+$ref = 'most upvoted thing query';
+$query = "SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing ORDER BY net DESC LIMIT 3";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -239,15 +219,17 @@ if ($q === false) {
 	$saypart = array();
 	while ($qr = pg_fetch_assoc($q)) {
 		$fuvmc = number_format($qr['up']);
-		$saypart[] = "{$qr['thing']} (+$fuvmc)";
+		$fdvmc = number_format($qr['down']);
+		$fnvmc = number_format($qr['net']);
+		$saypart[] = "{$qr['thing']} $fnvmc (+$fuvmc/-$fdvmc)";
 	}
 	$sayparts[] = 'Most upvoted things: ' . implode(', ', $saypart);
 }
 
 #########################
 
-$ret = 'most downvoted thing query';
-$query = "SELECT thing, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing ORDER BY down DESC LIMIT 3";
+$ref = 'most downvoted thing query';
+$query = "SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing ORDER BY net LIMIT 3";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -264,7 +246,9 @@ if ($q === false) {
 	$saypart = array();
 	while ($qr = pg_fetch_assoc($q)) {
 		$fdvmc = number_format($qr['down']);
-		$saypart[] = "{$qr['thing']} (-$fdvmc)";
+		$fuvmc = number_format($qr['up']);
+		$fnvmc = number_format($qr['net']);
+		$saypart[] = "{$qr['thing']} $fnvmc (+$fuvmc/-$fdvmc)";
 	}
 	$sayparts[] = 'Most downvoted things: ' . implode(', ', $saypart);
 }

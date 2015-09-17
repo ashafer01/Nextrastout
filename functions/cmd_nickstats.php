@@ -33,11 +33,18 @@ if ($params != null) {
 		$nick = dbescape(strtolower($nicks[0]));
 		$where = "nick='$nick'";
 	}
+
+	if (count($p->before) > 0 || count($p->after) > 0) {
+		$where_dateonly = f::log_where(new parsed_logquery(array('before' => $p->before, 'after' => $p->after)), true, null, false);
+	} else {
+		$where_dateonly = 'TRUE';
+	}
 } else {
 	$nicks = array($_i['hostmask']->nick);
 	$where_nonick = 'TRUE';
 	$nick = dbescape(strtolower($nicks[0]));
 	$where = "nick='$nick'";
+	$where_dateonly = 'TRUE';
 }
 
 $nicks = array_map('strtolower', $nicks);
@@ -149,7 +156,7 @@ $sayparts[] = "%C$fntl%0 lines / $ftl total ($fpcnt%)";
 $where_nickonly = f::log_where_nick($nicks, $channel, false);
 
 $ref = 'nickstats first use query';
-$query = "SELECT uts, nick, ircuser FROM log WHERE $where_nickonly ORDER BY uts ASC LIMIT 1";
+$query = "SELECT uts, nick, ircuser FROM log WHERE $where_nickonly AND $where_dateonly ORDER BY uts ASC LIMIT 1";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -214,7 +221,7 @@ if ($q === false) {
 #########################
 
 while ($qr = pg_fetch_assoc($q)) {
-	if (!in_array($qr['word'], config::get_list('smallwords'))) {
+	if (!in_array($qr['word'], config::get_list('stopwords'))) {
 		$ftwc = number_format($qr['count']);
 		$sayparts[] = "Top word: {$qr['word']} ($ftwc)";
 		break;

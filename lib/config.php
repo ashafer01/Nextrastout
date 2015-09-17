@@ -39,6 +39,7 @@ class config {
 	public static function reload_all() {
 		config::get_instance()->reload();
 		self::$lists = array();
+		self::$json_objects = array();
 	}
 
 	## List management
@@ -69,6 +70,15 @@ class config {
 			self::$lists[$name][] = $value;
 			file_put_contents(self::$base . "$name.list", "$value\n", FILE_APPEND);
 		}
+	}
+
+	## misc read-only file types
+	public static $json_objects = array();
+	public static function get_json($name) {
+		if (!array_key_exists($name, self::$json_objects)) {
+			self::$json_objects[$name] = json_decode(file_get_contents(self::$base . "$name.json"));
+		}
+		return self::$json_objects[$name];
 	}
 
 	### Channels

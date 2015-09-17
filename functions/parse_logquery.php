@@ -10,17 +10,7 @@ if ($default_cond === null) {
 
 $params = explode(' ', $param_string);
 
-$ret = new stdClass;
-$ret->likes = array();
-$ret->notlikes = array();
-$ret->req_wordbound = array();
-$ret->exc_wordbound = array();
-$ret->before = array();
-$ret->after = array();
-$ret->req_nicks = array();
-$ret->exc_nicks = array();
-$ret->req_re = array();
-$ret->exc_re = array();
+$ret = new parsed_logquery();
 
 $current_var = $default_cond;
 $current_index = 0;

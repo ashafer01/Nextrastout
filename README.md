@@ -21,3 +21,7 @@ below. You can keep them in private.ini or put them in the main config; the two 
     
     quotes.web_channel =
     quotes.admins = []
+    
+    nickserv_passwords.Nextrastout =
+    
+    google.api_key =

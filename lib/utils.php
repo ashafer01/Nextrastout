@@ -349,3 +349,26 @@ class color_formatting {
 		return color_formatting::unescape(str_replace($codes, '', $text));
 	}
 }
+
+class parsed_logquery {
+	public $likes = array();
+	public $notlikes = array();
+	public $req_wordbound = array();
+	public $exc_wordbound = array();
+	public $before = array();
+	public $after = array();
+	public $req_nicks = array();
+	public $exc_nicks = array();
+	public $req_re = array();
+	public $exc_re = array();
+
+	public function __construct($initial = null) {
+		if ($initial != null) {
+			foreach ($initial as $key => $val) {
+				if (property_exists($this, $key) && is_array($val)) {
+					$this->{$key} = $val;
+				}
+			}
+		}
+	}
+}

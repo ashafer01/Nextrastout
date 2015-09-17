@@ -34,8 +34,6 @@ class client {
 			$this->sent_nickserv_ident = true;
 		}
 
-		var_dump($this);
-
 		foreach ($this->channels as $chan) {
 			$this->join($chan);
 		}
@@ -66,18 +64,19 @@ class client {
 	}
 
 	public function join($channel) {
-		if (!in_array($channel, $this->channels)) {
-			log::debug("Joining $channel");
-			ExtraServ::sjoin($this->nick, $channel);
-			$this->channels[] = $channel;
-			if ($this->sent_nickserv_ident === true) {
-				$this->say('ChanServ', "OP $channel");
-			} else {
-				log::debug("Not sending OP request for $channel");
-			}
+		if (in_array($channel, $this->channels)) {
+			log::notice("Already joined to $channel, sending JOIN anyway");
 		} else {
-			log::debug("Already joined to $channel");
+			log::trace("Adding $channel to channels");
+			$this->channels[] = $channel;
 		}
+		log::debug("Joining $channel");
+		ExtraServ::sjoin($this->nick, $channel);
+		//if ($this->sent_nickserv_ident === true) {
+		//	$this->say('ChanServ', "OP $channel");
+		//} else {
+			log::debug("Not sending OP request for $channel");
+		//}
 	}
 
 	public function part($channel, $reason = 'By admin request') {
