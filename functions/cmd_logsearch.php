@@ -92,26 +92,30 @@ foreach ($query_params->notlikes as $nl) {
 $conf = config::get_instance();
 $query_params->exc_nicks[] = array($conf->bot_handle);
 
-$cmds = f::LISTALL();
-$cmds = array_filter($cmds, function($e) {
-	return (substr($e, 0, 4) == 'cmd_');
-});
-$cmds = array_map(function($e) {
-	return '!' . substr($e, 4);
-}, $cmds);
-$cmds = array_filter($cmds, function($e) use ($query_params) {
-	foreach (array('likes', 'req_wordbound') as $var) {
-		foreach ($query_params->$var as $list) {
-			if (in_array($e, $list)) {
-				return false;
+if ($command == 'line') {
+	$cmd_in = '1=1';
+} else {
+	$cmds = f::LISTALL();
+	$cmds = array_filter($cmds, function($e) {
+		return (substr($e, 0, 4) == 'cmd_');
+	});
+	$cmds = array_map(function($e) {
+		return '!' . substr($e, 4);
+	}, $cmds);
+	$cmds = array_filter($cmds, function($e) use ($query_params) {
+		foreach (array('likes', 'req_wordbound') as $var) {
+			foreach ($query_params->$var as $list) {
+				if (in_array($e, $list)) {
+					return false;
+				}
 			}
 		}
-	}
-	return true;
-});
-$cmd_in = implode('|', $cmds);
+		return true;
+	});
+	$cmd_in = "(message NOT SIMILAR TO '(" . implode('|', $cmds) . ")%')";
+}
 
-$query = "SELECT uts, nick, message FROM log WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}') AND (message NOT SIMILAR TO '($cmd_in)%')" . f::log_where($query_params) . "$where $orderby $limit";
+$query = "SELECT uts, nick, message FROM log WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}') AND $cmd_in" . f::log_where($query_params) . "$where $orderby $limit";
 log::debug("log search query >>> $query");
 
 $q = pg_query(ExtraServ::$db, $query);

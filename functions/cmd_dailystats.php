@@ -4,26 +4,49 @@ log::trace('entered f::cmd_dailystats()');
 list($_CMD, $params, $_i) = $_ARGV;
 
 $day_s = 24 * 60 * 60;
+$week_s = 7 * $day_s;
+$month_s = 30 * $day_s;
 
-date_default_timezone_set(ExtraServ::$output_tz);
 if ($params == null) {
-	$start_uts = strtotime('midnight');
-	$stop_uts = time();
 
-	$say = 'So far today: ';
+	if ($_CMD == 'dailystats') {
+		$say = 'So far today: ';
+		$start_uts = local_strtotime('midnight');
+		$NUM_HOURS = 24;
+	} elseif ($_CMD == 'weeklystats') {
+		$say = 'So far this week: ';
+		$start_uts = local_strtotime('last sunday 0:00');
+		$NUM_HOURS = 7 * 24;
+	} elseif ($_CMD == 'monthlystats') {
+		$say = 'So far this month: ';
+		$start_uts = local_strtotime('first day of this month 0:00');
+		$NUM_HOURS = 30 * 24;
+	}
+	$stop_uts = time();
 } else {
 	$params = trim($params, '"');
 	$params = trim($params);
 
-	$start_uts = strtotime($params);
+	$start_uts = local_strtotime($params);
 	if ($start_uts === false) {
 		$_i['handle']->say($_i['reply_to'], 'Please specify a valid time string, such as "last tuesday" or "2012-02-17". See http://php.net/strtotime for details.');
-		date_default_timezone_set('UTC');
 		return null;
 	}
-	$stop_uts = $start_uts + $day_s;
 
-	$today = date_fmt('Y-m-d', strtotime('midnight'));
+	if ($_CMD == 'dailystats') {
+		$stop_uts = $start_uts + $day_s;
+		$today = date_fmt('Y-m-d', strtotime('midnight'));
+		$NUM_HOURS = 24;
+	} elseif ($_CMD == 'weeklystats') {
+		$stop_uts = $start_uts + $week_s;
+		$today = date_fmt('Y-m-d', strtotime('last sunday 0:00'));
+		$NUM_HOURS = 7 * 24;
+	} elseif ($_CMD == 'monthlystats') {
+		$stop_uts = $start_uts + $month_s;
+		$today = date_fmt('Y-m-d', strtotime('first day of this month 0:00'));
+		$NUM_HOURS = 30 * 24;
+	}
+
 	$start_str = date_fmt('Y-m-d', $start_uts);
 	$start_time = date_fmt('G:i', $start_uts);
 	if ($start_str != $today) {
@@ -41,7 +64,6 @@ if ($params == null) {
 
 	$say = "Between $start_str and $stop_str: ";
 }
-date_default_timezone_set('UTC');
 
 $channel = $_i['sent_to'];
 
@@ -93,7 +115,13 @@ for ($i = $start_uts; $i <= $stop_uts; $i += 3600) {
 		$end = time();
 		$break = true;
 	}
-	$starttime = date_fmt('G:i', $i);
+	if ($_CMD == 'dailystats') {
+		$starttime = date_fmt('G:i', $i);
+	} elseif ($_CMD == 'weeklystats') {
+		$starttime = date_fmt('D jS G:i', $i);
+	} elseif ($_CMD == 'monthlystats') {
+		$starttime = date_fmt('D M jS G:i', $i);
+	}
 	$stoptime = date_fmt('G:i', $end);
 	$top_hours .= " WHEN uts BETWEEN $i AND $end THEN '$starttime to $stoptime'";
 	if ($break) {
@@ -115,7 +143,7 @@ if ($q === false) {
 $total_str = number_format($TOTAL);
 $num_nicks_str = number_format($NUM_NICKS);
 $lpn = number_format($TOTAL / $NUM_NICKS, 2);
-$lph = number_format($TOTAL / 24, 2);
+$lph = number_format($TOTAL / $NUM_HOURS, 2);
 
 $say .= "$total_str lines by $NUM_NICKS nicks in $channel (average $lpn lines/nick, $lph lines/hour). Top 3 nicks: ";
 
@@ -124,7 +152,7 @@ $top_nick_strs = array();
 foreach ($TOP_NICKS as $row) {
 	$count_str = number_format($row['count']);
 	$day_percent = number_format(($row['count'] / $TOTAL) * 100, 2);
-	$lph = number_format($row['count'] / 24, 2);
+	$lph = number_format($row['count'] / $NUM_HOURS, 2);
 	$top_nick_strs[] = "$b{$row['nick']}$b with $count_str lines ($day_percent%, $lph lines/hour)";
 }
 
