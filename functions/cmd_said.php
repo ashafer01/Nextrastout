@@ -10,7 +10,7 @@ if ($params == null) {
 } else {
 	$where .= f::log_where($params);
 
-	$query = "SELECT nick FROM log WHERE $where GROUP BY nick LIMIT 200";
+	$query = "SELECT nick FROM log WHERE $where GROUP BY nick ORDER BY RANDOM() LIMIT 200";
 	log::debug("said query >>> $query");
 	$q = pg_query(ExtraServ::$db, $query);
 	if ($q === false) {
