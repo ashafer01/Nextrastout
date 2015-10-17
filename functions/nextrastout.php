@@ -63,8 +63,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					if ($qr['count'] > 0) {
 						log::debug('Not inserting server topic, we already have topics for this channel');
 						$doit = false;
+					} else {
+						$doit = true;
 					}
-					$doit = true;
 				}
 				if ($doit) {
 					$query = "INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '{$topicdata[$topicchan]}', '$nick', '$topicchan')";
@@ -117,6 +118,11 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 		# handle commands, etc.
 		case 'PRIVMSG':
+			if (in_array($_i['hostmask']->user, ExtraServ::$conf->banned_users)) {
+				log::info("Ignoring banned user {$_i['hostmask']->user}");
+				break;
+			}
+
 			$leader = '!';
 			$_i['sent_to'] = $_i['args'][0];
 			$_i['reply_to'] = $_i['args'][0];
