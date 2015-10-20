@@ -232,7 +232,7 @@ pg_result_seek($q, 0);
 
 #########################
 
-$sayparts[] = 'See also: !nickkarma';
+$sayparts[] = 'See also: !nickkarma, !twowords';
 
 log::debug('Finished nickstats queries');
 
