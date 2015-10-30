@@ -19,7 +19,7 @@ if (($uarg == '*') || ($ucmd == 'chankarma')) {
 	$things = array($uarg);
 }
 
-$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout')";
+$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout', 'm2', 'fish')";
 
 if ($do_total) {
 	$sayprefix = "All karma in $channel: ";

@@ -8,7 +8,7 @@ if (preg_match('/^(\d{10})$/', $params) !== 1) {
 	return f::FALSE;
 }
 
-$data = f::everyoneapi($params, array('name','cnam','carrier','location','linetype'));
+$data = f::everyoneapi($params, array('name','cnam','line_provider','location','linetype'));
 
 if ($data === false) {
 	$say = 'API Error';
@@ -29,8 +29,8 @@ if ($data === false) {
 	if (!in_array('location', $data->missed)) {
 		$fields[] = "Location: {$data->data->location->city}, {$data->data->location->state}";
 	}
-	if (!in_array('carrier', $data->missed)) {
-		$fields[] = "Carrier: {$data->data->carrier->name}";
+	if (!in_array('line_provider', $data->missed)) {
+		$fields[] = "Line Provider: {$data->data->line_provider->name}";
 	}
 	$say = "Caller ID info for +1$params: " . implode(' | ', $fields);
 }

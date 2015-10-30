@@ -215,7 +215,8 @@ if ($q === false) {
 
 	$ftuw = number_format($total_unique_words);
 	$fuwpl = number_format($total_unique_words / $nick_total_lines, 3);
-	$sayparts[] = "Total unique words: $ftuw ($fuwpl unique words/line)";
+	$fuwpd = number_format($total_unique_words / $elapsed_days, 3);
+	$sayparts[] = "Total unique words: $ftuw ($fuwpl unique words/line; $fuwpd unique words/day)";
 }
 
 #########################
