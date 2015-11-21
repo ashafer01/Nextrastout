@@ -87,6 +87,9 @@ if ($params[0] == 'recall') {
 			$newtopic = $qr['topic'] . ' | ' . $params[1];
 			break;
 
+		case 'remove':
+		case 'del':
+			$params[0] = 'delete';
 		case 'set':
 		case 'insert':
 		case 'delete':

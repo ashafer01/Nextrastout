@@ -4,26 +4,24 @@ log::trace('entered f::cmd_kol()');
 
 list($_CMD, $param, $_i) = $_ARGV;
 
-$where = "(command='PRIVMSG' AND args='{$_i['sent_to']}')";
-if ($param != null) {
-	$where .= f::log_where($param, null, null, null, 'req_wordbound');
-}
+$channel = $_i['sent_to'];
+$where = "channel='$channel'";
 
-$query = "SELECT COUNT(uts) AS count FROM log WHERE $where";
-log::debug("total matching rows query >>> $query");
+$query = "SELECT SUM(lines) AS count FROM statcache_lines WHERE $where";
+log::debug("total query >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
 	log::error('Query failed');
 	log::error(pg_last_error());
 	$say = 'Query failed';
 } else {
-	log::debug('total matching rows query OK');
+	log::debug('total query OK');
 	$qr = pg_fetch_assoc($q);
 	$total_count = $qr['count'];
-	log::debug("Got total matching rows: $total_count");
+	log::debug("Got total: $total_count");
 
 	if ($total_count > 0) {
-		$query = "SELECT nick, COUNT(uts) AS count FROM log WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 11";
+		$query = "SELECT nick, SUM(lines) AS count FROM statcache_lines WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 10";
 		log::debug("kol query >>> $query");
 		$q = pg_query(ExtraServ::$db, $query);
 		if ($q === false) {
@@ -35,7 +33,7 @@ if ($q === false) {
 
 			$b = chr(2);
 			$total_str = number_format($total_count);
-			$say = "Matched $b{$total_str}$b lines in {$_i['sent_to']}: ";
+			$say = "Out of $b{$total_str}$b lines in $channel: ";
 
 			$i = 1;
 			$sayparts = array();
@@ -66,8 +64,8 @@ if ($q === false) {
 			$say .= implode(', ', $sayparts);
 		}
 	} else {
-		log::debug('No matching rows');
-		$say = 'No matching rows';
+		log::debug('No lines in channel');
+		$say = 'No lines in channel';
 	}
 }
 

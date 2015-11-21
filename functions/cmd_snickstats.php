@@ -6,15 +6,45 @@ list($_CMD, $params, $_i) = $_ARGV;
 
 $channel = $_i['sent_to'];
 
-$where_notme = "nick NOT IN ('" . strtolower(ExtraServ::$bot_handle->nick)  . "', 'extrastout')";
+$where_privmsg = "(command='PRIVMSG' AND args='$channel')";
+$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout')";
 
 if ($params != null) {
-	$nicks = explode(',', strtolower($params));
-	$where = 'nick IN (' . implode(',', array_map('single_quote', array_map('dbescape', $nicks))) . ") AND channel='$channel'";
+	$p = f::parse_logquery($params, 'req_nicks');
+	if (count($p->req_nicks) > 0) {
+		$req_nicks = $p->req_nicks;
+		$nicks = array();
+		foreach ($req_nicks as $nickgrp) {
+			foreach ($nickgrp as $nickstr) {
+				$nicklist = explode(',', strtolower($nickstr));
+				$nicks = array_merge($nicks, $nicklist);
+			}
+		}
+		$nicks = array_unique($nicks);
+
+		$where_nonick = f::log_where($p, true, null, false);
+		if ($where_nonick == null) {
+			$where_nonick = 'TRUE';
+		}
+		$where = f::log_where($p, false, null, false);
+	} else {
+		$nicks = array(strtolower($params));
+		$where_nonick = 'TRUE';
+		$nick = dbescape(strtolower($nicks[0]));
+		$where = "nick='$nick'";
+	}
+
+	if (count($p->before) > 0 || count($p->after) > 0) {
+		$where_dateonly = f::log_where(new parsed_logquery(array('before' => $p->before, 'after' => $p->after)), true, null, false);
+	} else {
+		$where_dateonly = 'TRUE';
+	}
 } else {
 	$nicks = array($_i['hostmask']->nick);
+	$where_nonick = 'TRUE';
 	$nick = dbescape(strtolower($nicks[0]));
-	$where = "nick='$nick' AND channel='$channel'";
+	$where = "nick='$nick'";
+	$where_dateonly = 'TRUE';
 }
 
 $nicks = array_map('strtolower', $nicks);
@@ -28,10 +58,10 @@ log::debug('Starting nickstats queries');
 
 #########################
 
-# Total number of lines
+# Total number of lines matching the query
 
 $ref = 'nickstats total lines query';
-$query = "SELECT val AS count FROM statcache_misc WHERE channel='$channel' AND stat_name='total lines'";
+$query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where_nonick";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -44,8 +74,8 @@ if ($q === false) {
 	$qr = pg_fetch_assoc($q);
 	$total_lines = $qr['count'];
 	if ($total_lines == 0) {
-		log::debug('nickstats: channel not found');
-		$_i['handle']->say($_i['reply_to'], 'No lines for channel');
+		log::debug('nickstats: No matching rows for log query');
+		$_i['handle']->say($_i['reply_to'], 'No lines match your query');
 		return f::TRUE;
 	}
 	$ftl = number_format($total_lines);
@@ -53,10 +83,10 @@ if ($q === false) {
 
 #########################
 
-# Total number of lines by the given nick(s)
+# Total number of lines matching the query by the given nick(s)
 
 $ref = 'nickstats total nick lines query';
-$query = "SELECT SUM(lines) AS count FROM statcache_lines WHERE $where";
+$query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -79,7 +109,7 @@ if ($q === false) {
 # Find the rank of the line count
 
 $ref = 'nickstats rank query';
-$query = "SELECT nick, sum(lines) AS count FROM statcache_lines WHERE channel='$channel' GROUP BY nick ORDER BY count DESC";
+$query = "SELECT nick, count(uts) FROM log WHERE $where_privmsg AND $where_nonick GROUP BY nick ORDER BY count DESC";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -123,8 +153,10 @@ $sayparts[] = "%C$fntl%0 lines / $ftl total ($fpcnt%)";
 
 # Find the first usage of the given nick(s)
 
+$where_nickonly = f::log_where_nick($nicks, $channel, false);
+
 $ref = 'nickstats first use query';
-$query = "SELECT uts, nick FROM statcache_firstuse WHERE $where ORDER BY uts ASC LIMIT 1";
+$query = "SELECT uts, nick, ircuser FROM log WHERE $where_nickonly AND $where_dateonly ORDER BY uts ASC LIMIT 1";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -152,11 +184,11 @@ if ($q === false) {
 	}
 
 	if (count($nicks) == 1) {
-		$as = '';
+		$as = "as user {$qr['ircuser']}";
 	} else {
-		$as = " by nick {$qr['nick']}";
+		$as = "by nick {$qr['nick']}";
 	}
-	$sayparts[] = "First join: $fdate ($fed $days ago$as)";
+	$sayparts[] = "First join: $fdate ($fed $days ago $as)";
 
 	$flpd = number_format($nick_total_lines / $elapsed_days, 3);
 	$sayparts[] = "$flpd lines/day";
@@ -167,7 +199,7 @@ if ($q === false) {
 # Get big list of words
 
 $ref = 'nickstats word list query';
-$query = "SELECT word, wc AS count FROM statcache_words WHERE $where AND word !~ '^\x01' ORDER BY count DESC";
+$query = "SELECT * FROM (SELECT regexp_split_to_table(lower(message), '\s+') AS word, count(uts) FROM log WHERE $where_privmsg AND $where GROUP BY word ORDER BY count DESC) AS t1 WHERE word !~ '^\x01'";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {

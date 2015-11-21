@@ -9,6 +9,7 @@ proc::$name = 'logger';
 log::$level = log::INFO;
 
 require_once 'lib/utils.php';
+require_once 'lib/es_utils.php';
 require_once 'lib/functions.php';
 require_once 'lib/config.php';
 
@@ -36,6 +37,10 @@ function safe_feof($fp, &$start = null) {
 	return feof($fp);
 }
 
+class ExtraServ {
+	public static $db;
+}
+
 while (true) {
 	log::info('Connecting to IRC socket');
 	$_irc = fsockopen($_host, $_port);
@@ -52,6 +57,7 @@ while (true) {
 		log::fatal('Failed to connect to database, exiting');
 		exit(1);
 	}
+	ExtraServ::$db = $_sql;
 
 	log::info('Doing ident');
 	send("NICK $_nick");
@@ -121,6 +127,7 @@ while (true) {
 			}
 
 			if ($_i['cmd'] == 'PRIVMSG') {
+				$_i['sent_to'] = $_i['args'][0];
 				$karma = f::parse_karma($_i['text']);
 				foreach ($karma as $thing => $changes) {
 					$query_params = array(
@@ -145,6 +152,7 @@ while (true) {
 						log::info("Updated karma for '$thing' (+{$changes['++']}; -{$changes['--']}; nick={$handle->nick})");
 					}
 				}
+				f::statcache_line($_i);
 			}
 
 			$itext = pg_escape_string($_sql, $_i['text']);

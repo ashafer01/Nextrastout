@@ -10,7 +10,6 @@ if ($params == null) {
 }
 $nicks = array_map('trim', explode(',', strtolower($params)));
 $channel = $_i['sent_to'];
-$channel = '#geekboy';
 
 switch ($_CMD) {
 	case 'twowords':
