@@ -17,13 +17,9 @@ if ($params[0] < 1) {
 
 $params[0]--;
 
-$where = f::log_where($params[1]);
-if ($where == null) {
-	$where = '1=1';
-}
 $channel = $_i['sent_to'];
 
-$query = "SELECT nick, COUNT(*) AS lines FROM log WHERE args='$channel' AND $where GROUP BY nick ORDER BY lines DESC OFFSET {$params[0]} LIMIT 1";
+$query = "SELECT nick, lines FROM statcache_lines WHERE channel='$channel' ORDER BY lines DESC OFFSET {$params[0]} LIMIT 1";
 log::debug("rank query >> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
