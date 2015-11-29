@@ -12,11 +12,11 @@ $nicks = array_map('trim', explode(',', strtolower($params)));
 $channel = $_i['sent_to'];
 
 switch ($_CMD) {
-	case 'twowords':
+	case 'stwowords':
 		$N = 2;
 		break;
 	default:
-		if (preg_match('/^(\d)words$/', $_CMD, $matches) === 1) {
+		if (preg_match('/^s(\d)words$/', $_CMD, $matches) === 1) {
 			$N = (int) $matches[1];
 		} else {
 			return f::FALSE;

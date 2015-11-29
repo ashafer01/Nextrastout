@@ -23,22 +23,23 @@ if ($db === false) {
 
 class ExtraServ {
 	public static $db;
+	public static $prepared_queries = array();
 }
-
 ExtraServ::$db = $db;
+
+log::info('Connected to db');
 
 require_once 'lib/es_utils.php';
 
-log::info('Connected to db, truncating statcache_* tables');
-
-foreach (array('statcache_lines', 'statcache_misc', 'statcache_words', 'statcache_twowords') as $table) {
-	$q = pg_query($db, "TRUNCATE $table");
-	if ($q === false) {
-		log::fatal("Failed to truncate $table");
-		log::fatal(pg_last_error());
-		exit(1);
-	}
-}
+#log::info('truncating statcache_* tables');
+#foreach (array('statcache_lines', 'statcache_misc', 'statcache_words', 'statcache_twowords') as $table) {
+#	$q = pg_query($db, "TRUNCATE $table");
+#	if ($q === false) {
+#		log::fatal("Failed to truncate $table");
+#		log::fatal(pg_last_error());
+#		exit(1);
+#	}
+#}
 
 log::info('Selecting log');
 
@@ -51,9 +52,15 @@ if ($irclog === false) {
 
 log::info('Starting processing');
 
-$n = number_format(pg_num_rows($irclog));
-$l = strlen($n);
+$n = pg_num_rows($irclog);
+$total = number_format($n);
+$l = strlen($total);
 $i = 0;
+$time = time();
+$s_n = 0;
+$rate = '?';
+$est_complete = '?';
+$status_fmt = " %{$l}s / $total (%6s%%) | %7s lines/sec | Est completion %s   \r";
 while ($row = pg_fetch_assoc($irclog)) {
 	$_i = array(
 		'uts' => $row['uts'],
@@ -65,7 +72,16 @@ while ($row = pg_fetch_assoc($irclog)) {
 	$_i['hostmask']->nick = $row['nick'];
 	f::statcache_line($_i);
 	$i++;
-	printf(" %{$l}s / %s\r", number_format($i), $n);
+	$ntime = time();
+	if ($ntime != $time) {
+		$time = $ntime;
+		$s_complete = round(($n - $i) / $s_n);
+		$est_complete = date('Y-m-d H:i:s', $ntime + $s_complete);
+		$rate = number_format($s_n);
+		$s_n = 0;
+	}
+	$s_n++;
+	printf($status_fmt, number_format($i), number_format(($i/$n)*100, 2), $rate, $est_complete);
 }
 
 echo "\n";

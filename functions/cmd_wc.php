@@ -15,15 +15,15 @@ switch ($_CMD) {
 	case 'nwc':
 		if (count($params) == 1) {
 			$nick = $_i['hostmask']->nick;
-			$word = dbescape($params[0]);
+			$word = dbescape(ltrim($params[0], '+='));
 		} else {
-			$nick = dbescape($params[0]);
-			$word = dbescape($params[1]);
+			$nick = dbescape(ltrim($params[0], '@'));
+			$word = dbescape(ltrim($params[1], '+='));
 		}
 		$where = "word='$word' AND nick='$nick' AND channel='$channel'";
 		break;
 	case 'wc':
-		$word = dbescape($params[0]);
+		$word = dbescape(ltrim($params[0], '+='));
 		$where = "word='$word' AND channel='$channel'";
 		break;
 	default:

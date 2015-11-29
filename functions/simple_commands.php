@@ -15,6 +15,13 @@ switch ($_CMD) {
 	case 'help':
 		log::debug('Got !help');
 		$_i['handle']->say($_i['reply_to'], ExtraServ::$conf->wiki_url);
+		return f::TRUE;
+	case 'rand':
+		$randcmds = array('randquote', 'randcaps');
+		$f = $randcmds[array_rand($randcmds)];
+		$_ARGV[0] = $f;
+		f::CALL("cmd_$f", $_ARGV);
+		return f::TRUE;
 	default:
 		return f::FALSE;
 }

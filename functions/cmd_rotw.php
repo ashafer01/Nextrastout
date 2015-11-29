@@ -8,7 +8,7 @@ $channel = $_i['sent_to'];
 
 if ($param != null) {
 	$word = dbescape(strtolower($param));
-	$where = "word='$word' AND channel='$channel'";
+	$where = "word='$word' AND channel='$channel' AND nick NOT IN ('nextrastout','extrastout')";
 
 	$query = "SELECT SUM(wc) AS count FROM statcache_words WHERE $where";
 	log::debug("total query >>> $query");

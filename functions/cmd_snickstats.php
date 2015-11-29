@@ -199,7 +199,7 @@ if ($q === false) {
 # Get big list of words
 
 $ref = 'nickstats word list query';
-$query = "SELECT * FROM (SELECT regexp_split_to_table(lower(message), '\s+') AS word, count(uts) FROM log WHERE $where_privmsg AND $where GROUP BY word ORDER BY count DESC) AS t1 WHERE word !~ '^\x01'";
+$query = "SELECT * FROM (SELECT regexp_split_to_table(lower(message), '\W+') AS word, count(uts) FROM log WHERE $where_privmsg AND $where GROUP BY word ORDER BY count DESC) AS t1 WHERE word !~ '^\x01'";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -222,6 +222,9 @@ if ($q === false) {
 #########################
 
 while ($qr = pg_fetch_assoc($q)) {
+	if (strlen($qr['word']) < 3) {
+		continue;
+	}
 	if (!in_array($qr['word'], config::get_list('stopwords'))) {
 		$ftwc = number_format($qr['count']);
 		$sayparts[] = "Top word: {$qr['word']} ($ftwc)";

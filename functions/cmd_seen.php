@@ -10,7 +10,7 @@ if ($fc != '#' && $fc != '&') {
 	$channel = ExtraServ::$conf->default_channel;
 }
 
-$inick = pg_escape_string(ExtraServ::$db, strtolower($_ARG));
+$inick = pg_escape_string(ExtraServ::$db, strtolower(rtrim($_ARG, '?')));
 
 $query = str_replace(array("\n","\t"), array(' ',''), <<<QUERY
 SELECT uts, command, nick, message,

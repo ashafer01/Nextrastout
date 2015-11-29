@@ -39,6 +39,7 @@ function safe_feof($fp, &$start = null) {
 
 class ExtraServ {
 	public static $db;
+	public static $prepared_queries = array();
 }
 
 while (true) {
@@ -152,8 +153,8 @@ while (true) {
 						log::info("Updated karma for '$thing' (+{$changes['++']}; -{$changes['--']}; nick={$handle->nick})");
 					}
 				}
-				f::statcache_line($_i);
 			}
+			f::statcache_line($_i);
 
 			$itext = pg_escape_string($_sql, $_i['text']);
 			$iargs = pg_escape_string($_sql, implode(' ', $_i['args']));
@@ -169,6 +170,11 @@ while (true) {
 				log::error(pg_last_error($_sql));
 				log::fatal('Failed to log message, exiting');
 				exit(1);
+			}
+			if (preg_match('/^[A-Z][A-Z!,\?\.\'\" ]{3,}$/', $_i['text']) === 1) {
+				log::info('Writing to caps cache');
+				$query = "INSERT INTO caps_cache (uts, nick, ircuser, irchost, command, args, message) VALUES ($uts, '{$handle->nick}', '{$handle->user}', '{$handle->host}', '$icmd', '$iargs', '$itext')";
+				$q = pg_query($_sql, $query);
 			}
 		} else {
 			log::rawlog(log::INFO, "%K<= $lline%0");

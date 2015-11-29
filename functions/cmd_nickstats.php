@@ -190,6 +190,9 @@ if ($q === false) {
 #########################
 
 while ($qr = pg_fetch_assoc($q)) {
+	if (strlen($qr['word']) < 3) {
+		continue;
+	}
 	if (!in_array($qr['word'], config::get_list('stopwords'))) {
 		$ftwc = number_format($qr['count']);
 		$sayparts[] = "Top word: {$qr['word']} ($ftwc)";

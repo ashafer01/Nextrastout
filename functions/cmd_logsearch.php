@@ -6,7 +6,7 @@ list($command, $params, $_i) = $_ARGV;
 
 $where = '';
 $rainbow = false;
-$capswhere = " AND message SIMILAR TO '[A-Z][A-Z!,\?\.''\" ]{3,}'";
+$table = 'log';
 $req_nicks = null;
 switch ($command) {
 	case 'fn':
@@ -56,12 +56,14 @@ switch ($command) {
 	case 'rrandomcaps':
 	case 'rrandcaps':
 	case 'rrancaps':
-		$where = $capswhere;
 		$rainbow = true;
 	case 'randcaps':
 	case 'rancaps':
 	case 'randomcaps':
-		$where = $capswhere;
+		$table = 'caps_cache';
+		$orderby = 'ORDER BY random()';
+		$limit = 'LIMIT 1';
+		break;
 	case 'random':
 		$orderby = 'ORDER BY random()';
 		$limit = 'LIMIT 1';
@@ -115,7 +117,8 @@ if ($command == 'line') {
 	$cmd_in = "(message NOT SIMILAR TO '(" . implode('|', $cmds) . ")%')";
 }
 
-$query = "SELECT uts, nick, message FROM log WHERE (command='PRIVMSG' AND args='{$_i['sent_to']}') AND $cmd_in" . f::log_where($query_params) . "$where $orderby $limit";
+$channel = $_i['sent_to'];
+$query = "SELECT uts, nick, message FROM $table WHERE (command='PRIVMSG' AND args='$channel') AND $cmd_in" . f::log_where($query_params) . "$where $orderby $limit";
 log::debug("log search query >>> $query");
 
 $q = pg_query(ExtraServ::$db, $query);
