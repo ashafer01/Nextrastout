@@ -88,26 +88,26 @@ if (!in_array($sname, ExtraServ::$prepared_queries)) {
 		return f::FALSE;
 	}
 }
-#$sname = 'update_statcache_twowords';
-#if (!in_array($sname, ExtraServ::$prepared_queries)) {
-#	$p = pg_prepare(ExtraServ::$db, $sname, 'UPDATE statcache_twowords SET wc=wc+$4 WHERE channel=$1 AND nick=$2 AND twowords=$3');
-#	if ($p !== false) {
-#		ExtraServ::$prepared_queries[] = $sname;
-#	} else {
-#		log::error(pg_last_error());
-#		return f::FALSE;
-#	}
-#}
-#$sname = 'insert_statcache_twowords';
-#if (!in_array($sname, ExtraServ::$prepared_queries)) {
-#	$p = pg_prepare(ExtraServ::$db, $sname, 'INSERT INTO statcache_twowords (channel, nick, twowords, wc) VALUES ($1,$2,$3,$4)');
-#	if ($p !== false) {
-#		ExtraServ::$prepared_queries[] = $sname;
-#	} else {
-#		log::error(pg_last_error());
-#		return f::FALSE;
-#	}
-#}
+$sname = 'update_statcache_twowords';
+if (!in_array($sname, ExtraServ::$prepared_queries)) {
+	$p = pg_prepare(ExtraServ::$db, $sname, 'UPDATE statcache_twowords SET wc=wc+$4 WHERE channel=$1 AND nick=$2 AND twowords=$3');
+	if ($p !== false) {
+		ExtraServ::$prepared_queries[] = $sname;
+	} else {
+		log::error(pg_last_error());
+		return f::FALSE;
+	}
+}
+$sname = 'insert_statcache_twowords';
+if (!in_array($sname, ExtraServ::$prepared_queries)) {
+	$p = pg_prepare(ExtraServ::$db, $sname, 'INSERT INTO statcache_twowords (channel, nick, twowords, wc) VALUES ($1,$2,$3,$4)');
+	if ($p !== false) {
+		ExtraServ::$prepared_queries[] = $sname;
+	} else {
+		log::error(pg_last_error());
+		return f::FALSE;
+	}
+}
 
 $channel_nick = array($channel, $nick);
 
@@ -164,45 +164,44 @@ foreach ($word_counts as $word => $wc) {
 	}
 }
 
-## update twowords list
-#$N = 2;
-#$stopwords = config::get_list('stopwords');
-#$sequences = array();
-#$words = array_map(function($w) {
-#	return str_replace(chr(1), '', $w);
-#}, array_filter(array_map('trim', explode(' ', strtolower($_i['text']))), function($w) use ($stopwords) {
-#	if ($w == null) {
-#		return false;
-#	}
-#	if ($w == chr(1).'action') {
-#		return false;
-#	}
-#	if (in_array($w, $stopwords)) {
-#		return false;
-#	}
-#	return true;
-#}));
-#$words = array_values($words);
-#
-#if (count($words) >= $N) {
-#	for ($i = 0; $i < count($words) - ($N-1); $i++) {
-#		$seq = array();
-#		for ($j = $i; $j < $i+$N; $j++) {
-#			$seq[] = $words[$j];
-#		}
-#		$seq = implode(' ', $seq);
-#		if (isset($sequences[$seq])) {
-#			$sequences[$seq]++;
-#		} else {
-#			$sequences[$seq] = 1;
-#		}
-#	}
-#	foreach ($sequences as $seq => $wc) {
-#		$qparams = array($channel, $nick, $seq, $wc);
-#		$q = pg_execute(ExtraServ::$db, 'update_statcache_twowords', $qparams);
-#		if (($q !== false) && (pg_affected_rows($q) == 0)) {
-#			pg_execute(ExtraServ::$db, 'insert_statcache_twowords', $qparams);
-#		}
-#	}
-#}
+# update twowords list
+$N = 2;
+$stopwords = config::get_list('stopwords');
+$sequences = array();
+$words = array_map(function($w) {
+	return str_replace(chr(1), '', $w);
+}, array_filter(array_map('trim', explode(' ', strtolower($_i['text']))), function($w) use ($stopwords) {
+	if ($w == null) {
+		return false;
+	}
+	if ($w == chr(1).'action') {
+		return false;
+	}
+	if (in_array($w, $stopwords)) {
+		return false;
+	}
+	return true;
+}));
+$words = array_values($words);
 
+if (count($words) >= $N) {
+	for ($i = 0; $i < count($words) - ($N-1); $i++) {
+		$seq = array();
+		for ($j = $i; $j < $i+$N; $j++) {
+			$seq[] = $words[$j];
+		}
+		$seq = implode(' ', $seq);
+		if (isset($sequences[$seq])) {
+			$sequences[$seq]++;
+		} else {
+			$sequences[$seq] = 1;
+		}
+	}
+	foreach ($sequences as $seq => $wc) {
+		$qparams = array($channel, $nick, $seq, $wc);
+		$q = pg_execute(ExtraServ::$db, 'update_statcache_twowords', $qparams);
+		if (($q !== false) && (pg_affected_rows($q) == 0)) {
+			pg_execute(ExtraServ::$db, 'insert_statcache_twowords', $qparams);
+		}
+	}
+}
