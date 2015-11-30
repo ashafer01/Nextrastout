@@ -159,11 +159,17 @@ if ($q === false) {
 } else {
 	log::debug("$ref OK");
 	$saypart = array();
+	$i = 0;
 	while ($qr = pg_fetch_assoc($q)) {
 		$fuvmc = number_format($qr['up']);
 		$fdvmc = number_format($qr['down']);
 		$fnvmc = number_format($qr['net']);
-		$saypart[] = "{$qr['thing']} $fnvmc (+$fuvmc/-$fdvmc)";
+		if ($i == 0) {
+			$saypart[] = "%g{$qr['thing']}%0 $fnvmc (+$fuvmc/-$fdvmc)";
+		} else {
+			$saypart[] = "{$qr['thing']} $fnvmc (+$fuvmc/-$fdvmc)";
+		}
+		$i++;
 	}
 	$sayparts[] = 'Most upvoted things: ' . implode(', ', $saypart);
 }
@@ -186,11 +192,17 @@ if ($q === false) {
 } else {
 	log::debug("$ref OK");
 	$saypart = array();
+	$i = 0;
 	while ($qr = pg_fetch_assoc($q)) {
 		$fdvmc = number_format($qr['down']);
 		$fuvmc = number_format($qr['up']);
 		$fnvmc = number_format($qr['net']);
-		$saypart[] = "{$qr['thing']} $fnvmc (+$fuvmc/-$fdvmc)";
+		if ($i == 0) {
+			$saypart[] = "%r{$qr['thing']}%0 $fnvmc (+$fuvmc/-$fdvmc)";
+		} else {
+			$saypart[] = "{$qr['thing']} $fnvmc (+$fuvmc/-$fdvmc)";
+		}
+		$i++;
 	}
 	$sayparts[] = 'Most downvoted things: ' . implode(', ', $saypart);
 }
