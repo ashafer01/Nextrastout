@@ -12,11 +12,11 @@ $nicks = array_map('trim', explode(',', strtolower($params)));
 $channel = $_i['sent_to'];
 
 switch ($_CMD) {
-	case 'stwowords':
+	case 'twowords':
 		$N = 2;
 		break;
 	default:
-		if (preg_match('/^s(\d)words$/', $_CMD, $matches) === 1) {
+		if (preg_match('/^(\d)words$/', $_CMD, $matches) === 1) {
 			$N = (int) $matches[1];
 		} else {
 			return f::FALSE;
@@ -39,7 +39,7 @@ if ($q === false) {
 	log::debug('word_sequences query OK');
 
 	$sequences = array();
-	$stopwords = config::get_list('stopwords');
+	$stopwords = config::get_list('stopwords_extended');
 	while ($row = pg_fetch_assoc($q)) {
 		$words = array_map(function($w) {
 			return str_replace(chr(1), '', $w);

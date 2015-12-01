@@ -10,12 +10,14 @@ $where_notme = "nick NOT IN ('" . strtolower(ExtraServ::$bot_handle->nick)  . "'
 
 if ($params != null) {
 	$nicks = explode(',', strtolower($params));
-	$where = 'nick IN (' . implode(',', array_map('single_quote', array_map('dbescape', $nicks))) . ") AND channel='$channel'";
+	$where_nick = 'nick IN (' . implode(',', array_map('single_quote', array_map('dbescape', $nicks))) . ')';
 } else {
 	$nicks = array($_i['hostmask']->nick);
 	$nick = dbescape(strtolower($nicks[0]));
-	$where = "nick='$nick' AND channel='$channel'";
+	$where_nick = "nick='$nick'";
 }
+
+$where = "$where_nick AND channel='$channel'";
 
 $nicks = array_map('strtolower', $nicks);
 $nicks = array_map('dbescape', $nicks);
@@ -204,6 +206,110 @@ pg_result_seek($q, 0);
 
 #########################
 
+# Get time profile
+
+$sums = array();
+foreach (array('d_mon','d_tue','d_wed','d_thu','d_fri','d_sat','d_sun') as $d_col) {
+	$sums[] = "SUM($d_col) AS $d_col";
+}
+for ($i = 0; $i < 24; $i++) {
+	$sums[] = "SUM(h_$i) AS h_$i";
+}
+$sums = implode(', ', $sums);
+
+$ref = 'nickstats time profile query';
+$query = "SELECT $sums FROM statcache_timeprofile WHERE $where";
+log::debug("$ref >>> $query");
+$q = pg_query(ExtraServ::$db, $query);
+if ($q === false) {
+	log::error("$ref failed");
+	log::error(pg_last_error());
+	$sayparts[] = 'Query failed';
+	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
+	return f::FALSE;
+} else {
+	log::debug("$ref OK");
+	$qr = pg_fetch_assoc($q);
+
+	$max_hour = '?';
+	$max_day = '?';
+	$max_h_val = 0;
+	$max_d_val = 0;
+	foreach ($qr as $col => $val) {
+		$f2c = substr($col, 0, 2);
+		if ($f2c == 'h_') {
+			# hour column
+			if ($val > $max_h_val) {
+				$max_h_val = $val;
+				$max_hour = $col;
+			}
+		} elseif ($f2c == 'd_') {
+			# day column
+			if ($val > $max_d_val) {
+				$max_d_val = $val;
+				$max_day = $col;
+			}
+		}
+	}
+	$max_hour = substr($max_hour, 2);
+	$tzo = tz_hour_offset();
+	$max_hour = $max_hour + $tzo;
+	if ($max_hour < 0) {
+		$max_hour = 24 + $max_hour;
+	}
+
+	$daymap = array(
+		'd_mon' => 'Monday',
+		'd_tue' => 'Tuesday',
+		'd_wed' => 'Wednesday',
+		'd_thu' => 'Thursday',
+		'd_fri' => 'Friday',
+		'd_sat' => 'Saturday',
+		'd_sun' => 'Sunday'
+	);
+	$max_day = $daymap[$max_day];
+
+	$fmdv = number_format($max_d_val);
+	$fmdvr = number_format(($max_d_val / $nick_total_lines) * 100, 2);
+	$sayparts[] = "Most talkative day: $b{$max_day}$b ($fmdv lines; $fmdvr%)";
+
+	$fmhv = number_format($max_h_val);
+	$fmhvr = number_format(($max_h_val / $nick_total_lines) * 100, 2);
+	$sayparts[] = "Most talkative hour: $b{$max_hour}:00$b ($fmhv lines; $fmhvr%)";
+}
+
+#########################
+
+# number of caps lines
+
+$ref = 'nickstats caps count query';
+$query = "SELECT count(*) FROM caps_cache WHERE args='$channel' AND $where_nick";
+log::debug("$ref >>> $query");
+$q = pg_query(ExtraServ::$db, $query);
+if ($q === false) {
+	log::error("$ref failed");
+	log::error(pg_last_error());
+	$sayparts[] = 'Query failed';
+	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
+	return f::FALSE;
+} else {
+	log::debug("$ref OK");
+	$qr = pg_fetch_assoc($q);
+
+	$caps_count = $qr['count'];
+	$fcc = number_format($caps_count);
+	$fccr = number_format(($caps_count / $nick_total_lines) * 100, 2);
+	$sayparts[] = "$fcc caps lines ($fccr%)";
+}
+
+#########################
+
+$sayparts[] = 'See also: !nickkarma, !twowords';
+
+log::debug('Finished nickstats queries');
+
+$_i['handle']->say($_i['reply_to'], color_formatting::irc($sayprefix . implode(' | ', $sayparts)));
+return f::TRUE;
 $sayparts[] = 'See also: !nickkarma, !twowords';
 
 log::debug('Finished nickstats queries');

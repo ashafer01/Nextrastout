@@ -64,9 +64,7 @@ function get_password($name) {
 	return trim(file_get_contents("passwords/$name.password"));
 }
 
-function duration_str($seconds) {
-	if ($seconds == 0)
-		return '0 seconds';
+function split_seconds($seconds) {
 	$ut = $seconds;
 	$sm = 60;
 	$sh = 60 * $sm;
@@ -81,14 +79,36 @@ function duration_str($seconds) {
 	$m = floor($ms / $sm);
 	$rs = $ms % $sm;
 	$s = ceil($rs);
-	$ago = array(
+	return array(
 		'year' => $y,
 		'day' => $d,
 		'hour' => $h,
 		'minute' => $m,
 		'second' => $s
 	);
+}
+
+function short_duration_str($seconds) {
+	if ($seconds == 0) {
+		return '00:00:00';
+	}
+	$duration = split_seconds($seconds);
+	$dur_strs = array();
+	if ($duration['year'] > 0) {
+		$dur_strs[] = sprintf('%2sY', $duration['year']);
+	}
+	if ($duration['day'] > 0) {
+		$dur_strs[] = sprintf('%3sD', $duration['day']);
+	}
+	$dur_strs[] = sprintf("%02dH:%02dM:%02dS", $duration['hour'], $duration['minute'], $duration['second']);
+	return implode(' ', $dur_strs);
+}
+
+function duration_str($seconds) {
+	if ($seconds == 0)
+		return '0 seconds';
 	$ago_strs = array();
+	$ago = split_seconds($seconds);
 	foreach ($ago as $word => $num) {
 		if ($num <= 0)
 			continue;

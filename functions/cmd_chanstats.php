@@ -12,7 +12,7 @@ $sayparts = array();
 $b = chr(2); # bold
 
 $ref = 'chanstats first channel use';
-$query = "SELECT nick, uts FROM log WHERE $where_channel ORDER BY uts LIMIT 1";
+$query = "SELECT nick, uts FROM statcache_firstuse WHERE channel='$channel' ORDER BY uts LIMIT 1";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -35,12 +35,11 @@ if ($q === false) {
 
 	$ffud = smart_date_fmt($first_use_uts);
 	$fcad = number_format($chan_age_days);
-	$frnick = rainbow($qr['nick']);
-	$sayparts[] = "First recorded use on $b$ffud$b by $b$frnick%0$b ($fcad days ago)";
+	$sayparts[] = "First recorded use: $b$ffud$b by $b{$qr['nick']}$b ($fcad days ago)";
 }
 
 $ref = 'chanstats total count query';
-$query = "SELECT count(uts) FROM log WHERE $where_channel";
+$query = "SELECT val AS count FROM statcache_misc WHERE channel='$channel' AND stat_name='total lines'";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -57,12 +56,11 @@ if ($q === false) {
 
 	$fctc = number_format($chan_total_count);
 	$flpd = number_format(($chan_total_count / ($chan_age_days + 0.0)), 2);
-	$flph = number_format(($chan_total_count / ($chan_age_hours + 0.0)), 2);
-	$sayparts[] = "%C$fctc%0 lines ($flpd lines/day; $flph lines/hour)";
+	$sayparts[] = "$fctc lines ($flpd lines/day)";
 }
 
 $ref = 'chanstats number nicks query';
-$query = "SELECT count(*) FROM (SELECT nick FROM log WHERE $where_channel GROUP BY nick) t1";
+$query = "SELECT count(*) FROM (SELECT nick FROM statcache_lines WHERE channel='$channel' GROUP BY nick) t1";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -79,10 +77,9 @@ if ($q === false) {
 	$avg_lines_per_nick = $chan_total_count / ($chan_total_nicks + 0.0);
 
 	$fctn = number_format($chan_total_nicks);
-	$falpn = number_format($avg_lines_per_nick, 5);
-	$falpnpd = number_format($avg_lines_per_nick / $chan_age_days, 5);
-	$falpnph = number_format($avg_lines_per_nick / $chan_age_hours, 6);
-	$sayparts[] = "$b$fctn$b unique nicknames ($falpn lines/nick; $falpnpd lines/nick/day; $falpnph lines/nick/hour)";
+	$falpn = number_format($avg_lines_per_nick, 2);
+	$falpnpd = number_format($avg_lines_per_nick / $chan_age_days, 2);
+	$sayparts[] = "$fctn nicks ($falpn lines/nick; $falpnpd lines/nick/day)";
 }
 
 $ref = 'chanstats number users query';
@@ -100,10 +97,111 @@ if ($q === false) {
 	$qr = pg_fetch_assoc($q);
 
 	$fctu = number_format($qr['count']);
-	$sayparts[] = "$b$fctu$b unqiue usernames";
+	$sayparts[] = "$fctu usernames";
 }
 
-$sayparts[] = "See also: $b!karma *$b";
+$sums = array();
+foreach (array('d_mon','d_tue','d_wed','d_thu','d_fri','d_sat','d_sun') as $d_col) {
+	$sums[] = "SUM($d_col) AS $d_col";
+}
+for ($i = 0; $i < 24; $i++) {
+	$sums[] = "SUM(h_$i) AS h_$i";
+}
+$sums = implode(', ', $sums);
 
-$_i['handle']->say($_i['reply_to'], color_formatting::irc($sayprefix . implode(' | ', $sayparts)));
+$ref = 'chanstats time profile query';
+$query = "SELECT $sums FROM statcache_timeprofile WHERE channel='$channel'";
+log::debug("$ref >>> $query");
+$q = pg_query(ExtraServ::$db, $query);
+if ($q === false) {
+	log::error("$ref failed");
+	log::error(pg_last_error());
+	$sayparts[] = 'Query failed';
+	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
+	return f::FALSE;
+} else {
+	log::debug("$ref OK");
+	$qr = pg_fetch_assoc($q);
+
+	$max_hour = '?';
+	$max_day = '?';
+	$max_h_val = 0;
+	$max_d_val = 0;
+	foreach ($qr as $col => $val) {
+		$f2c = substr($col, 0, 2);
+		if ($f2c == 'h_') {
+			# hour column
+			if ($val > $max_h_val) {
+				$max_h_val = $val;
+				$max_hour = $col;
+			}
+		} elseif ($f2c == 'd_') {
+			# day column
+			if ($val > $max_d_val) {
+				$max_d_val = $val;
+				$max_day = $col;
+			}
+		}
+	}
+	$max_hour = substr($max_hour, 2);
+	$tzo = tz_hour_offset();
+	$max_hour = $max_hour + $tzo;
+	if ($max_hour < 0) {
+		$max_hour = 24 + $max_hour;
+	}
+
+	$daymap = array(
+		'd_mon' => 'Monday',
+		'd_tue' => 'Tuesday',
+		'd_wed' => 'Wednesday',
+		'd_thu' => 'Thursday',
+		'd_fri' => 'Friday',
+		'd_sat' => 'Saturday',
+		'd_sun' => 'Sunday'
+	);
+	$max_day = $daymap[$max_day];
+
+	$fmdv = number_format($max_d_val);
+	$fmdvr = number_format(($max_d_val / $chan_total_count) * 100, 2);
+	$sayparts[] = "Most talkative day: $b{$max_day}$b ($fmdv lines; $fmdvr%)";
+
+	$fmhv = number_format($max_h_val);
+	$fmhvr = number_format(($max_h_val / $chan_total_count) * 100, 2);
+	$sayparts[] = "Most talkative hour: $b{$max_hour}:00$b ($fmhv lines; $fmhvr%)";
+}
+
+$ref = 'chanstats word list query';
+$query = "SELECT word, sum(wc) AS count FROM statcache_words WHERE channel='$channel' GROUP BY word ORDER BY count DESC";
+log::debug("$ref >>> $query");
+$q = pg_query(ExtraServ::$db, $query);
+if ($q === false) {
+	log::error("$ref failed");
+	log::error(pg_last_error());
+	$sayparts[] = 'Query failed';
+	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
+	return f::FALSE;
+} else {
+	log::debug("$ref OK");
+
+	$total_unique_words = pg_num_rows($q);
+
+	$ftuw = number_format($total_unique_words);
+	$fuwpd = number_format($total_unique_words / $chan_age_days, 2);
+	$sayparts[] = "Unique words: $ftuw ($fuwpd unique words/day)";
+}
+
+while ($qr = pg_fetch_assoc($q)) {
+	if (strlen($qr['word']) < 3) {
+		continue;
+	}
+	if (!in_array($qr['word'], config::get_list('stopwords'))) {
+		$ftwc = number_format($qr['count']);
+		$sayparts[] = "Top word: {$qr['word']} ($ftwc)";
+		break;
+	}
+}
+
+$sayparts[] = "See also: !karma *, !topkarma";
+
+$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 return f::TRUE;

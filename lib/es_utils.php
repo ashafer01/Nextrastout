@@ -55,6 +55,15 @@ function local_strtotime($time_str) {
 	return $ret;
 }
 
+function tz_hour_offset($tz = null) {
+	if ($tz == null) {
+		$tz = ExtraServ::$output_tz;
+	}
+	$dt = new DateTime('now', new DateTimeZone($tz));
+	$tzo = explode(':', $dt->format('P'));
+	return (int) $tzo[0];
+}
+
 function pg_is_prepared($stmt_name) {
 	$q = pg_query(ExtraServ::$db, 'SELECT name FROM pg_prepared_statements');
 	if ($q === false) {

@@ -32,7 +32,7 @@ log::info('Connected to db');
 require_once 'lib/es_utils.php';
 
 #log::info('truncating statcache_* tables');
-#foreach (array('statcache_firstuse', 'statcache_lines', 'statcache_misc', 'statcache_words', 'statcache_twowords') as $table) {
+#foreach (array('statcache_firstuse', 'statcache_lines', 'statcache_misc', 'statcache_words', 'statcache_timeprofile') as $table) {
 #	$q = pg_query($db, "TRUNCATE $table");
 #	if ($q === false) {
 #		log::fatal("Failed to truncate $table");
@@ -62,7 +62,8 @@ $runtime = 1;
 $rate = '?';
 $avg_rate = '?';
 $est_complete = '?';
-$status_fmt = " %{$l}s / $total (%6s%%) | %7s lines/sec | %10s avg lines/sec | Est completion %s   \r";
+$duration = '?';
+$status_fmt = " %{$l}s / $total (%6s%%) | %7s lines/sec | %10s avg lines/sec | Est completion %s (%s) \r";
 while ($row = pg_fetch_assoc($irclog)) {
 	$_i = array(
 		'uts' => $row['uts'],
@@ -82,11 +83,12 @@ while ($row = pg_fetch_assoc($irclog)) {
 		$avg_rate = number_format($avg_s_n, 2);
 		$s_complete = round(($n - $i) / $avg_s_n);
 		$est_complete = date('Y-m-d H:i:s', $ntime + $s_complete);
+		$duration = short_duration_str($s_complete);
 		$s_n = 0;
 		$runtime++;
 	}
 	$s_n++;
-	printf($status_fmt, number_format($i), number_format(($i/$n)*100, 2), $rate, $avg_rate, $est_complete);
+	printf($status_fmt, number_format($i), number_format(($i/$n)*100, 2), $rate, $avg_rate, $est_complete, $duration);
 }
 
 echo "\n";
