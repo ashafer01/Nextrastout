@@ -304,6 +304,28 @@ if ($q === false) {
 
 #########################
 
+# average line length
+
+$ref = 'nickstats avg line length query';
+$query = "SELECT nick, avg(char_length(message)) AS len FROM log WHERE args='$channel' AND command='PRIVMSG' AND $where_nick GROUP BY nick";
+log::debug("$ref >>> $query");
+$q = pg_query(ExtraServ::$db, $query);
+if ($q === false) {
+	log::error("$ref failed");
+	log::error(pg_last_error());
+	$sayparts[] = 'Query failed';
+	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
+	return f::FALSE;
+} else {
+	log::debug("$ref OK");
+	$qr = pg_fetch_assoc($q);
+
+	$fal = number_format($qr['len'], 2);
+	$sayparts[] = "Avg line length: $fal";
+}
+
+#########################
+
 $sayparts[] = 'See also: !nickkarma, !twowords';
 
 log::debug('Finished nickstats queries');

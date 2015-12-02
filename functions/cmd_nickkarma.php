@@ -93,6 +93,41 @@ if ($q === false) {
 	$up_votes = $qr['up'];
 	$down_votes = $qr['down'];
 	$net_votes = $up_votes - $down_votes;
+}
+
+#########################
+
+# Find the karma rank
+
+$ref = 'karma rank';
+$query = "SELECT thing, sum(up)-sum(down) AS net FROM karma_cache WHERE channel='$channel' AND thing IN (SELECT nick FROM karma_cache WHERE channel='$channel' GROUP BY nick) AND thing!=nick AND $where_notme GROUP BY thing ORDER BY net DESC";
+log::debug("$ref >>> $query");
+$q = pg_query(ExtraServ::$db, $query);
+if ($q === false) {
+	log::error("$ref failed");
+	log::error(pg_last_error());
+	$sayparts[] = 'Query failed';
+	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
+	return f::FALSE;
+} elseif (pg_num_rows($q) == 0) {
+	log::debug('No matching rows');
+	$sayparts[] = 'no votes';
+} else {
+	log::debug("$ref OK");
+	$rank = 1;
+	while ($qr = pg_fetch_assoc($q)) {
+		log::debug("thing={$qr['thing']} net={$qr['net']} rank=$rank");
+		if ($net_votes >= $qr['net']) {
+			log::debug("beat rank $rank");
+			break;
+		}
+		$rank++;
+	}
+
+	$frank = number_format($rank);
+	$suffix = ord_suffix($rank);
+	$sayparts[] = "Karma rank: $frank$suffix";
+
 	$fnv = number_format($net_votes);
 	$fuv = number_format($up_votes);
 	$fdv = number_format($down_votes);
