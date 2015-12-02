@@ -100,7 +100,7 @@ if ($q === false) {
 # Find the karma rank
 
 $ref = 'karma rank';
-$query = "SELECT thing, sum(up)-sum(down) AS net FROM karma_cache WHERE channel='$channel' AND thing IN (SELECT nick FROM karma_cache WHERE channel='$channel' GROUP BY nick) AND thing!=nick AND $where_notme GROUP BY thing ORDER BY net DESC";
+$query = "SELECT sum(up)-sum(down) AS net FROM karma_cache WHERE channel='$channel' AND thing IN (SELECT nick FROM karma_cache WHERE channel='$channel' GROUP BY nick) AND thing!=nick AND $where_notme GROUP BY thing ORDER BY net DESC";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -116,9 +116,7 @@ if ($q === false) {
 	log::debug("$ref OK");
 	$rank = 1;
 	while ($qr = pg_fetch_assoc($q)) {
-		log::debug("thing={$qr['thing']} net={$qr['net']} rank=$rank");
 		if ($net_votes >= $qr['net']) {
-			log::debug("beat rank $rank");
 			break;
 		}
 		$rank++;
