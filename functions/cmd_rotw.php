@@ -12,7 +12,7 @@ if ($param != null) {
 
 	$query = "SELECT SUM(wc) AS count FROM statcache_words WHERE $where";
 	log::debug("total query >>> $query");
-	$q = pg_query(ExtraServ::$db, $query);
+	$q = pg_query(Nextrastout::$db, $query);
 	if ($q === false) {
 		log::error('Query failed');
 		log::error(pg_last_error());
@@ -26,7 +26,7 @@ if ($param != null) {
 		if ($total_count > 0) {
 			$query = "SELECT nick, SUM(wc) AS count FROM statcache_words WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 10";
 			log::debug("kotw query >>> $query");
-			$q = pg_query(ExtraServ::$db, $query);
+			$q = pg_query(Nextrastout::$db, $query);
 			if ($q === false) {
 				log::error('Query failed');
 				log::error(pg_last_error());

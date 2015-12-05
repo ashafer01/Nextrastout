@@ -1,9 +1,9 @@
 //<?php
 
-ExtraServ::dbconnect();
+Nextrastout::dbconnect();
 f::ALIAS_INIT();
 
-$handles_re = implode('|', array_keys(ExtraServ::$handles));
+$handles_re = implode('|', array_keys(Nextrastout::$handles));
 $topicdata = array();
 
 $cmd_globals = new stdClass;
@@ -51,7 +51,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			if (array_key_exists($topicchan, $topicdata)) {
 				$query = "SELECT count(*) AS count from topic WHERE channel='$topicchan'";
 				log::debug("Check topic query >> $query");
-				$q = pg_query(ExtraServ::$db, $query);
+				$q = pg_query(Nextrastout::$db, $query);
 				if ($q === false) {
 					log::error('Query failed');
 					log::error(pg_last_error());
@@ -70,11 +70,11 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				if ($doit) {
 					$query = "INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '{$topicdata[$topicchan]}', '$nick', '$topicchan')";
 					log::debug("New topic query >> $query");
-					$q = pg_query(ExtraServ::$db, $query);
+					$q = pg_query(Nextrastout::$db, $query);
 					if ($q === false) {
 						log::error('Query failed');
 						log::error(pg_last_error());
-						ExtraServ::$bot_handle->say($_i['reply_to'], 'Failed to store new topic');
+						Nextrastout::$bot_handle->say($_i['reply_to'], 'Failed to store new topic');
 					} else {
 						log::debug("Stored new topic for $topicchan");
 					}
@@ -87,7 +87,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 		# need op privileges
 		case '482':
-			ExtraServ::$bot_handle->say($_i['args'][1], "I'll need op privileges to do that");
+			Nextrastout::$bot_handle->say($_i['args'][1], "I'll need op privileges to do that");
 			break;
 
 		# handle topic from user
@@ -106,11 +106,11 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 			$query = "INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '$topic', '$nick', '$topicchan')";
 			log::debug("New topic query >> $query");
-			$q = pg_query(ExtraServ::$db, $query);
+			$q = pg_query(Nextrastout::$db, $query);
 			if ($q === false) {
 				log::error('Query failed');
 				log::error(pg_last_error());
-				ExtraServ::$bot_handle->say($_i['args'][0], 'Failed to store new topic');
+				Nextrastout::$bot_handle->say($_i['args'][0], 'Failed to store new topic');
 			} else {
 				log::debug("Stored new topic for $topicchan");
 			}
@@ -118,7 +118,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 		# handle commands, etc.
 		case 'PRIVMSG':
-			if (in_array($_i['hostmask']->user, ExtraServ::$conf->banned_users)) {
+			if (in_array($_i['hostmask']->user, Nextrastout::$conf->banned_users)) {
 				log::info("Ignoring banned user {$_i['hostmask']->user}");
 				break;
 			}
@@ -126,9 +126,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			$leader = '!';
 			$_i['sent_to'] = $_i['args'][0];
 			$_i['reply_to'] = $_i['args'][0];
-			$_i['handle'] = ExtraServ::$bot_handle;
+			$_i['handle'] = Nextrastout::$bot_handle;
 			$in_pm = false;
-			foreach (ExtraServ::$handles as $handle) {
+			foreach (Nextrastout::$handles as $handle) {
 				if ($_i['reply_to'] == $handle->nick) {
 					log::trace('Received private message');
 					$_i['reply_to'] = $_i['hostmask']->nick;
@@ -153,20 +153,20 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				if (f::EXISTS($cmdfunc)) {
 					$iuser = $_i['hostmask']->user;
 					$inick = $_i['hostmask']->nick;
-					if (in_array($iuser, ExtraServ::$conf->cooldown_users) && array_key_exists($iuser, ExtraServ::$cmd_cooldown)) {
-						$mycd = ExtraServ::$cmd_cooldown[$iuser];
+					if (in_array($iuser, Nextrastout::$conf->cooldown_users) && array_key_exists($iuser, Nextrastout::$cmd_cooldown)) {
+						$mycd = Nextrastout::$cmd_cooldown[$iuser];
 						if (($mycd['last'] + $mycd['cooldown']) >= time()) {
 							$lastdate = date('r', $mycd['last']);
 							log::info("{$iuser} under {$mycd['cooldown']} second cooldown from $lastdate");
 
 							# update array
 							$wlevel = "warn{$mycd['warncount']}";
-							if (isset(ExtraServ::$conf->cooldown->{$wlevel})) {
-								$newcd = ExtraServ::$conf->cooldown->{$wlevel};
+							if (isset(Nextrastout::$conf->cooldown->{$wlevel})) {
+								$newcd = Nextrastout::$conf->cooldown->{$wlevel};
 							} else {
 								$newcd = $mycd['cooldown'];
 							}
-							ExtraServ::$cmd_cooldown[$iuser] = array(
+							Nextrastout::$cmd_cooldown[$iuser] = array(
 								'last' => time(),
 								'cooldown' => $newcd,
 								'warncount' => $mycd['warncount']+1
@@ -195,7 +195,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						}
 					}
 
-					ExtraServ::$cmd_cooldown[$iuser] = array('last' => time(), 'cooldown' => ExtraServ::$conf->cooldown->initial, 'warncount' => 0);
+					Nextrastout::$cmd_cooldown[$iuser] = array('last' => time(), 'cooldown' => Nextrastout::$conf->cooldown->initial, 'warncount' => 0);
 					f::CALL($cmdfunc, array($ucmd, $uarg, $_i, $cmd_globals));
 				} elseif(is_admin($_i['hostmask']->user)) {
 					switch ($ucmd) {
@@ -208,7 +208,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 								config::reload_all();
 								$_i['handle']->say($_i['reply_to'], 'Reloaded config');
 								f::ALIAS_INIT();
-								ExtraServ::$bot_handle->update_conf_channels();
+								Nextrastout::$bot_handle->update_conf_channels();
 							}
 							$_i['handle']->say($_i['reply_to'], 'Reloading nextrastout');
 							f::RELOAD('nextrastout');
@@ -243,13 +243,13 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							config::reload_all();
 							$_i['handle']->say($_i['reply_to'], 'Reloaded config');
 							f::ALIAS_INIT();
-							ExtraServ::$bot_handle->update_conf_channels();
+							Nextrastout::$bot_handle->update_conf_channels();
 							break;
 						case 'dump-cd':
-							print_r(ExtraServ::$cmd_cooldown);
+							print_r(Nextrastout::$cmd_cooldown);
 							break;
 						case 'rm-cd':
-							unset(ExtraServ::$cmd_cooldown[$uarg]);
+							unset(Nextrastout::$cmd_cooldown[$uarg]);
 							$_i['handle']->say($_i['reply_to'], "Cleared cooldown for $uarg");
 							break;
 						case 'reload-all':
@@ -257,7 +257,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading and reloading conf');
 							f::RELOAD_ALL();
 							config::reload_all();
-							ExtraServ::$bot_handle->update_conf_channels();
+							Nextrastout::$bot_handle->update_conf_channels();
 							break;
 						case 'es-stop':
 							log::notice('Got !es-stop, stopping');
@@ -272,24 +272,24 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							break;
 						case 'set-tz':
 							log::notice('Got !set-tz');
-							ExtraServ::$output_tz = $uarg;
+							Nextrastout::$output_tz = $uarg;
 							$_i['handle']->say($_i['reply_to'], 'Changed output timezone');
 							break;
 						case 'es-join':
 							log::notice('Got !es-join');
-							ExtraServ::$bot_handle->join($uarg);
+							Nextrastout::$bot_handle->join($uarg);
 							break;
 						case 'es-part':
 							log::notice('Got !es-part');
-							ExtraServ::$bot_handle->part($uarg);
+							Nextrastout::$bot_handle->part($uarg);
 							break;
 						case 'chanserv':
 							log::notice('Got !chanserv');
-							ExtraServ::$bot_handle->say('ChanServ', $uarg);
+							Nextrastout::$bot_handle->say('ChanServ', $uarg);
 							break;
 						case 'nickserv':
 							log::notice('Got !nickserv');
-							ExtraServ::$bot_handle->say('NickServ', $uarg);
+							Nextrastout::$bot_handle->say('NickServ', $uarg);
 							break;
 						default:
 							log::trace('Not an admin command');
@@ -322,5 +322,5 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 	}
 }
 
-ExtraServ::$bot_handle->del_all_channels();
+Nextrastout::$bot_handle->del_all_channels();
 exit(1);

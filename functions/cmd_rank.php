@@ -21,7 +21,7 @@ $channel = $_i['sent_to'];
 
 $query = "SELECT nick, lines FROM statcache_lines WHERE channel='$channel' ORDER BY lines DESC OFFSET {$params[0]} LIMIT 1";
 log::debug("rank query >> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error('Query failed');
 	log::error(pg_last_error());

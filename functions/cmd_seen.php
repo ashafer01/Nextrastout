@@ -7,10 +7,10 @@ $channel = $_i['sent_to'];
 $fc = substr($channel, 0, 1);
 if ($fc != '#' && $fc != '&') {
 	log::debug('Got seen in PM, using default_channel');
-	$channel = ExtraServ::$conf->default_channel;
+	$channel = Nextrastout::$conf->default_channel;
 }
 
-$inick = pg_escape_string(ExtraServ::$db, strtolower(rtrim($_ARG, '?')));
+$inick = pg_escape_string(Nextrastout::$db, strtolower(rtrim($_ARG, '?')));
 
 $query = str_replace(array("\n","\t"), array(' ',''), <<<QUERY
 SELECT uts, command, nick, message,
@@ -30,7 +30,7 @@ QUERY
 
 log::debug("seen query >>> $query");
 
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error('Query failed');
 	log::error(pg_last_error());

@@ -6,7 +6,7 @@ list($_CMD, $params, $_i) = $_ARGV;
 
 $channel = $_i['sent_to'];
 
-$where_notme = "nick NOT IN ('" . strtolower(ExtraServ::$bot_handle->nick)  . "', 'extrastout')";
+$where_notme = "nick NOT IN ('" . strtolower(Nextrastout::$bot_handle->nick)  . "', 'extrastout')";
 
 if ($params != null) {
 	$nicks = explode(',', strtolower($params));
@@ -35,7 +35,7 @@ log::debug('Starting nickstats queries');
 $ref = 'nickstats total lines query';
 $query = "SELECT val AS count FROM statcache_misc WHERE channel='$channel' AND stat_name='total lines'";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -60,7 +60,7 @@ if ($q === false) {
 $ref = 'nickstats total nick lines query';
 $query = "SELECT SUM(lines) AS count FROM statcache_lines WHERE $where";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -83,7 +83,7 @@ if ($q === false) {
 $ref = 'nickstats rank query';
 $query = "SELECT nick, sum(lines) AS count FROM statcache_lines WHERE channel='$channel' GROUP BY nick ORDER BY count DESC";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -128,7 +128,7 @@ $sayparts[] = "%C$fntl%0 lines / $ftl total ($fpcnt%)";
 $ref = 'nickstats first use query';
 $query = "SELECT uts, nick FROM statcache_firstuse WHERE $where ORDER BY uts ASC LIMIT 1";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -171,7 +171,7 @@ if ($q === false) {
 $ref = 'nickstats word list query';
 $query = "SELECT word, wc AS count FROM statcache_words WHERE $where AND word !~ '^\x01' ORDER BY count DESC";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -220,7 +220,7 @@ $sums = implode(', ', $sums);
 $ref = 'nickstats time profile query';
 $query = "SELECT $sums FROM statcache_timeprofile WHERE $where";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -285,7 +285,7 @@ if ($q === false) {
 $ref = 'nickstats caps count query';
 $query = "SELECT count(*) FROM caps_cache WHERE args='$channel' AND $where_nick";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -309,7 +309,7 @@ if ($q === false) {
 $ref = 'nickstats avg line length query';
 $query = "SELECT nick, avg(char_length(message)) AS len FROM log WHERE args='$channel' AND command='PRIVMSG' AND $where_nick GROUP BY nick";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());

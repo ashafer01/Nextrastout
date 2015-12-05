@@ -9,7 +9,7 @@ $where = "channel='$channel'";
 
 $query = "SELECT SUM(lines) AS count FROM statcache_lines WHERE $where";
 log::debug("total query >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error('Query failed');
 	log::error(pg_last_error());
@@ -23,7 +23,7 @@ if ($q === false) {
 	if ($total_count > 0) {
 		$query = "SELECT nick, SUM(lines) AS count FROM statcache_lines WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 10";
 		log::debug("kol query >>> $query");
-		$q = pg_query(ExtraServ::$db, $query);
+		$q = pg_query(Nextrastout::$db, $query);
 		if ($q === false) {
 			log::error('Query failed');
 			log::error(pg_last_error());

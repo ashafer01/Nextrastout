@@ -121,7 +121,7 @@ $channel = $_i['sent_to'];
 $query = "SELECT uts, nick, message FROM $table WHERE (command='PRIVMSG' AND args='$channel') AND $cmd_in" . f::log_where($query_params) . "$where $orderby $limit";
 log::debug("log search query >>> $query");
 
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("Query failed");
 	log::error(pg_last_error());

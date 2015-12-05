@@ -14,7 +14,7 @@ switch ($_CMD) {
 		return f::TRUE;
 	case 'help':
 		log::debug('Got !help');
-		$_i['handle']->say($_i['reply_to'], ExtraServ::$conf->wiki_url);
+		$_i['handle']->say($_i['reply_to'], Nextrastout::$conf->wiki_url);
 		return f::TRUE;
 	case 'rand':
 		$randcmds = array('randquote', 'randcaps');

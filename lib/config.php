@@ -16,7 +16,7 @@ class config {
 	## ini stuff
 	private $conf = null;
 	public function reload() {
-		$main = new IniParser(config::$base . 'ExtraServ.ini');
+		$main = new IniParser(config::$base . 'Nextrastout.ini');
 		$private = new IniParser(config::$base . 'private.ini');
 		$this->conf = new ArrayObject(array_merge($main->parse()->getArrayCopy(), $private->parse()->getArrayCopy()), ArrayObject::ARRAY_AS_PROPS);
 	}

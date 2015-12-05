@@ -29,8 +29,8 @@ class client {
 		uplink::send("USER {$this->user} dot dot :{$this->name}");
 
 		$this->sent_nickserv_ident = false;
-		if (isset(ExtraServ::$conf->nickserv_passwords->{$this->nick})) {
-			$this->say('NickServ', 'IDENTIFY ' . ExtraServ::$conf->nickserv_passwords->{$this->nick});
+		if (isset(Nextrastout::$conf->nickserv_passwords->{$this->nick})) {
+			$this->say('NickServ', 'IDENTIFY ' . Nextrastout::$conf->nickserv_passwords->{$this->nick});
 			$this->sent_nickserv_ident = true;
 		}
 
@@ -40,15 +40,15 @@ class client {
 	}
 
 	public function send($line) {
-		ExtraServ::usend($this->nick, $line);
+		Nextrastout::usend($this->nick, $line);
 	}
 
 	public function say($to, $message) {
-		ExtraServ::usend($this->nick, "PRIVMSG $to :$message");
+		Nextrastout::usend($this->nick, "PRIVMSG $to :$message");
 	}
 
 	public function notice($to, $message) {
-		ExtraServ::usend($this->nick, "NOTICE $to :$message");
+		Nextrastout::usend($this->nick, "NOTICE $to :$message");
 	}
 
 	public function update_conf_channels() {
@@ -71,7 +71,7 @@ class client {
 			$this->channels[] = $channel;
 		}
 		log::debug("Joining $channel");
-		ExtraServ::sjoin($this->nick, $channel);
+		Nextrastout::sjoin($this->nick, $channel);
 		//if ($this->sent_nickserv_ident === true) {
 		//	$this->say('ChanServ', "OP $channel");
 		//} else {
@@ -90,7 +90,7 @@ class client {
 	}
 
 	public function quit($reason) {
-		ExtraServ::usend($this->nick, "QUIT :$reason");
+		Nextrastout::usend($this->nick, "QUIT :$reason");
 	}
 
 	public function del_channel($channel) {

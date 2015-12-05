@@ -71,7 +71,7 @@ $where = "(command='PRIVMSG') AND (args='$channel') AND (uts > $start_uts) AND (
 
 $total = "SELECT count(uts) FROM log WHERE $where";
 log::debug("total query >>> $total");
-$q = pg_query(ExtraServ::$db, $total);
+$q = pg_query(Nextrastout::$db, $total);
 if ($q === false) {
 	log::error('total query failed');
 	log::error(pg_last_error());
@@ -84,7 +84,7 @@ if ($q === false) {
 
 $distinct_nicks = "SELECT count(*) FROM (SELECT count(nick) FROM log WHERE $where GROUP BY nick) AS t1;";
 log::debug("distinct nicks query >>> $distinct_nicks");
-$q = pg_query(ExtraServ::$db, $distinct_nicks);
+$q = pg_query(Nextrastout::$db, $distinct_nicks);
 if ($q === false) {
 	log::error('distinct nicks query failed');
 	log::error(pg_last_error());
@@ -97,7 +97,7 @@ if ($q === false) {
 
 $top_nicks = "SELECT nick, count(uts) FROM log WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 3";
 log::debug("top nicks query >>> $top_nicks");
-$q = pg_query(ExtraServ::$db, $top_nicks);
+$q = pg_query(Nextrastout::$db, $top_nicks);
 if ($q === false) {
 	log::error('top nicks query failed');
 	log::error(pg_last_error());
@@ -130,7 +130,7 @@ for ($i = $start_uts; $i <= $stop_uts; $i += 3600) {
 }
 $top_hours .= " END AS timerange, count(uts) FROM log WHERE $where GROUP BY timerange ORDER BY count DESC LIMIT 3";
 log::debug("top hours query >>> $top_hours");
-$q = pg_query(ExtraServ::$db, $top_hours);
+$q = pg_query(Nextrastout::$db, $top_hours);
 if ($q === false) {
 	log::error('top hours query failed');
 	log::error(pg_last_error());

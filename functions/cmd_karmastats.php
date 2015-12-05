@@ -19,7 +19,7 @@ if (($uarg == '*') || ($ucmd == 'chankarma')) {
 	$things = array($uarg);
 }
 
-$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout', 'm2', 'fish')";
+$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, Nextrastout::$handles))) . ", 'extrastout', 'm2', 'fish')";
 
 if ($do_total) {
 	$sayprefix = "All karma in $channel: ";
@@ -43,7 +43,7 @@ if ($where_nicks !== null) {
 	$where_things_karma .= " AND $where_nicks";
 }
 
-$q = pg_query_params(ExtraServ::$db, "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme", array(
+$q = pg_query_params(Nextrastout::$db, "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme", array(
 	$channel
 ));
 if ($q === false) {
@@ -71,7 +71,7 @@ if ($q === false) {
 }
 
 # top upvoters
-$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) >= 0 ORDER BY net DESC LIMIT 5", array(
+$q = pg_query_params(Nextrastout::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) >= 0 ORDER BY net DESC LIMIT 5", array(
 	$channel
 ));
 if ($q === false) {
@@ -105,7 +105,7 @@ if ($q === false) {
 }
 
 # top downvoters
-$q = pg_query_params(ExtraServ::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5", array(
+$q = pg_query_params(Nextrastout::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5", array(
 	$channel
 ));
 if ($q === false) {

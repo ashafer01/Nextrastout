@@ -1,13 +1,13 @@
 <?php
 
-### Utility functions depending on the ExtraServ class or other runtime resources
+### Utility functions depending on the Nextrastout class or other runtime resources
 
 require_once 'log.php';
 require_once 'procs.php';
 require_once 'functions.php';
 
 function smart_date_fmt($uts) {
-	$tz = new DateTimeZone(ExtraServ::$output_tz);
+	$tz = new DateTimeZone(Nextrastout::$output_tz);
 	$dt = new DateTime();
 	$dt->setTimestamp($uts);
 	$dt->setTimezone($tz);
@@ -43,13 +43,13 @@ function smart_date_fmt($uts) {
 function date_fmt($fmt, $uts) {
 	$dt = new DateTime();
 	$dt->setTimestamp($uts);
-	$dt->setTimezone(new DateTimeZone(ExtraServ::$output_tz));
+	$dt->setTimezone(new DateTimeZone(Nextrastout::$output_tz));
 	return $dt->format($fmt);
 }
 
 function local_strtotime($time_str) {
 	$tz = date_default_timezone_get();
-	date_default_timezone_set(ExtraServ::$output_tz);
+	date_default_timezone_set(Nextrastout::$output_tz);
 	$ret = strtotime($time_str);
 	date_default_timezone_set($tz);
 	return $ret;
@@ -57,7 +57,7 @@ function local_strtotime($time_str) {
 
 function tz_hour_offset($tz = null) {
 	if ($tz == null) {
-		$tz = ExtraServ::$output_tz;
+		$tz = Nextrastout::$output_tz;
 	}
 	$dt = new DateTime('now', new DateTimeZone($tz));
 	$tzo = explode(':', $dt->format('P'));
@@ -65,7 +65,7 @@ function tz_hour_offset($tz = null) {
 }
 
 function pg_is_prepared($stmt_name) {
-	$q = pg_query(ExtraServ::$db, 'SELECT name FROM pg_prepared_statements');
+	$q = pg_query(Nextrastout::$db, 'SELECT name FROM pg_prepared_statements');
 	if ($q === false) {
 		log::error('pg_is_prepared(): query failed');
 		log::error(pg_last_error());
@@ -84,14 +84,14 @@ function pg_is_prepared($stmt_name) {
 }
 
 function dbescape($str) {
-	return pg_escape_string(ExtraServ::$db, $str);
+	return pg_escape_string(Nextrastout::$db, $str);
 }
 
 class QueryFailedException extends Exception { }
 
 function es_pg_query($query, $ref = '[query]') {
 	log::debug("$ref >>> $query");
-	$q = pg_query(ExtraServ::$db, $query);
+	$q = pg_query(Nextrastout::$db, $query);
 	if ($q === false) {
 		log::error("$ref failed");
 		log::error(pg_last_error());

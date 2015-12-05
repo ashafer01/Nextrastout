@@ -31,7 +31,7 @@ if ($params[0] == 'recall') {
 
 	$query = "SELECT by_nick, topic FROM topic WHERE tid={$params[1]} AND channel='$channel'";
 	log::debug("topic recall query >> $query");
-	$q = pg_query(ExtraServ::$db, $query);
+	$q = pg_query(Nextrastout::$db, $query);
 	if ($q === false) {
 		log::error('Query failed');
 		log::error(pg_last_error());
@@ -48,7 +48,7 @@ if ($params[0] == 'recall') {
 	// get current topic(s)
 	$query = "SELECT * FROM topic WHERE channel='$channel' ORDER BY uts DESC LIMIT 5";
 	log::debug("topic query >> $query");
-	$q = pg_query(ExtraServ::$db, $query);
+	$q = pg_query(Nextrastout::$db, $query);
 	if ($q === false) {
 		log::error('Query failed');
 		log::error(pg_last_error());
@@ -182,5 +182,5 @@ if ($params[0] == 'recall') {
 
 if ($newtopic !== null) {
 	log::trace("sending new topic for $channel");
-	ExtraServ::$bot_handle->send("TOPIC $channel :$newtopic");
+	Nextrastout::$bot_handle->send("TOPIC $channel :$newtopic");
 }

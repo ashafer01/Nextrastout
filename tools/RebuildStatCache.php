@@ -21,11 +21,11 @@ if ($db === false) {
 	exit(1);
 }
 
-class ExtraServ {
+class Nextrastout {
 	public static $db;
 	public static $prepared_queries = array();
 }
-ExtraServ::$db = $db;
+Nextrastout::$db = $db;
 
 log::info('Connected to db');
 

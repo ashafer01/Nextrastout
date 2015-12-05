@@ -16,7 +16,7 @@ if (count($args) == 0) {
 
 	$query = "SELECT max(uts), ircuser FROM log WHERE $where GROUP BY ircuser ORDER BY max DESC LIMIT 5";
 	log::debug("whowas query >>> $query");
-	$q = pg_query(ExtraServ::$db, $query);
+	$q = pg_query(Nextrastout::$db, $query);
 	if ($q === false) {
 		log::error('Query failed');
 		log::error(pg_last_error());

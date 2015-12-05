@@ -11,7 +11,7 @@ require_once __DIR__ . '/lib/es_utils.php';
 set_error_handler('error_logger', E_ALL);
 
 function is_admin($nick) {
-	return in_array($nick, ExtraServ::$conf->admins);
+	return in_array($nick, Nextrastout::$conf->admins);
 }
 
 date_default_timezone_set('UTC');
@@ -23,7 +23,7 @@ proc::$name = 'parent';
 $_status = -10;
 while (true) {
 	log::debug('Started init loop');
-	$_status = ExtraServ::init();
+	$_status = Nextrastout::init();
 	if ($_status === 1) {
 		log::error("Failed to connect to uplink server, sleeping 30 seconds and retrying");
 		sleep(30);
@@ -58,14 +58,14 @@ while (true) {
 			break;
 		} elseif ($_status === 2) {
 			# stopping gracefully
-			foreach (ExtraServ::$handles as $pc) {
+			foreach (Nextrastout::$handles as $pc) {
 				$pc->quit('Stopping');
 			}
 			log::debug('Stopping');
 			break 2;
 		} elseif ($_status === 3) {
 			# manual reconnect
-			foreach (ExtraServ::$handles as $pc) {
+			foreach (Nextrastout::$handles as $pc) {
 				$pc->quit('Reconnecting');
 			}
 			close_all();
@@ -99,21 +99,21 @@ close_all();
 
 function close_all() {
 	uplink::close();
-	pg_close(ExtraServ::$db);
+	pg_close(Nextrastout::$db);
 	log::debug('stopping children');
 	proc::stop_all();
 }
 
 function parent_sigint() {
 	log::fatal('Got sigint in parent, killing children');
-	foreach (ExtraServ::$handles as $pc) {
+	foreach (Nextrastout::$handles as $pc) {
 		$pc->quit('Got SIGINT');
 	}
 	close_all();
 	exit(42);
 }
 
-class ExtraServ {
+class Nextrastout {
 	const HYBRID_TOKEN = "0ES";
 	public static $hostname = null;
 	public static $info = null;
@@ -132,7 +132,7 @@ class ExtraServ {
 		$conf = config::get_instance();
 		$dbpw = get_password($conf->db->pwname);
 		$proc = proc::$name;
-		self::$db = pg_connect("host={$conf->db->host} dbname={$conf->db->name} user={$conf->db->user} password=$dbpw application_name=ExtraServ_$proc");
+		self::$db = pg_connect("host={$conf->db->host} dbname={$conf->db->name} user={$conf->db->user} password=$dbpw application_name=Nextrastout_$proc");
 		if (self::$db === false) {
 			log::fatal('Failed to connect to database, exiting');
 			exit(17);

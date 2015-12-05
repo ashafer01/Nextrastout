@@ -11,7 +11,7 @@ if ($param != null) {
 
 $query = "SELECT COUNT(uts) AS count FROM log WHERE $where";
 log::debug("total matching rows query >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error('Query failed');
 	log::error(pg_last_error());
@@ -25,7 +25,7 @@ if ($q === false) {
 	if ($total_count > 0) {
 		$query = "SELECT nick, COUNT(uts) AS count FROM log WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 11";
 		log::debug("kol query >>> $query");
-		$q = pg_query(ExtraServ::$db, $query);
+		$q = pg_query(Nextrastout::$db, $query);
 		if ($q === false) {
 			log::error('Query failed');
 			log::error(pg_last_error());

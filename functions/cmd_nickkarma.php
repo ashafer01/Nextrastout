@@ -17,7 +17,7 @@ if ($params != null) {
 }
 
 $where = 'nick IN (' . implode(',', array_map('single_quote', $nicks)) . ')';
-$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout')";
+$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, Nextrastout::$handles))) . ", 'extrastout')";
 $where_privmsg = "(command='PRIVMSG' AND args='$channel')";
 
 if (count($nicks) == 1) {
@@ -39,7 +39,7 @@ $orange = "\x0307";
 $ref = 'nickkarma first use query';
 $query = "SELECT uts, nick FROM statcache_firstuse WHERE $where AND channel='$channel'";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -76,7 +76,7 @@ $where_nicks_karma .= ')';
 $ref = 'karma lookup';
 $query = "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_nicks_karma AND $where_notme";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -102,7 +102,7 @@ if ($q === false) {
 $ref = 'karma rank';
 $query = "SELECT sum(up)-sum(down) AS net FROM karma_cache WHERE channel='$channel' AND thing IN (SELECT nick FROM karma_cache WHERE channel='$channel' GROUP BY nick) AND thing!=nick AND $where_notme GROUP BY thing ORDER BY net DESC";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -147,7 +147,7 @@ $where_things_karma .= ')';
 $ref = 'vote totals query';
 $query = "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_things_karma";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -179,7 +179,7 @@ if ($q === false) {
 $ref = 'most upvoted thing query';
 $query = "SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) > 0 ORDER BY net DESC LIMIT 5";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -212,7 +212,7 @@ if ($q === false) {
 $ref = 'most downvoted thing query';
 $query = "SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());

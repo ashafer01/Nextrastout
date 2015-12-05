@@ -10,13 +10,13 @@ if (preg_match('/^(\d+)$/', $params) !== 1) {
 
 $quote_id = dbescape($params);
 
-if (!in_array($_i['hostmask']->nick, ExtraServ::$conf->quotes->admins)) {
+if (!in_array($_i['hostmask']->nick, Nextrastout::$conf->quotes->admins)) {
 	log::info('Not a quote admin');
 	$say = "Only quote admins can restore deleted quotes";
 } else {
 	$query = "INSERT INTO quotedb SELECT * FROM quotedb_deleted WHERE id=$quote_id";
 	log::debug("restorequote query >> $query");
-	$q = pg_query(ExtraServ::$db, $query);
+	$q = pg_query(Nextrastout::$db, $query);
 	if ($q === false) {
 		log::error("Query failed");
 		log::error(pg_last_error());
@@ -30,7 +30,7 @@ if (!in_array($_i['hostmask']->nick, ExtraServ::$conf->quotes->admins)) {
 
 		$query = "DELETE FROM quotedb_deleted WHERE id=$quote_id";
 		log::debug("restorequote/delete backup query >> $query");
-		$q = pg_query(ExtraServ::$db, $query);
+		$q = pg_query(Nextrastout::$db, $query);
 		if ($q === false) {
 			log::error('Failed to delete quote backup after restore');
 			log::error(pg_last_error());

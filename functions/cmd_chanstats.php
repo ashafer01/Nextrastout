@@ -14,7 +14,7 @@ $b = chr(2); # bold
 $ref = 'chanstats first channel use';
 $query = "SELECT nick, uts FROM statcache_firstuse WHERE channel='$channel' ORDER BY uts LIMIT 1";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -41,7 +41,7 @@ if ($q === false) {
 $ref = 'chanstats total count query';
 $query = "SELECT val AS count FROM statcache_misc WHERE channel='$channel' AND stat_name='total lines'";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -62,7 +62,7 @@ if ($q === false) {
 $ref = 'chanstats number nicks query';
 $query = "SELECT count(*) FROM (SELECT nick FROM statcache_lines WHERE channel='$channel' GROUP BY nick) t1";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -85,7 +85,7 @@ if ($q === false) {
 $ref = 'chanstats number users query';
 $query = "SELECT count(*) FROM (SELECT ircuser FROM log WHERE $where_channel GROUP BY ircuser) t1";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -112,7 +112,7 @@ $sums = implode(', ', $sums);
 $ref = 'chanstats time profile query';
 $query = "SELECT $sums FROM statcache_timeprofile WHERE channel='$channel'";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -173,7 +173,7 @@ if ($q === false) {
 $ref = 'chanstats word list query';
 $query = "SELECT word, sum(wc) AS count FROM statcache_words WHERE channel='$channel' GROUP BY word ORDER BY count DESC";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());

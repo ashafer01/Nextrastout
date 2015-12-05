@@ -37,7 +37,7 @@ function safe_feof($fp, &$start = null) {
 	return feof($fp);
 }
 
-class ExtraServ {
+class Nextrastout {
 	public static $db;
 	public static $prepared_queries = array();
 }
@@ -58,7 +58,7 @@ while (true) {
 		log::fatal('Failed to connect to database, exiting');
 		exit(1);
 	}
-	ExtraServ::$db = $_sql;
+	Nextrastout::$db = $_sql;
 
 	log::info('Doing ident');
 	send("NICK $_nick");

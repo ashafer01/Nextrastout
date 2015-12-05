@@ -3,7 +3,7 @@
 log::trace('entered f::pack_list()');
 list($prefix, $list, $_i) = $_ARGV;
 
-$maxlen = 512 - (strlen($_i['handle']->nick) + strlen($_i['handle']->user) + strlen(ExtraServ::$hostname)
+$maxlen = 512 - (strlen($_i['handle']->nick) + strlen($_i['handle']->user) + strlen(Nextrastout::$hostname)
 	+ strlen($_i['reply_to']) + 20);
 
 $ret = $prefix;

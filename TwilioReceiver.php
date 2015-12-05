@@ -49,7 +49,7 @@ $conf = config::get_instance();
 log::info('Opening database connection');
 $dbpw = get_password($conf->db->pwname);
 $proc = proc::$name;
-$db = pg_connect("host={$conf->db->host} dbname={$conf->db->name} user={$conf->db->user} password=$dbpw application_name=ExtraServ_$proc");
+$db = pg_connect("host={$conf->db->host} dbname={$conf->db->name} user={$conf->db->user} password=$dbpw application_name=Nextrastout_$proc");
 if ($db === false) {
 	log::error('Failed to connect to database');
 	$autoreply = 'An error occurred';

@@ -7,7 +7,7 @@ $query = rawurlencode($params);
 
 $qcount = strlen($params);
 
-$q = pg_query(ExtraServ::$db, "SELECT value FROM keyval WHERE key='translate_count'");
+$q = pg_query(Nextrastout::$db, "SELECT value FROM keyval WHERE key='translate_count'");
 if ($q === false) {
 	log::error('Translate count query failed');
 	log::error(pg_last_error());
@@ -21,7 +21,7 @@ if ($q === false) {
 		$_i['handle']->say($_i['reply_to'], 'Limit exceeded');
 		return f::FALSE;
 	} else {
-		$q = pg_query(ExtraServ::$db, "UPDATE keyval SET value='$newcount' WHERE key='translate_count'");
+		$q = pg_query(Nextrastout::$db, "UPDATE keyval SET value='$newcount' WHERE key='translate_count'");
 		if ($q === false) {
 			log::error('Update translate count query failed');
 			log::error(pg_last_error());
@@ -34,7 +34,7 @@ if ($q === false) {
 }
 
 
-$key = ExtraServ::$conf->google->api_key;
+$key = Nextrastout::$conf->google->api_key;
 $url = "https://www.googleapis.com/language/translate/v2?key=$key&target=en&format=text&q=$query";
 
 log::debug("translate url >> $url");

@@ -12,7 +12,7 @@ if ($quote_where === null) {
 
 $query = "SELECT * FROM quotedb WHERE channel='$channel' AND $quote_where ORDER BY RANDOM() LIMIT 1";
 log::debug("randomquote query >> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("Query failed");
 	log::error(pg_last_error());

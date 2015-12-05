@@ -6,7 +6,7 @@ list($_CMD, $params, $_i) = $_ARGV;
 if (!pg_is_prepared('dailylines')) {
 	$query = "SELECT COUNT(uts) AS count FROM log WHERE command='PRIVMSG' AND uts >= $1 AND uts < $2 AND args=$4 AND nick ILIKE $3";
 	log::debug("preparing dailylines query >>> $query");
-	$pq = pg_prepare(ExtraServ::$db, 'dailylines', $query);
+	$pq = pg_prepare(Nextrastout::$db, 'dailylines', $query);
 	if ($pq === false) {
 		log::error('Failed to prepare dailylines query');
 		log::error(pg_last_error());
@@ -31,7 +31,7 @@ $stop_uts = time();
 $start_uts = local_strtotime('midnight');
 $reply = array();
 $b = chr(2);
-$er = pg_execute(ExtraServ::$db, 'dailylines', array($start_uts, $stop_uts, $qnick, $qchan));
+$er = pg_execute(Nextrastout::$db, 'dailylines', array($start_uts, $stop_uts, $qnick, $qchan));
 if ($er === false) {
 	log::error('Execute failed');
 	log::error(pg_last_error());
@@ -45,10 +45,10 @@ for ($i = 0; $i < 7; $i++) {
 	$stop_uts = $start_uts;
 	$start_uts -= $day_s;
 	$linedate = date_fmt('D j M:', $start_uts+10);
-	$er = pg_execute(ExtraServ::$db, 'dailylines', array($start_uts, $stop_uts, $qnick, $qchan));
+	$er = pg_execute(Nextrastout::$db, 'dailylines', array($start_uts, $stop_uts, $qnick, $qchan));
 	if ($er === false) {
 		log::error('Execute failed');
-		log::error(pg_last_error(ExtraServ::$db));
+		log::error(pg_last_error(Nextrastout::$db));
 		$reply[] = "$linedate Failed to execute";
 		continue;
 	}

@@ -10,7 +10,7 @@ $sayparts = array();
 $ref = 'most upvoted thing query';
 $query = "SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' GROUP BY thing ORDER BY net DESC LIMIT 5";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -42,7 +42,7 @@ if ($q === false) {
 $ref = 'most downvoted thing query';
 $query = "SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' GROUP BY thing ORDER BY net LIMIT 5";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());

@@ -16,7 +16,7 @@ $channel = dbescape($_i['args'][0]);
 
 $query = "INSERT INTO quotedb (quote, set_by, channel) VALUES ('$quote', '$set_by', '$channel') RETURNING id";
 log::debug("new quote query >> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("Query failed");
 	log::error(pg_last_error());

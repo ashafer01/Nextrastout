@@ -32,7 +32,7 @@ switch ($_CMD) {
 }
 
 
-$q = pg_query(ExtraServ::$db, "SELECT SUM(wc) AS wc FROM statcache_words WHERE $where");
+$q = pg_query(Nextrastout::$db, "SELECT SUM(wc) AS wc FROM statcache_words WHERE $where");
 if ($q === false) {
 	log::error('Query failed');
 	log::error(pg_last_error());

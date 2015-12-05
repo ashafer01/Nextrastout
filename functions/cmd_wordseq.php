@@ -25,9 +25,9 @@ switch ($_CMD) {
 
 $nick_in = implode(',', array_map('single_quote', array_map('dbescape', $nicks)));
 
-$q = pg_query(ExtraServ::$db, $query = "SELECT message FROM log WHERE command='PRIVMSG' AND nick IN ($nick_in) AND args='$channel'");
+$q = pg_query(Nextrastout::$db, $query = "SELECT message FROM log WHERE command='PRIVMSG' AND nick IN ($nick_in) AND args='$channel'");
 log::debug("word_sequences query >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error('word_sequences query failed');
 	log::error(pg_last_error());

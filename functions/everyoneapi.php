@@ -5,8 +5,8 @@ list($number, $datapoints) = $_ARGV;
 
 $datapoints = implode(',', $datapoints);
 
-$account_sid = ExtraServ::$conf->everyoneapi->account_sid;
-$auth_token = ExtraServ::$conf->everyoneapi->auth_token;
+$account_sid = Nextrastout::$conf->everyoneapi->account_sid;
+$auth_token = Nextrastout::$conf->everyoneapi->auth_token;
 $url = "https://api.everyoneapi.com/v1/phone/+1$number?account_sid=$account_sid&auth_token=$auth_token&data=$datapoints";
 
 $ch = curl_init();

@@ -9,9 +9,9 @@ if ($user === false) {
 } else {
 	uplink::remove_from_modelists($nick);
 	unset(uplink::$nicks[$nick]);
-	if (ExtraServ::$ident->offsetExists($user) && !f::user_exists($user)) {
+	if (Nextrastout::$ident->offsetExists($user) && !f::user_exists($user)) {
 		log::info("Deleted ident for user '$user'");
-		unset(ExtraServ::$ident[$user]);
+		unset(Nextrastout::$ident[$user]);
 	}
 	log::debug("Deleted nick '$nick'");
 }

@@ -7,7 +7,7 @@ list($_CMD, $params, $_i) = $_ARGV;
 $channel = $_i['sent_to'];
 
 $where_privmsg = "(command='PRIVMSG' AND args='$channel')";
-$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, ExtraServ::$handles))) . ", 'extrastout')";
+$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, Nextrastout::$handles))) . ", 'extrastout')";
 
 if ($params != null) {
 	$p = f::parse_logquery($params, 'req_nicks');
@@ -63,7 +63,7 @@ log::debug('Starting nickstats queries');
 $ref = 'nickstats total lines query';
 $query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where_nonick";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -88,7 +88,7 @@ if ($q === false) {
 $ref = 'nickstats total nick lines query';
 $query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -111,7 +111,7 @@ if ($q === false) {
 $ref = 'nickstats rank query';
 $query = "SELECT nick, count(uts) FROM log WHERE $where_privmsg AND $where_nonick GROUP BY nick ORDER BY count DESC";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -158,7 +158,7 @@ $where_nickonly = f::log_where_nick($nicks, $channel, false);
 $ref = 'nickstats first use query';
 $query = "SELECT uts, nick, ircuser FROM log WHERE $where_nickonly AND $where_dateonly ORDER BY uts ASC LIMIT 1";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());
@@ -201,7 +201,7 @@ if ($q === false) {
 $ref = 'nickstats word list query';
 $query = "SELECT * FROM (SELECT regexp_split_to_table(lower(message), '\W+') AS word, count(uts) FROM log WHERE $where_privmsg AND $where GROUP BY word ORDER BY count DESC) AS t1 WHERE word !~ '^\x01'";
 log::debug("$ref >>> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("$ref failed");
 	log::error(pg_last_error());

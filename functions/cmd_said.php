@@ -12,7 +12,7 @@ if ($params == null) {
 
 	$query = "SELECT nick FROM log WHERE $where GROUP BY nick ORDER BY RANDOM() LIMIT 200";
 	log::debug("said query >>> $query");
-	$q = pg_query(ExtraServ::$db, $query);
+	$q = pg_query(Nextrastout::$db, $query);
 	if ($q === false) {
 		log::error('said query failed');
 		log::error(pg_last_error());

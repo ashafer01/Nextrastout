@@ -13,7 +13,7 @@ $channel = dbescape($_i['args'][0]);
 
 $query = "SELECT * FROM quotedb WHERE id=$quote_id AND channel='$channel'";
 log::debug("getquote query >> $query");
-$q = pg_query(ExtraServ::$db, $query);
+$q = pg_query(Nextrastout::$db, $query);
 if ($q === false) {
 	log::error("Query failed");
 	log::error(pg_last_error());
