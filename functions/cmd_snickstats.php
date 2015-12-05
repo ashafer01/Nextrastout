@@ -7,7 +7,7 @@ list($_CMD, $params, $_i) = $_ARGV;
 $channel = $_i['sent_to'];
 
 $where_privmsg = "(command='PRIVMSG' AND args='$channel')";
-$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, Nextrastout::$handles))) . ", 'extrastout')";
+$where_notme = "nick NOT IN ('" . Nextrastout::$bot_handle->nick . "', 'extrastout')";
 
 if ($params != null) {
 	$p = f::parse_logquery($params, 'req_nicks');

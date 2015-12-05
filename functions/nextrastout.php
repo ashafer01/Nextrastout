@@ -3,7 +3,6 @@
 Nextrastout::dbconnect();
 f::ALIAS_INIT();
 
-$handles_re = implode('|', array_keys(Nextrastout::$handles));
 $topicdata = array();
 
 $cmd_globals = new stdClass;
@@ -15,10 +14,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 	$line = uplink::readline();
 	if ($line != null) {
 		$lline = color_formatting::escape($line);
-		if (preg_match("/^(:.+? PRIVMSG ($handles_re) [^:]*:(REGISTER|SETPASS|IDENTIFY|ASSOCIATE) )(.+)$/i", $lline, $matches) === 1) {
-			log::debug('Hiding password from log');
-			$lline = "{$matches[1]}**********";
-		}
 		log::rawlog(log::INFO, "%c<= $lline%0");
 	} else {
 		continue;
@@ -30,7 +25,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 	switch ($_i['cmd']) {
 		case 'ERROR':
 			log::fatal('Got ERROR line');
-			exit(13);
+			exit(proc::EXIT_ERROR_LINE);
 		case 'PING':
 			uplink::send("PONG :{$_i['text']}");
 			break;
@@ -128,15 +123,12 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			$_i['reply_to'] = $_i['args'][0];
 			$_i['handle'] = Nextrastout::$bot_handle;
 			$in_pm = false;
-			foreach (Nextrastout::$handles as $handle) {
-				if ($_i['reply_to'] == $handle->nick) {
-					log::trace('Received private message');
-					$_i['reply_to'] = $_i['hostmask']->nick;
-					$_i['handle'] = $handle;
-					$in_pm = true;
-					$_i['in_pm'] = true;
-					break;
-				}
+			if ($_i['reply_to'] == $_i['handle']->nick) {
+				log::trace('Received private message');
+				$_i['reply_to'] = $_i['hostmask']->nick;
+				$in_pm = true;
+				$_i['in_pm'] = true;
+				break;
 			}
 
 			# Normal commands
@@ -212,7 +204,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							}
 							$_i['handle']->say($_i['reply_to'], 'Reloading nextrastout');
 							f::RELOAD('nextrastout');
-							return 0;
+							return proc::PROC_RERUN;
 						case 'reload':
 							log::notice('Got !reload');
 							if (f::EXISTS($uarg)) {
@@ -259,12 +251,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							config::reload_all();
 							Nextrastout::$bot_handle->update_conf_channels();
 							break;
-						case 'es-stop':
-							log::notice('Got !es-stop, stopping');
-							return 2;
-						case 'es-reinit':
-							log::notice('Got !es-reinit');
-							return 3;
 						case 'loglevel':
 							log::notice("Got !loglevel $uarg");
 							log::$level = log::string_to_level($uarg);
@@ -323,4 +309,4 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 }
 
 Nextrastout::$bot_handle->del_all_channels();
-exit(1);
+exit(proc::BROKEN_PIPE);

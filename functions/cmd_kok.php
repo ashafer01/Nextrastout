@@ -5,7 +5,7 @@ log::trace('entered f::cmd_kok()');
 list($_CMD, $params, $_i) = $_ARGV;
 
 $channel = $_i['sent_to'];
-$where_notme = 'nick NOT IN (' . implode(',', array_map('single_quote', array_map(function($handle) {return strtolower($handle->nick);}, Nextrastout::$handles))) . ", 'extrastout')";
+$where_notme = "nick NOT IN ('" . Nextrastout::$bot_handle->nick . "', 'extrastout')";
 
 $b = chr(2);
 

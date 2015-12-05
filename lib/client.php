@@ -1,15 +1,18 @@
 <?php
-require_once 'functions.php';
+require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/uplink.php';
+require_once __DIR__ . '/config.php';
 
 class client {
 	private $params;
-	private $channels;
+	private $channels = array();
+	private $joined = array();
+	private $conf;
 	public function __construct($params) {
 		if (is_object($params)) {
 			$params = (array) $params;
 		}
-		$this->channels = array();
-		unset($params['channels']);
+		$this->channels = config::channels();
 		$this->params = $params;
 	}
 
@@ -28,10 +31,8 @@ class client {
 		uplink::send("NICK {$this->nick}");
 		uplink::send("USER {$this->user} dot dot :{$this->name}");
 
-		$this->sent_nickserv_ident = false;
 		if (isset(Nextrastout::$conf->nickserv_passwords->{$this->nick})) {
 			$this->say('NickServ', 'IDENTIFY ' . Nextrastout::$conf->nickserv_passwords->{$this->nick});
-			$this->sent_nickserv_ident = true;
 		}
 
 		foreach ($this->channels as $chan) {
@@ -39,24 +40,20 @@ class client {
 		}
 	}
 
-	public function send($line) {
-		Nextrastout::usend($this->nick, $line);
-	}
-
 	public function say($to, $message) {
-		Nextrastout::usend($this->nick, "PRIVMSG $to :$message");
+		uplink::send("PRIVMSG $to :$message");
 	}
 
 	public function notice($to, $message) {
-		Nextrastout::usend($this->nick, "NOTICE $to :$message");
+		uplink::send("NOTICE $to :$message");
 	}
 
 	public function update_conf_channels() {
-		$conf_channels = config::channels();
-		foreach ($conf_channels as $channel) {
+		$this->channels = config::channels();
+		foreach ($this->channels as $channel) {
 			$this->join($channel);
 		}
-		foreach ($this->channels as $channel) {
+		foreach ($this->joined as $channel) {
 			if (!in_array($channel, $conf_channels)) {
 				$this->part($channel);
 			}
@@ -64,33 +61,34 @@ class client {
 	}
 
 	public function join($channel) {
-		if (in_array($channel, $this->channels)) {
-			log::notice("Already joined to $channel, sending JOIN anyway");
+		if (in_array($channel, $this->joined)) {
+			log::notice("Already joined to $channel, not sending JOIN");
 		} else {
-			log::trace("Adding $channel to channels");
-			$this->channels[] = $channel;
+			log::trace("Adding $channel to joined channels");
+			$this->joined[] = $channel;
+			log::debug("Joining $channel");
+			uplink::send("JOIN $channel");
 		}
-		log::debug("Joining $channel");
-		Nextrastout::sjoin($this->nick, $channel);
-		//if ($this->sent_nickserv_ident === true) {
-		//	$this->say('ChanServ', "OP $channel");
-		//} else {
-			log::debug("Not sending OP request for $channel");
-		//}
 	}
 
 	public function part($channel, $reason = 'By admin request') {
-		if (($key = array_search($channel, $this->channels) !== false)) {
+		if (($key = array_search($channel, $this->joined) !== false)) {
 			log::debug("Parting channel $channel");
-			$this->send("PART $channel :$reason");
-			unset($this->channels[$key]);
+			uplink::send("PART $channel :$reason");
+			unset($this->joined[$key]);
+			if (($key = array_search($chanel, $this->channels) !== false)) {
+				log::info("Removing $channel from channels list");
+				unset($this->channels[$key]);
+			} else {
+				log::trace("Channel $channel not in channels list");
+			}
 		} else {
-			log::debug("Not joined to $channel");
+			log::debug("Not joined to $channel, not sending PART");
 		}
 	}
 
 	public function quit($reason) {
-		Nextrastout::usend($this->nick, "QUIT :$reason");
+		uplink::send("QUIT :$reason");
 	}
 
 	public function del_channel($channel) {
