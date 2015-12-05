@@ -125,6 +125,7 @@ class ExtraServ {
 	public static $bot_handle = null;
 
 	public static $prepared_queries = array();
+	public static $cmd_cooldown = array();
 
 	public static function dbconnect() {
 		log::info('Opening database connection');

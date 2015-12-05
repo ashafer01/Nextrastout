@@ -11,6 +11,9 @@ below. You can keep them in private.ini or put them in the main config; the two 
     admins = []
     wiki_url =
     
+    banned_users = []
+    cooldown_users = []
+    
     twilio.account_sid =
     twilio.auth_token =
     twilio.phone_number =

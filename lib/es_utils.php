@@ -87,3 +87,27 @@ function dbescape($str) {
 	return pg_escape_string(ExtraServ::$db, $str);
 }
 
+class QueryFailedException extends Exception { }
+
+function es_pg_query($query, $ref = '[query]') {
+	log::debug("$ref >>> $query");
+	$q = pg_query(ExtraServ::$db, $query);
+	if ($q === false) {
+		log::error("$ref failed");
+		log::error(pg_last_error());
+		throw new QueryFailedException("$ref failed");
+	} else {
+		log::debug("$ref OK");
+		return $q;
+	}
+}
+
+function es_pg_upsert($update_query, $insert_query, $ref = '[query]') {
+	log::debug("$ref [update] >>> $update_query");
+	$u = es_pg_query($update_query, "$ref [update]");
+	if (pg_affected_rows($u) == 0) {
+		log::debug("No affected rows for $ref update, doing insert");
+		es_pg_query($insert_query, "$ref [insert]");
+	}
+	return true;
+}

@@ -76,8 +76,7 @@ class f {
 				$s_func_file = escapeshellarg($func_file);
 				$ret = -1;
 				ob_start();
-				#system("/usr/bin/php -l $s_func_file", $ret);
-				$ret = 0;
+				system("/usr/bin/php -l $s_func_file", $ret);
 				$out = trim(ob_get_clean());
 				if ($ret == 0) {
 					log::notice($out);

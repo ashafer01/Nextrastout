@@ -177,7 +177,7 @@ if ($q === false) {
 # Find most voted things
 
 $ref = 'most upvoted thing query';
-$query = "SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing ORDER BY net DESC LIMIT 5";
+$query = "SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) > 0 ORDER BY net DESC LIMIT 5";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {
@@ -210,7 +210,7 @@ if ($q === false) {
 #########################
 
 $ref = 'most downvoted thing query';
-$query = "SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing ORDER BY net LIMIT 5";
+$query = "SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5";
 log::debug("$ref >>> $query");
 $q = pg_query(ExtraServ::$db, $query);
 if ($q === false) {

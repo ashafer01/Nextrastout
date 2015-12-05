@@ -138,7 +138,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					break;
 				}
 			}
-	
+
 			# Normal commands
 			$_i['text'] = trim($_i['text']);
 			if (substr($_i['text'], 0, 1) == $leader) {
@@ -151,6 +151,51 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 				$cmdfunc = "cmd_$ucmd";
 				if (f::EXISTS($cmdfunc)) {
+					$iuser = $_i['hostmask']->user;
+					$inick = $_i['hostmask']->nick;
+					if (in_array($iuser, ExtraServ::$conf->cooldown_users) && array_key_exists($iuser, ExtraServ::$cmd_cooldown)) {
+						$mycd = ExtraServ::$cmd_cooldown[$iuser];
+						if (($mycd['last'] + $mycd['cooldown']) >= time()) {
+							$lastdate = date('r', $mycd['last']);
+							log::info("{$iuser} under {$mycd['cooldown']} second cooldown from $lastdate");
+
+							# update array
+							$wlevel = "warn{$mycd['warncount']}";
+							if (isset(ExtraServ::$conf->cooldown->{$wlevel})) {
+								$newcd = ExtraServ::$conf->cooldown->{$wlevel};
+							} else {
+								$newcd = $mycd['cooldown'];
+							}
+							ExtraServ::$cmd_cooldown[$iuser] = array(
+								'last' => time(),
+								'cooldown' => $newcd,
+								'warncount' => $mycd['warncount']+1
+							);
+							log::info("Set cooldown to {$new_cd}s for $iuser");
+
+							# Send warning messages
+							$cd_str = duration_str($newcd);
+							switch ($mycd['warncount']) {
+								case 0:
+									$_i['handle']->say($_i['reply_to'], "{$inick}: Cooldown of $cd_str in effect.");
+									break;
+								case 1:
+									if ($newcd != $mycd['cooldown']) {
+										$say = "Cooldown has been increased to $cd_str.";
+									} else {
+										$say = "Cooldown of $cd_str seconds is still in effect. Please wait.";
+									}
+									$_i['handle']->say($inick, $say);
+									break;
+								case 2:
+									$_i['handle']->say($inick, "Cooldown has been increased to $cd_str. If you continue to spam, the time will be increased silently. Would you kindly stop?");
+									break;
+							}
+							break;
+						}
+					}
+
+					ExtraServ::$cmd_cooldown[$iuser] = array('last' => time(), 'cooldown' => ExtraServ::$conf->cooldown->initial, 'warncount' => 0);
 					f::CALL($cmdfunc, array($ucmd, $uarg, $_i, $cmd_globals));
 				} elseif(is_admin($_i['hostmask']->user)) {
 					switch ($ucmd) {
@@ -199,6 +244,13 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							$_i['handle']->say($_i['reply_to'], 'Reloaded config');
 							f::ALIAS_INIT();
 							ExtraServ::$bot_handle->update_conf_channels();
+							break;
+						case 'dump-cd':
+							print_r(ExtraServ::$cmd_cooldown);
+							break;
+						case 'rm-cd':
+							unset(ExtraServ::$cmd_cooldown[$uarg]);
+							$_i['handle']->say($_i['reply_to'], "Cleared cooldown for $uarg");
 							break;
 						case 'reload-all':
 							log::notice('Got !reload-all');
