@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/uplink.php';
+require_once __DIR__ . '/log.php';
 
 class Nextrastout {
 	public static $bot_handle = null;
@@ -24,16 +25,20 @@ class Nextrastout {
 		}
 	}
 
+	public static function debug_mode() {
+		log::notice('Debug mode');
+		ini_set('xdebug.collect_params', 3);
+		ini_set('xdebug.var_max_display_children', 1);
+		ini_set('xdebug.var_max_display_data', -1);
+		ini_set('xdebug.var_max_display_depth', 0);
+	}
+
 	public static function init() {
 		$conf = config::get_instance();
 		self::$conf = $conf;
 
 		if ($conf->debug) {
-			log::notice('Debug mode');
-			ini_set('xdebug.collect_params', 3);
-			ini_set('xdebug.var_max_display_children', 1);
-			ini_set('xdebug.var_max_display_data', -1);
-			ini_set('xdebug.var_max_display_depth', 0);
+			self::debug_mode();
 		}
 
 		log::$level = log::string_to_level($conf->loglevel);

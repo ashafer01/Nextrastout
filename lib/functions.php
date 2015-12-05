@@ -1,6 +1,6 @@
 <?php
-require_once 'log.php';
-require_once 'utils.php';
+require_once __DIR__ . '/log.php';
+require_once __DIR__ . '/utils.php';
 
 define('FUNC_DIR', __DIR__ . '/../functions/');
 
@@ -13,15 +13,13 @@ class f {
 	const FALSE = '___false___';
 	const RELOAD_FAIL = '___reload_failure___';
 
-	const FUNC_DIR = FUNC_DIR;
-
 	public static function LISTALL() {
 		return array_merge(array_keys(self::$functions), array_keys(self::$aliases));
 	}
 
 	public static function EXISTS($func) {
 		log::trace('f::EXISTS()');
-		$func_file = self::FUNC_DIR."$func.php";
+		$func_file = FUNC_DIR."$func.php";
 		$a = array_key_exists($func, self::$functions);
 		$b = array_key_exists($func, self::$aliases);
 		$c = is_readable($func_file);
@@ -68,7 +66,7 @@ class f {
 			$func = self::$aliases[$func];
 			log::debug("Mapping alias function '$orig' to '$func' for reload");
 		}
-		$func_file = self::FUNC_DIR."$func.php";
+		$func_file = FUNC_DIR."$func.php";
 		log::debug("Looking for code in $func_file");
 		if (file_exists($func_file)) { # not using EXISTS() so that we get more specific errors
 			if (is_readable($func_file)) {

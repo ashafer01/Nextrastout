@@ -1,8 +1,8 @@
 <?php
-require_once 'ini_parser.php';
+require_once __DIR__ . '/ini_parser.php';
 
 class config {
-	private static $base = 'config/';
+	private static $base = __DIR__ . '/../config/';
 
 	## singleton stuff
 	private static $instance = null;

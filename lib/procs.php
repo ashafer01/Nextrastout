@@ -1,12 +1,10 @@
 <?php
-require_once 'functions.php';
-require_once 'utils.php';
+require_once __DIR__ . '/functions.php';
+require_once __DIR__ . '/utils.php';
 
 class proc {
 	private static $procs = array();
 	private static $dups = array();
-
-	private static $ready_procs = array();
 
 	public static $name = null;
 	public static $func = null;

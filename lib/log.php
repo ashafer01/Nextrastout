@@ -1,7 +1,7 @@
 <?php
-require_once 'utils.php';
-require_once 'procs.php';
-require_once 'functions.php';
+require_once __DIR__ . '/utils.php';
+require_once __DIR__ . '/procs.php';
+require_once __DIR__ . '/functions.php';
 
 class log {
 	const FATAL = 0;

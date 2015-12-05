@@ -14,6 +14,7 @@ class client {
 		}
 		$this->channels = config::channels();
 		$this->params = $params;
+		$this->conf = config::get_instance();
 	}
 
 	public function __get($key) {
@@ -31,8 +32,8 @@ class client {
 		uplink::send("NICK {$this->nick}");
 		uplink::send("USER {$this->user} dot dot :{$this->name}");
 
-		if (isset(Nextrastout::$conf->nickserv_passwords->{$this->nick})) {
-			$this->say('NickServ', 'IDENTIFY ' . Nextrastout::$conf->nickserv_passwords->{$this->nick});
+		if (isset($this->conf->nickserv_passwords->{$this->nick})) {
+			$this->say('NickServ', 'IDENTIFY ' . $this->conf->nickserv_passwords->{$this->nick});
 		}
 
 		foreach ($this->channels as $chan) {
