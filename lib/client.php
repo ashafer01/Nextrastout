@@ -55,7 +55,7 @@ class client {
 			$this->join($channel);
 		}
 		foreach ($this->joined as $channel) {
-			if (!in_array($channel, $conf_channels)) {
+			if (!in_array($channel, $this->channels)) {
 				$this->part($channel);
 			}
 		}
@@ -77,7 +77,7 @@ class client {
 			log::debug("Parting channel $channel");
 			uplink::send("PART $channel :$reason");
 			unset($this->joined[$key]);
-			if (($key = array_search($chanel, $this->channels) !== false)) {
+			if (($key = array_search($channel, $this->channels) !== false)) {
 				log::info("Removing $channel from channels list");
 				unset($this->channels[$key]);
 			} else {

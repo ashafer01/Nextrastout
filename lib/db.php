@@ -22,6 +22,10 @@ class db {
 		}
 	}
 
+	public function get_conn() {
+		return $this->db;
+	}
+
 	public function escape($str) {
 		return pg_escape_string($this->db, $str);
 	}

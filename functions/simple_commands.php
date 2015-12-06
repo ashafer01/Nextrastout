@@ -22,6 +22,11 @@ switch ($_CMD) {
 		$_ARGV[0] = $f;
 		f::CALL("cmd_$f", $_ARGV);
 		return f::TRUE;
+	case 'choose':
+		$choices = array_map('trim', explode(',', $_ARG));
+		$i = rand(0, count($choices)-1);
+		$_i['handle']->say($_i['reply_to'], "{$_i['hostmask']->nick}: {$choices[$i]}");
+		return f::TRUE;
 	default:
 		return f::FALSE;
 }
