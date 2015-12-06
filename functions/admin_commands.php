@@ -3,6 +3,11 @@
 log::trace('entered f::admin_commands()');
 list($ucmd, $uarg, $_i, $_globals) = $_ARGV;
 
+if (!is_admin($_i['hostmask']->user)) {
+	log::warning('Unauthorized call to admin_commands()');
+	return f::FALSE;
+}
+
 switch ($ucmd) {
 	# operational functions
 	case 'proc-reload':

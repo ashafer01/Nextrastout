@@ -126,6 +126,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 
 				$cmdfunc = "cmd_$ucmd";
 				if (f::EXISTS($cmdfunc)) {
+					# check cooldown
 					$iuser = $_i['hostmask']->user;
 					$inick = $_i['hostmask']->nick;
 					if (in_array($iuser, Nextrastout::$conf->cooldown_users) && array_key_exists($iuser, Nextrastout::$cmd_cooldown)) {
@@ -170,6 +171,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						}
 					}
 
+					# Run command
 					Nextrastout::$cmd_cooldown[$iuser] = array('last' => time(), 'cooldown' => Nextrastout::$conf->cooldown->initial, 'warncount' => 0);
 					f::CALL($cmdfunc, array($ucmd, $uarg, $_i, $cmd_globals));
 				} elseif(is_admin($_i['hostmask']->user)) {
