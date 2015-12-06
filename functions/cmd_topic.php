@@ -173,5 +173,5 @@ if ($params[0] == 'recall') {
 
 if ($newtopic !== null) {
 	log::trace("sending new topic for $channel");
-	uplink::send("TOPIC $channel :$newtopic");
+	$_i['handle']->topic($channel, $newtopic);
 }

@@ -49,6 +49,10 @@ class client {
 		uplink::send("NOTICE $to :$message");
 	}
 
+	public function topic($channel, $topic) {
+		uplink::send("TOPIC $channel :$topic");
+	}
+
 	public function update_conf_channels() {
 		$this->channels = config::channels();
 		foreach ($this->channels as $channel) {
