@@ -53,6 +53,10 @@ class client {
 		uplink::send("TOPIC $channel :$topic");
 	}
 
+	public function is_joined($channel) {
+		return in_array($channel, $this->joined);
+	}
+
 	public function update_conf_channels() {
 		$this->channels = config::channels();
 		foreach ($this->channels as $channel) {

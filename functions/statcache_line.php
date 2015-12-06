@@ -3,96 +3,56 @@
 log::trace('entered f::statcache_line()');
 list($_i) = $_ARGV;
 
-$channel = dbescape($_i['sent_to']);
+$channel = dbescape($_i['args'][0]);
 $nick = dbescape($_i['hostmask']->nick);
 
 # prepare queries
 
 $sname = 'select_statcache_first_use';
-if (!in_array($sname, Nextrastout::$prepared_queries)) {
-	$p = pg_prepare(Nextrastout::$db, $sname, 'SELECT 1 FROM statcache_firstuse WHERE channel=$1 AND nick=$2');
-	if ($p !== false) {
-		Nextrastout::$prepared_queries[] = $sname;
-	} else {
-		log::error(pg_last_error());
-		return f::FALSE;
-	}
+$p = Nextrastout::$db->pg_prepare($sname, 'SELECT 1 FROM statcache_firstuse WHERE channel=$1 AND nick=$2', false);
+if ($p === false) {
+	return f::FALSE;
 }
 $sname = 'insert_statcache_first_use';
-if (!in_array($sname, Nextrastout::$prepared_queries)) {
-	$p = pg_prepare(Nextrastout::$db, $sname, 'INSERT INTO statcache_firstuse (channel, nick, uts) VALUES ($1, $2, $3)');
-	if ($p !== false) {
-		Nextrastout::$prepared_queries[] = $sname;
-	} else {
-		log::error(pg_last_error());
-		return f::FALSE;
-	}
+$p = Nextrastout::$db->pg_prepare($sname, 'INSERT INTO statcache_firstuse (channel, nick, uts) VALUES ($1, $2, $3)', false);
+if ($p === false) {
+	return f::FALSE;
 }
 $sname = 'update_statcache_nick_line_count';
-if (!in_array($sname, Nextrastout::$prepared_queries)) {
-	$p = pg_prepare(Nextrastout::$db, $sname, 'UPDATE statcache_lines SET lines=lines+1 WHERE channel=$1 AND nick=$2');
-	if ($p !== false) {
-		Nextrastout::$prepared_queries[] = $sname;
-	} else {
-		log::error(pg_last_error());
-		return f::FALSE;
-	}
+$p = Nextrastout::$db->pg_prepare($sname, 'UPDATE statcache_lines SET lines=lines+1 WHERE channel=$1 AND nick=$2', false);
+if ($p === false) {
+	return f::FALSE;
 }
 $sname = 'insert_statcache_nick_line_count';
-if (!in_array($sname, Nextrastout::$prepared_queries)) {
-	$p = pg_prepare(Nextrastout::$db, $sname, 'INSERT INTO statcache_lines (channel, nick, lines) VALUES ($1, $2, 1)');
-	if ($p !== false) {
-		Nextrastout::$prepared_queries[] = $sname;
-	} else {
-		log::error(pg_last_error());
-		return f::FALSE;
-	}
+$p = Nextrastout::$db->pg_prepare($sname, 'INSERT INTO statcache_lines (channel, nick, lines) VALUES ($1, $2, 1)', false);
+if ($p === false) {
+	return f::FALSE;
 }
 $sname = 'update_statcache_channel_line_count';
-if (!in_array($sname, Nextrastout::$prepared_queries)) {
-	$p = pg_prepare(Nextrastout::$db, $sname, 'UPDATE statcache_misc SET val=val+1 WHERE channel=$1 AND stat_name=\'total lines\'');
-	if ($p !== false) {
-		Nextrastout::$prepared_queries[] = $sname;
-	} else {
-		log::error(pg_last_error());
-		return f::FALSE;
-	}
+$p = Nextrastout::$db->pg_prepare($sname, 'UPDATE statcache_misc SET val=val+1 WHERE channel=$1 AND stat_name=\'total lines\'', false);
+if ($p === false) {
+	return f::FALSE;
 }
 $sname = 'insert_statcache_channel_line_count';
-if (!in_array($sname, Nextrastout::$prepared_queries)) {
-	$p = pg_prepare(Nextrastout::$db, $sname, 'INSERT INTO statcache_misc (channel, stat_name, val) VALUES ($1, \'total lines\', 1)');
-	if ($p !== false) {
-		Nextrastout::$prepared_queries[] = $sname;
-	} else {
-		log::error(pg_last_error());
-		return f::FALSE;
-	}
+$p = Nextrastout::$db->pg_prepare($sname, 'INSERT INTO statcache_misc (channel, stat_name, val) VALUES ($1, \'total lines\', 1)', false);
+if ($p === false) {
+	return f::FALSE;
 }
 $sname = 'update_statcache_words';
-if (!in_array($sname, Nextrastout::$prepared_queries)) {
-	$p = pg_prepare(Nextrastout::$db, $sname, 'UPDATE statcache_words SET wc=wc+$4 WHERE channel=$1 AND nick=$2 AND word=$3');
-	if ($p !== false) {
-		Nextrastout::$prepared_queries[] = $sname;
-	} else {
-		log::error(pg_last_error());
-		return f::FALSE;
-	}
+$p = Nextrastout::$db->pg_prepare($sname, 'UPDATE statcache_words SET wc=wc+$4 WHERE channel=$1 AND nick=$2 AND word=$3', false);
+if ($p === false) {
+	return f::FALSE;
 }
 $sname = 'insert_statcache_words';
-if (!in_array($sname, Nextrastout::$prepared_queries)) {
-	$p = pg_prepare(Nextrastout::$db, $sname, 'INSERT INTO statcache_words (channel, nick, word, wc) VALUES ($1,$2,$3,$4)');
-	if ($p !== false) {
-		Nextrastout::$prepared_queries[] = $sname;
-	} else {
-		log::error(pg_last_error());
-		return f::FALSE;
-	}
+$p = Nextrastout::$db->pg_prepare($sname, 'INSERT INTO statcache_words (channel, nick, word, wc) VALUES ($1,$2,$3,$4)', false);
+if ($p === false) {
+	return f::FALSE;
 }
 
 $channel_nick = array($channel, $nick);
 
 # check to see if this is the first use of the nick
-$q = pg_execute(Nextrastout::$db, 'select_statcache_first_use', $channel_nick);
+$q = Nextrastout::$db->pg_execute('select_statcache_first_use', $channel_nick, false);
 if ($q !== false) {
 	if (pg_num_rows($q) == 0) {
 		# this is to facilitate the rebuild script
@@ -103,7 +63,7 @@ if ($q !== false) {
 		}
 
 		# store the timestamp
-		pg_execute(Nextrastout::$db, 'insert_statcache_first_use', array($channel, $nick, $time));
+		Nextrastout::$db->pg_execute('insert_statcache_first_use', array($channel, $nick, $time), false);
 	}
 }
 
@@ -119,22 +79,21 @@ if (array_key_exists('uts', $_i)) { # this is to facilitate the rebuild script
 }
 $d_col = 'd_' . date('D', $time);
 $h_col = 'h_' . date('G', $time);
-$q = pg_query(Nextrastout::$db, "UPDATE statcache_timeprofile SET $d_col=$d_col+1, $h_col=$h_col+1 WHERE nick='$nick' AND channel='$channel'");
-if (($q !== false) && (pg_affected_rows($q) == 0)) {
-	pg_query(Nextrastout::$db, "INSERT INTO statcache_timeprofile (channel, nick, $d_col, $h_col) VALUES ('$channel', '$nick', 1, 1)");
-}
+Nextrastout::$db->pg_upsert("UPDATE statcache_timeprofile SET $d_col=$d_col+1, $h_col=$h_col+1 WHERE nick='$nick' AND channel='$channel'",
+	"INSERT INTO statcache_timeprofile (channel, nick, $d_col, $h_col) VALUES ('$channel', '$nick', 1, 1)",
+	'update statcache timeprofile', false);
 
 # update nick's line count
-$q = pg_execute(Nextrastout::$db, 'update_statcache_nick_line_count', $channel_nick);
+$q = Nextrastout::$db->pg_execute('update_statcache_nick_line_count', $channel_nick, false);
 if (($q !== false) && (pg_affected_rows($q) == 0)) {
-	pg_execute(Nextrastout::$db, 'insert_statcache_nick_line_count', $channel_nick);
+	Nextrastout::$db->pg_execute('insert_statcache_nick_line_count', $channel_nick, false);
 }
 
 # update channel's line count
 $qparams = array($channel);
-$q = pg_execute(Nextrastout::$db, 'update_statcache_channel_line_count', $qparams);
+$q = Nextrastout::$db->pg_execute('update_statcache_channel_line_count', $qparams, false);
 if (($q !== false) && (pg_affected_rows($q) == 0)) {
-	pg_execute(Nextrastout::$db, 'insert_statcache_channel_line_count', $qparams);
+	Nextrastout::$db->pg_execute('insert_statcache_channel_line_count', $qparams, false);
 }
 
 # update unique words list
@@ -151,8 +110,8 @@ foreach ($words as $word) {
 }
 foreach ($word_counts as $word => $wc) {
 	$qparams = array($channel, $nick, $word, $wc);
-	$q = pg_execute(Nextrastout::$db, 'update_statcache_words', $qparams);
+	$q = Nextrastout::$db->pg_execute('update_statcache_words', $qparams, false);
 	if (($q !== false) && (pg_affected_rows($q) == 0)) {
-		pg_execute(Nextrastout::$db, 'insert_statcache_words', $qparams);
+		Nextrastout::$db->pg_execute('insert_statcache_words', $qparams, false);
 	}
 }

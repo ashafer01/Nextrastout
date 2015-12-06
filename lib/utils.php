@@ -253,6 +253,20 @@ function sqlify($val) {
 	return $val;
 }
 
+function str_bool($val) {
+	if (($val === true) || ($val === false)) {
+		return $val;
+	}
+	$val = strtolower($val);
+	if (in_array($val, array('true', 't', 'yes', 'y', 'on'))) {
+		return true;
+	}
+	if (in_array($val, array('false', 'f', 'no', 'n', 'off'))) {
+		return false;
+	}
+	trigger_error('Unknown string bool value', E_USER_ERROR);
+}
+
 function rainbow($string) {
 	static $colors = array('05','04','07','08','03','09','10','11','02','12','06','13');
 	static $cindex = 0;

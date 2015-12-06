@@ -2,16 +2,16 @@
 
 date_default_timezone_set('UTC');
 
-require_once 'lib/procs.php';
-require_once 'lib/log.php';
+require_once __DIR__ . '/lib/procs.php';
+require_once __DIR__ . '/lib/log.php';
 
 proc::$name = 'logger';
 log::$level = log::INFO;
 
-require_once 'lib/utils.php';
-require_once 'lib/es_utils.php';
-require_once 'lib/functions.php';
-require_once 'lib/config.php';
+require_once __DIR__ . '/lib/utils.php';
+require_once __DIR__ . '/lib/functions.php';
+require_once __DIR__ . '/lib/config.php';
+require_once __DIR__ . '/lib/Nextrastout.class.php';
 
 $conf = config::get_instance();
 
@@ -37,11 +37,6 @@ function safe_feof($fp, &$start = null) {
 	return feof($fp);
 }
 
-class Nextrastout {
-	public static $db;
-	public static $prepared_queries = array();
-}
-
 while (true) {
 	log::info('Connecting to IRC socket');
 	$_irc = fsockopen($_host, $_port);
@@ -52,13 +47,12 @@ while (true) {
 	}
 
 	log::info('Connecting to database');
-	$dbpw = get_password('db');
-	$_sql = pg_connect("host={$conf->db->host} dbname={$conf->db->name} user={$conf->db->user} password=$dbpw application_name=Logger");
+	Nextrastout::dbconnect();
+	$_sql = Nextrastout::$db->get_conn();
 	if ($_sql === false) {
 		log::fatal('Failed to connect to database, exiting');
 		exit(1);
 	}
-	Nextrastout::$db = $_sql;
 
 	log::info('Doing ident');
 	send("NICK $_nick");

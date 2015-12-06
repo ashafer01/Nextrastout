@@ -30,6 +30,7 @@ while (true) {
 	}
 
 	proc::start('responder', 'nextrastout');
+	proc::start('timer', 'timer');
 	proc::waitloop('responder');
 
 	log::debug('Reached end of init loop');

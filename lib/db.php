@@ -30,43 +30,45 @@ class db {
 		return pg_escape_string($this->db, $str);
 	}
 
-	public function pg_query($query, $ref = '[query]') {
-		log::debug("$ref >>> $query");
+	public function pg_query($query, $ref = '[query]', $dolog=true) {
+		if ($dolog) log::debug("$ref >>> $query");
 		$q = pg_query($this->db, $query);
 		if ($q === false) {
 			log::error("$ref failed");
 			log::error(pg_last_error());
 		} else {
-			log::debug("$ref OK");
+			if ($dolog) log::debug("$ref OK");
 		}
 		return $q;
 	}
 
-	public function pg_upsert($update_query, $insert_query, $ref = '[upsert]') {
-		$u = $this->pg_query($update_query, "$ref [update]");
+	public function pg_upsert($update_query, $insert_query, $ref = '[upsert]', $dolog=true) {
+		$u = $this->pg_query($update_query, "$ref [update]", $dolog);
 		if (pg_affected_rows($u) == 0) {
-			log::debug("No affected rows for $ref update, doing insert");
-			$this->pg_query($insert_query, "$ref [insert]");
+			if ($dolog) log::debug("No affected rows for $ref update, doing insert");
+			$this->pg_query($insert_query, "$ref [insert]", $dolog);
 		}
 		return true;
 	}
 
-	public function pg_prepare($name, $query) {
+	public function pg_prepare($name, $query, $dolog=true) {
 		if (!in_array($name, Nextrastout::$prepared_queries)) {
-			log::debug("Preparing '$name' >> $query");
+			if ($dolog) log::debug("Preparing '$name' >> $query");
 			$p = pg_prepare($this->db, $name, $query);
 			if ($p === false) {
 				log::error("Failed to prepare '$name' query");
 				log::error(pg_last_error());
+			} else {
+				Nextrastout::$prepared_queries[] = $name;
 			}
 			return $p;
 		} else {
-			log::debug("Query '$name' already prepared");
+			if ($dolog) log::debug("Query '$name' already prepared");
 		}
 	}
 
-	public function pg_execute($name, $params) {
-		log::debug("Executing query '$name'");
+	public function pg_execute($name, $params, $dolog = true) {
+		if ($dolog) log::debug("Executing query '$name'");
 		$e = pg_execute($this->db, $name, $params);
 		if ($e === false) {
 			log::error("Failed to execute '$name'");

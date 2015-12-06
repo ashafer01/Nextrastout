@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/functions.php';
 require_once __DIR__ . '/utils.php';
+require_once __DIR__ . '/Nextrastout.class.php';
 
 class proc {
 	private static $procs = array();
@@ -48,6 +49,7 @@ class proc {
 			pcntl_signal(SIGINT, 'child_sigint');
 			file_put_contents("pids/$name.pid", posix_getpid());
 			setproctitle("Nextrastout [$name]");
+			self::$name = $name;
 
 			self::$procs = array();
 			self::$dups = array();
@@ -160,6 +162,38 @@ class proc {
 			log::debug('Reached end of wait loop');
 		}
 		log::debug('Returning from waitloop()');
+	}
+
+	public static function enable_reload($name=null) {
+		if ($name == null) {
+			$name = self::$name;
+		}
+		Nextrastout::$db->pg_upsert("UPDATE proc_reloads SET do_reload=TRUE WHERE proc='$name'",
+			"INSERT INTO proc_reloads (proc, do_reload) VALUES ('$name', TRUE)",
+			'enable proc reload');
+	}
+
+	public static function disable_reload($name=null) {
+		if ($name == null) {
+			$name = self::$name;
+		}
+		Nextrastout::$db->pg_upsert("UPDATE proc_reloads SET do_reload=FALSE WHERE proc='$name'",
+			"INSERT INTO proc_reloads (proc, do_reload) VALUES ('$name', FALSE)",
+			'enable proc reload');
+	}
+
+	public static function reload_needed($name=null) {
+		if ($name == null) {
+			$name = self::$name;
+		}
+		$q = Nextrastout::$db->pg_query("SELECT do_reload FROM proc_reloads WHERE proc='$name'",
+			'check proc reload', false);
+		if (($q === false) || (pg_num_rows($q) == 0)) {
+			return false;
+		} else {
+			$qr = pg_fetch_assoc($q);
+			return str_bool($qr['do_reload']);
+		}
 	}
 
 	# delete metadata about a child process

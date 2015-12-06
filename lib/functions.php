@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/log.php';
 require_once __DIR__ . '/utils.php';
+require_once __DIR__ . '/Nextrastout.class.php';
 
 define('FUNC_DIR', __DIR__ . '/../functions/');
 
@@ -78,16 +79,16 @@ class f {
 				$out = trim(ob_get_clean());
 				if ($ret == 0) {
 					log::notice($out);
-					log::trace("Trying to reload fx function: $func()");
+					log::trace("Trying to reload function: $func()");
 					self::$functions[$func] = null;
 					$func_code = file_get_contents($func_file);
 					if ($func_code !== false) {
-						log::notice("Reloaded fx function: $func()");
+						log::notice("Reloaded function: $func()");
 						if (self::$functions[$func] == $func_code) {
 							log::notice("No code change for $func()");
 						}
 						self::$functions[$func] = $func_code;
-						self::$reload[$func] = false;
+						self::$reload[$func] = time();
 						return true;
 					} else {
 						log::fatal("Error while reading $func_file");
@@ -118,11 +119,11 @@ class f {
 			$_FUNC_NAME = self::$aliases[$_CALLED_AS];
 			log::debug("Mapping alias function '$_CALLED_AS' to '$_FUNC_NAME' for call");
 		}
-		if (!array_key_exists($_FUNC_NAME, self::$functions) || self::$reload[$_FUNC_NAME]) {
-			log::info('Need to reload fx function');
+		if (self::_needs_reload($_FUNC_NAME)) {
+			log::info('Need to reload function');
 			$___reload_ret = self::_reload($_FUNC_NAME);
 			if ($___reload_ret === false) {
-				log::error("Failed to reload fx function $_FUNC_NAME");
+				log::error("Failed to reload function $_FUNC_NAME");
 				return self::RELOAD_FAIL;
 			}
 		}
@@ -142,7 +143,7 @@ class f {
 				return $___eval_ret;
 			}
 		} else {
-			log::fatal("No key for fx function $_FUNC_NAME");
+			log::fatal("No key for function $_FUNC_NAME");
 			throw new Exception("Function $_FUNC_NAME code not loaded");
 		}
 	}
@@ -159,9 +160,41 @@ class f {
 		if (self::IS_ALIAS($func)) {
 			$func = self::RESOLVE_ALIAS($func);
 		}
+		return self::_set_reload($func);
+	}
+
+	private static function _needs_reload($func) {
+		$func = dbescape($func);
+		if (!array_key_exists($func, self::$functions)) {
+			return true;
+		}
+		if (!array_key_exists($func, self::$reload)) {
+			return true;
+		}
+		$q = Nextrastout::$db->pg_query("SELECT reload_uts FROM func_reloads WHERE function='$func'",
+			'check reload', false);
+		if ($q === false) {
+			return false;
+		} elseif (pg_num_rows($q) == 0) {
+			return false;
+		} else {
+			$qr = pg_fetch_assoc($q);
+			if (self::$reload[$func] < $qr['reload_uts']) {
+				# function is out of date
+				return true;
+			} else {
+				return false;
+			}
+		}
+	}
+
+	private static function _set_reload($func) {
 		log::info("Marking $func() for reloading");
-		self::$reload[$func] = true;
-		return true;
+		$func = dbescape($func);
+		$ts = time();
+		return Nextrastout::$db->pg_upsert("UPDATE func_reloads SET reload_uts=$ts WHERE function='$func'",
+			"INSERT INTO func_reloads (function, reload_uts) VALUES ('$func', $ts)",
+			'set reload', false);
 	}
 
 	public static function RELOAD_ALL() {
