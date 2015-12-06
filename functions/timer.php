@@ -12,7 +12,7 @@ while (true) {
 	}
 
 	# Check for new SMS
-	$q = Nextrastout::$db->pg_query("SELECT sms.message_sid, sms.from_number, sms.message, sms.dest_chan, phonebook.nick FROM sms JOIN phonebook ON phonebook.phone_number=sms.from_number WHERE posted IS FALSE ORDER BY uts",
+	$q = Nextrastout::$db->pg_query("SELECT sms.message_sid, sms.from_number, sms.message, sms.dest_chan, phonebook.nick FROM sms FULL JOIN phonebook ON phonebook.phone_number=sms.from_number WHERE posted IS FALSE ORDER BY uts",
 		'check for new sms', false);
 	while ($qr = db::fetch_assoc($q)) {
 		if ($qr['nick'] == null) {

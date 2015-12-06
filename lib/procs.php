@@ -179,7 +179,7 @@ class proc {
 		}
 		Nextrastout::$db->pg_upsert("UPDATE proc_reloads SET do_reload=FALSE WHERE proc='$name'",
 			"INSERT INTO proc_reloads (proc, do_reload) VALUES ('$name', FALSE)",
-			'enable proc reload');
+			'disable proc reload');
 	}
 
 	public static function reload_needed($name=null) {

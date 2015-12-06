@@ -189,6 +189,12 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							$_i['handle']->say($_i['reply_to'], 'Reloading nextrastout');
 							f::RELOAD('nextrastout');
 							return proc::PROC_RERUN;
+						case 'timer-reload':
+							log::notice('Got !timer-reload');
+							f::RELOAD('timer');
+							proc::enable_reload('timer');
+							$_i['handle']->say($_i['reply_to'], 'Reloading timer proc');
+							break;
 						case 'reload':
 							log::notice('Got !reload');
 							if (f::EXISTS($uarg)) {
