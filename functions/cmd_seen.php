@@ -10,7 +10,7 @@ if ($fc != '#' && $fc != '&') {
 	$channel = Nextrastout::$conf->default_channel;
 }
 
-$inick = pg_escape_string(Nextrastout::$db, strtolower(rtrim($_ARG, '?')));
+$inick = Nextrastout::$db->escape(strtolower(rtrim($_ARG, '?')));
 
 $query = str_replace(array("\n","\t"), array(' ',''), <<<QUERY
 SELECT uts, command, nick, message,
@@ -28,12 +28,8 @@ LIMIT 1
 QUERY
 );
 
-log::debug("seen query >>> $query");
-
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query($query, 'seen query');
 if ($q === false) {
-	log::error('Query failed');
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 } elseif (pg_num_rows($q) == 0) {
 	log::info("No results for seen '$inick'");

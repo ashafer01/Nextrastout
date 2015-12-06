@@ -11,19 +11,13 @@ if (preg_match('/^(\d+)$/', $params) !== 1) {
 $quote_id = dbescape($params);
 $channel = dbescape($_i['args'][0]);
 
-$query = "SELECT * FROM quotedb WHERE id=$quote_id AND channel='$channel'";
-log::debug("getquote query >> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT * FROM quotedb WHERE id=$quote_id AND channel='$channel'", 'getquote query');
 if ($q === false) {
-	log::error("Query failed");
-	log::error(pg_last_error());
 	$say = 'Query failed';
 } elseif (pg_num_rows($q) == 0) {
 	log::debug('No results for getquote query');
 	$say = 'No results';
 } else {
-	log::debug('getquote query ok');
-
 	$qr = pg_fetch_assoc($q);
 	$say = "Quote #{$qr['id']}: \"{$qr['quote']}\" set by {$qr['set_by']} ({$qr['set_time']})";
 }

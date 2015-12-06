@@ -9,30 +9,21 @@ if ($param != null) {
 	$where .= f::log_where($param, null, null, null, 'req_wordbound');
 }
 
-$query = "SELECT COUNT(uts) AS count FROM log WHERE $where";
-log::debug("total matching rows query >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT COUNT(uts) AS count FROM log WHERE $where",
+	'total matching rows query');
 if ($q === false) {
-	log::error('Query failed');
-	log::error(pg_last_error());
 	$say = 'Query failed';
 } else {
-	log::debug('total matching rows query OK');
 	$qr = pg_fetch_assoc($q);
 	$total_count = $qr['count'];
 	log::debug("Got total matching rows: $total_count");
 
 	if ($total_count > 0) {
-		$query = "SELECT nick, COUNT(uts) AS count FROM log WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 11";
-		log::debug("kol query >>> $query");
-		$q = pg_query(Nextrastout::$db, $query);
+		$q = Nextrastout::$db->pg_query("SELECT nick, COUNT(uts) AS count FROM log WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 11",
+			'kol query');
 		if ($q === false) {
-			log::error('Query failed');
-			log::error(pg_last_error());
 			$say = 'Query failed';
 		} else {
-			log::debug('kol query OK');
-
 			$b = chr(2);
 			$total_str = number_format($total_count);
 			$say = "Matched $b{$total_str}$b lines in {$_i['sent_to']}: ";

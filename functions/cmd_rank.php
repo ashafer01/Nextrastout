@@ -19,12 +19,10 @@ $params[0]--;
 
 $channel = $_i['sent_to'];
 
-$query = "SELECT nick, lines FROM statcache_lines WHERE channel='$channel' ORDER BY lines DESC OFFSET {$params[0]} LIMIT 1";
-log::debug("rank query >> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT nick, lines FROM statcache_lines WHERE channel='$channel' ORDER BY lines DESC OFFSET {$params[0]} LIMIT 1",
+	'rank query');
 if ($q === false) {
-	log::error('Query failed');
-	log::error(pg_last_error());
+	$_i['handle']->say($_i['reply_to'], 'Query failed');
 } elseif (pg_num_rows($q) == 0) {
 	$_i['handle']->say($_i['reply_to'], 'No results');
 } else {

@@ -11,21 +11,15 @@ $sayprefix = "Stats for $channel: ";
 $sayparts = array();
 $b = chr(2); # bold
 
-$ref = 'chanstats first channel use';
-$query = "SELECT nick, uts FROM statcache_firstuse WHERE channel='$channel' ORDER BY uts LIMIT 1";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT nick, uts FROM statcache_firstuse WHERE channel='$channel' ORDER BY uts LIMIT 1", 'chanstats first channel use');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return f::FALSE;
 } elseif (pg_num_rows($q) == 0) {
-	log::debug("No results for $ref '$channel'");
+	log::debug("No results for '$channel'");
 	$_i['handle']->say($_i['reply_to'], 'Channel not found');
 	return f::TRUE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$first_use_uts = $qr['uts'];
@@ -38,18 +32,12 @@ if ($q === false) {
 	$sayparts[] = "First recorded use: $b$ffud$b by $b{$qr['nick']}$b ($fcad days ago)";
 }
 
-$ref = 'chanstats total count query';
-$query = "SELECT val AS count FROM statcache_misc WHERE channel='$channel' AND stat_name='total lines'";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT val AS count FROM statcache_misc WHERE channel='$channel' AND stat_name='total lines'", 'chanstats total count query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$chan_total_count = $qr['count'];
@@ -59,18 +47,12 @@ if ($q === false) {
 	$sayparts[] = "$fctc lines ($flpd lines/day)";
 }
 
-$ref = 'chanstats number nicks query';
-$query = "SELECT count(*) FROM (SELECT nick FROM statcache_lines WHERE channel='$channel' GROUP BY nick) t1";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT count(*) FROM (SELECT nick FROM statcache_lines WHERE channel='$channel' GROUP BY nick) t1", 'chanstats number nicks query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$chan_total_nicks = $qr['count'];
@@ -82,18 +64,12 @@ if ($q === false) {
 	$sayparts[] = "$fctn nicks ($falpn lines/nick; $falpnpd lines/nick/day)";
 }
 
-$ref = 'chanstats number users query';
-$query = "SELECT count(*) FROM (SELECT ircuser FROM log WHERE $where_channel GROUP BY ircuser) t1";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT count(*) FROM (SELECT ircuser FROM log WHERE $where_channel GROUP BY ircuser) t1", 'chanstats number users query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$fctu = number_format($qr['count']);
@@ -109,18 +85,12 @@ for ($i = 0; $i < 24; $i++) {
 }
 $sums = implode(', ', $sums);
 
-$ref = 'chanstats time profile query';
-$query = "SELECT $sums FROM statcache_timeprofile WHERE channel='$channel'";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT $sums FROM statcache_timeprofile WHERE channel='$channel'", 'chanstats time profile query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$max_hour = '?';
@@ -170,19 +140,12 @@ if ($q === false) {
 	$sayparts[] = "Most talkative hour: $b{$max_hour}:00$b ($fmhv lines; $fmhvr%)";
 }
 
-$ref = 'chanstats word list query';
-$query = "SELECT word, sum(wc) AS count FROM statcache_words WHERE channel='$channel' GROUP BY word ORDER BY count DESC";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT word, sum(wc) AS count FROM statcache_words WHERE channel='$channel' GROUP BY word ORDER BY count DESC", 'chanstats word list query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
-
 	$total_unique_words = pg_num_rows($q);
 
 	$ftuw = number_format($total_unique_words);

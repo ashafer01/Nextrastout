@@ -8,7 +8,6 @@ $week_s = 7 * $day_s;
 $month_s = 30 * $day_s;
 
 if ($params == null) {
-
 	if ($_CMD == 'dailystats') {
 		$say = 'So far today: ';
 		$start_uts = local_strtotime('midnight');
@@ -69,12 +68,8 @@ $channel = $_i['sent_to'];
 
 $where = "(command='PRIVMSG') AND (args='$channel') AND (uts > $start_uts) AND (uts < $stop_uts)";
 
-$total = "SELECT count(uts) FROM log WHERE $where";
-log::debug("total query >>> $total");
-$q = pg_query(Nextrastout::$db, $total);
+$q = Nextrastout::$db->pg_query("SELECT count(uts) FROM log WHERE $where", 'total query');
 if ($q === false) {
-	log::error('total query failed');
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return null;
 } else {
@@ -82,12 +77,8 @@ if ($q === false) {
 	$TOTAL = $qr['count'];
 }
 
-$distinct_nicks = "SELECT count(*) FROM (SELECT count(nick) FROM log WHERE $where GROUP BY nick) AS t1;";
-log::debug("distinct nicks query >>> $distinct_nicks");
-$q = pg_query(Nextrastout::$db, $distinct_nicks);
+$q = Nextrastout::$db->pg_query("SELECT count(*) FROM (SELECT count(nick) FROM log WHERE $where GROUP BY nick) AS t1;", 'distinct nicks');
 if ($q === false) {
-	log::error('distinct nicks query failed');
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return null;
 } else {
@@ -95,12 +86,8 @@ if ($q === false) {
 	$NUM_NICKS = $qr['count'];
 }
 
-$top_nicks = "SELECT nick, count(uts) FROM log WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 3";
-log::debug("top nicks query >>> $top_nicks");
-$q = pg_query(Nextrastout::$db, $top_nicks);
+$q = Nextrastout::$db->pg_query("SELECT nick, count(uts) FROM log WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 3", 'top nicks');
 if ($q === false) {
-	log::error('top nicks query failed');
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return null;
 } else {
@@ -129,11 +116,8 @@ for ($i = $start_uts; $i <= $stop_uts; $i += 3600) {
 	}
 }
 $top_hours .= " END AS timerange, count(uts) FROM log WHERE $where GROUP BY timerange ORDER BY count DESC LIMIT 3";
-log::debug("top hours query >>> $top_hours");
-$q = pg_query(Nextrastout::$db, $top_hours);
+$q = Nextrastout::$db->pg_query($top_hours, 'top hours');
 if ($q === false) {
-	log::error('top hours query failed');
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return null;
 } else {

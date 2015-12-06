@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/client.php';
 require_once __DIR__ . '/uplink.php';
 require_once __DIR__ . '/log.php';
+require_once __DIR__ . '/db.php';
 
 class Nextrastout {
 	public static $bot_handle = null;
@@ -14,15 +16,7 @@ class Nextrastout {
 	public static $cmd_cooldown = array();
 
 	public static function dbconnect() {
-		log::info('Opening database connection');
-		$conf = config::get_instance();
-		$dbpw = get_password($conf->db->pwname);
-		$proc = proc::$name;
-		self::$db = pg_connect("host={$conf->db->host} dbname={$conf->db->name} user={$conf->db->user} password=$dbpw application_name=Nextrastout_$proc");
-		if (self::$db === false) {
-			log::fatal('Failed to connect to database, exiting');
-			exit(17);
-		}
+		self::$db = new db();
 	}
 
 	public static function debug_mode() {

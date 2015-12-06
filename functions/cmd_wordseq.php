@@ -25,19 +25,14 @@ switch ($_CMD) {
 
 $nick_in = implode(',', array_map('single_quote', array_map('dbescape', $nicks)));
 
-$q = pg_query(Nextrastout::$db, $query = "SELECT message FROM log WHERE command='PRIVMSG' AND nick IN ($nick_in) AND args='$channel'");
-log::debug("word_sequences query >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT message FROM log WHERE command='PRIVMSG' AND nick IN ($nick_in) AND args='$channel'",
+	'word sequences query');
 if ($q === false) {
-	log::error('word_sequences query failed');
-	log::error(pg_last_error());
 	$say = 'Query failed';
 } elseif (pg_num_rows($q) == 0) {
 	log::debug('No results for word_sequences');
 	$say = 'No results for nickname';
 } else {
-	log::debug('word_sequences query OK');
-
 	$sequences = array();
 	$stopwords = config::get_list('stopwords_extended');
 	while ($row = pg_fetch_assoc($q)) {

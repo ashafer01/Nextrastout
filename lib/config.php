@@ -2,11 +2,12 @@
 require_once __DIR__ . '/ini_parser.php';
 
 class config {
-	private static $base = __DIR__ . '/../config/';
+	private static $base;
 
 	## singleton stuff
 	private static $instance = null;
 	public static function get_instance() {
+		self::$base  = __DIR__ . '/../config/';
 		if (self::$instance === null) {
 			self::$instance = new config();
 		}

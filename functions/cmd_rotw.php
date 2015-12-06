@@ -10,30 +10,21 @@ if ($param != null) {
 	$word = dbescape(strtolower($param));
 	$where = "word='$word' AND channel='$channel' AND nick NOT IN ('nextrastout','extrastout')";
 
-	$query = "SELECT SUM(wc) AS count FROM statcache_words WHERE $where";
-	log::debug("total query >>> $query");
-	$q = pg_query(Nextrastout::$db, $query);
+	$q = Nextrastout::$db->pg_query("SELECT SUM(wc) AS count FROM statcache_words WHERE $where",
+		'total query');
 	if ($q === false) {
-		log::error('Query failed');
-		log::error(pg_last_error());
 		$say = 'Query failed';
 	} else {
-		log::debug('total query OK');
 		$qr = pg_fetch_assoc($q);
 		$total_count = $qr['count'];
 		log::debug("Got total: $total_count");
 
 		if ($total_count > 0) {
-			$query = "SELECT nick, SUM(wc) AS count FROM statcache_words WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 10";
-			log::debug("kotw query >>> $query");
-			$q = pg_query(Nextrastout::$db, $query);
+			$q = Nextrastout::$db->pg_query("SELECT nick, SUM(wc) AS count FROM statcache_words WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 10",
+				'kotw query');
 			if ($q === false) {
-				log::error('Query failed');
-				log::error(pg_last_error());
 				$say = 'Query failed';
 			} else {
-				log::debug('kol query OK');
-
 				$b = chr(2);
 				$total_str = number_format($total_count);
 				$say  = "There are $b{$total_str}$b uses of $b{$word}$b in $channel | ";

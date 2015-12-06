@@ -29,37 +29,28 @@ if ($params[0] == 'recall') {
 		return f::FALSE;
 	}
 
-	$query = "SELECT by_nick, topic FROM topic WHERE tid={$params[1]} AND channel='$channel'";
-	log::debug("topic recall query >> $query");
-	$q = pg_query(Nextrastout::$db, $query);
+	$q = Nextrastout::$db->pg_query("SELECT by_nick, topic FROM topic WHERE tid={$params[1]} AND channel='$channel'",
+		'topic recall query');
 	if ($q === false) {
-		log::error('Query failed');
-		log::error(pg_last_error());
 		$_i['handle']->say($_i['reply_to'], "Failed to look up topic #{$params[1]}");
 	} elseif (pg_num_rows($q) == 0) {
 		$_i['handle']->say($_i['reply_to'], "Topic #{$params[1]} not found");
 	} else {
-		log::debug('Query OK');
 		$qr = pg_fetch_assoc($q);
 		$_globals->topic_nicks[$channel] = $qr['by_nick'];
 		$newtopic = $qr['topic'];
 	}
 } else {
 	// get current topic(s)
-	$query = "SELECT * FROM topic WHERE channel='$channel' ORDER BY uts DESC LIMIT 5";
-	log::debug("topic query >> $query");
-	$q = pg_query(Nextrastout::$db, $query);
+	$q = Nextrastout::$db->pg_query("SELECT * FROM topic WHERE channel='$channel' ORDER BY uts DESC LIMIT 5",
+		'topic query');
 	if ($q === false) {
-		log::error('Query failed');
-		log::error(pg_last_error());
 		$_i['handle']->say($_i['reply_to'], 'Failed to get current topic');
 		return f::FALSE;
 	} elseif (pg_num_rows($q) == 0) {
 		log::debug("No topics for $channel");
 		$_i['handle']->say($_i['reply_to'], "No topics for $channel. If this is the first time using topic commands in this channel, just /topic <current topic> to initialize.");
 		return f::TRUE;
-	} else {
-		log::debug('Query OK');
 	}
 
 	switch ($params[0]) {
@@ -182,5 +173,5 @@ if ($params[0] == 'recall') {
 
 if ($newtopic !== null) {
 	log::trace("sending new topic for $channel");
-	Nextrastout::$bot_handle->send("TOPIC $channel :$newtopic");
+	uplink::send("TOPIC $channel :$newtopic");
 }

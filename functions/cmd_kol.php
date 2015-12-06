@@ -7,30 +7,21 @@ list($_CMD, $param, $_i) = $_ARGV;
 $channel = $_i['sent_to'];
 $where = "channel='$channel'";
 
-$query = "SELECT SUM(lines) AS count FROM statcache_lines WHERE $where";
-log::debug("total query >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT val AS count FROM statcache_misc WHERE $where AND stat_name='total lines'",
+	'total lines');
 if ($q === false) {
-	log::error('Query failed');
-	log::error(pg_last_error());
 	$say = 'Query failed';
 } else {
-	log::debug('total query OK');
 	$qr = pg_fetch_assoc($q);
 	$total_count = $qr['count'];
 	log::debug("Got total: $total_count");
 
 	if ($total_count > 0) {
-		$query = "SELECT nick, SUM(lines) AS count FROM statcache_lines WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 10";
-		log::debug("kol query >>> $query");
-		$q = pg_query(Nextrastout::$db, $query);
+		$q = Nextrastout::$db->pg_query("SELECT nick, SUM(lines) AS count FROM statcache_lines WHERE $where GROUP BY nick ORDER BY count DESC LIMIT 10",
+			'kol query');
 		if ($q === false) {
-			log::error('Query failed');
-			log::error(pg_last_error());
 			$say = 'Query failed';
 		} else {
-			log::debug('kol query OK');
-
 			$b = chr(2);
 			$total_str = number_format($total_count);
 			$say = "Out of $b{$total_str}$b lines in $channel: ";

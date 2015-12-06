@@ -9,19 +9,14 @@ $where_notme = "nick NOT IN ('" . Nextrastout::$bot_handle->nick . "', 'extrasto
 
 $b = chr(2);
 
-$ref = 'karma rank';
-$query = "SELECT thing, sum(up)-sum(down) AS net FROM karma_cache WHERE channel='$channel' AND thing IN (SELECT nick FROM karma_cache WHERE channel='$channel' GROUP BY nick) AND thing!=nick AND $where_notme GROUP BY thing ORDER BY net DESC LIMIT 15";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT thing, sum(up)-sum(down) AS net FROM karma_cache WHERE channel='$channel' AND thing IN (SELECT nick FROM karma_cache WHERE channel='$channel' GROUP BY nick) AND thing!=nick AND $where_notme GROUP BY thing ORDER BY net DESC LIMIT 15",
+	'karma rank');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$say = 'Query failed';
 } elseif (pg_num_rows($q) == 0) {
 	log::debug('No matching rows');
 	$say = 'No results';
 } else {
-	log::debug("$ref OK");
 	$rank = 1;
 	$out = array();
 	while ($qr = pg_fetch_assoc($q)) {

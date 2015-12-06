@@ -11,20 +11,14 @@ if ($quote_where === null) {
 	return f::FALSE;
 }
 
-$query = "SELECT id FROM quotedb WHERE channel='$channel' AND $quote_where ORDER BY id";
-log::debug("searchquote query >> $query");
-$q = pg_query(Nextrastout::$db, $query);
-
+$q = Nextrastout::$db->pg_query("SELECT id FROM quotedb WHERE channel='$channel' AND $quote_where ORDER BY id",
+	'searchquote query');
 if ($q === false) {
-	log::error("Query failed");
-	log::error(pg_last_error());
 	$say = 'Query failed';
 } elseif (($num_results = pg_num_rows($q)) == 0) {
 	log::debug('No results for searchquote query');
 	$say = 'No results';
 } else {
-	log::debug('searchquote query ok');
-
 	$ids = array();
 	while ($qr = pg_fetch_assoc($q)) {
 		$ids[] = $qr['id'];

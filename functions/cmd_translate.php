@@ -7,10 +7,8 @@ $query = rawurlencode($params);
 
 $qcount = strlen($params);
 
-$q = pg_query(Nextrastout::$db, "SELECT value FROM keyval WHERE key='translate_count'");
+$q = Nextrastout::$db->pg_query("SELECT value FROM keyval WHERE key='translate_count'", 'translate count query');
 if ($q === false) {
-	log::error('Translate count query failed');
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return f::FALSE;
 } else {

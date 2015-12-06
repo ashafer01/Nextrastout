@@ -43,12 +43,9 @@ if ($where_nicks !== null) {
 	$where_things_karma .= " AND $where_nicks";
 }
 
-$q = pg_query_params(Nextrastout::$db, "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme", array(
-	$channel
-));
+$q = Nextrastout::$db->pg_query("SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_things_karma AND $where_notme",
+	'net karma query');
 if ($q === false) {
-	log::error('Failed to look up karma for cmd_karma()');
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return f::FALSE;
 } elseif (pg_num_rows($q) == 0) {
@@ -56,7 +53,6 @@ if ($q === false) {
 	$_i['handle']->say($_i['reply_to'], "No votes found for '$uarg'");
 	return f::TRUE;
 } else {
-	log::debug('query OK');
 	$qr = pg_fetch_assoc($q);
 
 	$upvotes = $qr['up'];
@@ -71,12 +67,9 @@ if ($q === false) {
 }
 
 # top upvoters
-$q = pg_query_params(Nextrastout::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) >= 0 ORDER BY net DESC LIMIT 5", array(
-	$channel
-));
+$q = Nextrastout::$db->pg_query("SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) >= 0 ORDER BY net DESC LIMIT 5",
+	'top upvoters query');
 if ($q === false) {
-	log::error('Failed to get top upvoters for cmd_karmastats()');
-	log::error(pg_last_error());
 	$sayparts[] = 'Query Failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
@@ -84,7 +77,6 @@ if ($q === false) {
 	log::debug('No upvoters');
 	$sayparts[] = 'no upvoters';
 } else {
-	log::debug('query OK');
 	$voters = array();
 
 	$qr = pg_fetch_assoc($q);
@@ -105,12 +97,9 @@ if ($q === false) {
 }
 
 # top downvoters
-$q = pg_query_params(Nextrastout::$db, "SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel=$1 AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5", array(
-	$channel
-));
+$q = Nextrastout::$db->pg_query("SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5",
+	'top downvoters query');
 if ($q === false) {
-	log::error('Failed to get top downvoters for cmd_karmastats()');
-	log::error(pg_last_error());
 	$sayparts[] = 'Query Failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
@@ -118,7 +107,6 @@ if ($q === false) {
 	log::debug('No downvoters');
 	$sayparts[] = 'no downvoters';
 } else {
-	log::debug('query OK');
 	$voters = array();
 
 	$qr = pg_fetch_assoc($q);

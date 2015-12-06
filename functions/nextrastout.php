@@ -44,32 +44,19 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			$uts = dbescape($_i['args'][3]);
 
 			if (array_key_exists($topicchan, $topicdata)) {
-				$query = "SELECT count(*) AS count from topic WHERE channel='$topicchan'";
-				log::debug("Check topic query >> $query");
-				$q = pg_query(Nextrastout::$db, $query);
-				if ($q === false) {
-					log::error('Query failed');
-					log::error(pg_last_error());
-					$doit = true;
-				} elseif (pg_num_rows($q) == 0) {
-					$doit = true;
-				} else {
+				$q = Nextrastout::$db->pg_query("SELECT count(*) AS count from topic WHERE channel='$topicchan'", 'Check topic query');
+				$doit = true;
+				if (db::num_rows($q) > 0) {
 					$qr = pg_fetch_assoc($q);
 					if ($qr['count'] > 0) {
 						log::debug('Not inserting server topic, we already have topics for this channel');
 						$doit = false;
-					} else {
-						$doit = true;
 					}
 				}
 				if ($doit) {
-					$query = "INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '{$topicdata[$topicchan]}', '$nick', '$topicchan')";
-					log::debug("New topic query >> $query");
-					$q = pg_query(Nextrastout::$db, $query);
+					$q = Nextrastout::$db->pg_query("INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '{$topicdata[$topicchan]}', '$nick', '$topicchan')", 'New topic query');
 					if ($q === false) {
-						log::error('Query failed');
-						log::error(pg_last_error());
-						Nextrastout::$bot_handle->say($_i['reply_to'], 'Failed to store new topic');
+						Nextrastout::$bot_handle->say($topicchan, 'Failed to store new topic');
 					} else {
 						log::debug("Stored new topic for $topicchan");
 					}
@@ -99,12 +86,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 			}
 			$uts = time();
 
-			$query = "INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '$topic', '$nick', '$topicchan')";
-			log::debug("New topic query >> $query");
-			$q = pg_query(Nextrastout::$db, $query);
+			$q = Nextrastout::$db->pg_query("INSERT INTO topic (uts, topic, by_nick, channel) VALUES ($uts, '$topic', '$nick', '$topicchan')",
+				'New topic query');
 			if ($q === false) {
-				log::error('Query failed');
-				log::error(pg_last_error());
 				Nextrastout::$bot_handle->say($_i['args'][0], 'Failed to store new topic');
 			} else {
 				log::debug("Stored new topic for $topicchan");

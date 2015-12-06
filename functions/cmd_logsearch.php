@@ -119,18 +119,13 @@ if ($command == 'line') {
 
 $channel = $_i['sent_to'];
 $query = "SELECT uts, nick, message FROM $table WHERE (command='PRIVMSG' AND args='$channel') AND $cmd_in" . f::log_where($query_params) . "$where $orderby $limit";
-log::debug("log search query >>> $query");
-
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query($query, 'logsearch query');
 if ($q === false) {
-	log::error("Query failed");
-	log::error(pg_last_error());
 	$say = 'Query failed';
 } elseif (pg_num_rows($q) == 0) {
 	log::debug('No results for log search query');
 	$say = 'No results';
 } else {
-	log::debug('log search query ok');
 	$qr = pg_fetch_assoc($q);
 	$b = chr(2); #bold
 	$ts = smart_date_fmt($qr['uts']);

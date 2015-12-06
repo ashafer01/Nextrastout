@@ -60,17 +60,12 @@ log::debug('Starting nickstats queries');
 
 # Total number of lines matching the query
 
-$ref = 'nickstats total lines query';
-$query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where_nonick";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT count(uts) FROM log WHERE $where_privmsg AND $where_nonick",
+	'nickstats total lines query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 	$total_lines = $qr['count'];
 	if ($total_lines == 0) {
@@ -85,18 +80,13 @@ if ($q === false) {
 
 # Total number of lines matching the query by the given nick(s)
 
-$ref = 'nickstats total nick lines query';
-$query = "SELECT count(uts) FROM log WHERE $where_privmsg AND $where";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT count(uts) FROM log WHERE $where_privmsg AND $where",
+	'nickstats total nick lines query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$nick_total_lines = $qr['count'];
@@ -108,17 +98,12 @@ if ($q === false) {
 
 # Find the rank of the line count
 
-$ref = 'nickstats rank query';
-$query = "SELECT nick, count(uts) FROM log WHERE $where_privmsg AND $where_nonick GROUP BY nick ORDER BY count DESC";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT nick, count(uts) FROM log WHERE $where_privmsg AND $where_nonick GROUP BY nick ORDER BY count DESC",
+	'nickstats rank query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$found = false;
 	$rank = 1;
 	while ($row = pg_fetch_assoc($q)) {
@@ -155,18 +140,13 @@ $sayparts[] = "%C$fntl%0 lines / $ftl total ($fpcnt%)";
 
 $where_nickonly = f::log_where_nick($nicks, $channel, false);
 
-$ref = 'nickstats first use query';
-$query = "SELECT uts, nick, ircuser FROM log WHERE $where_nickonly AND $where_dateonly ORDER BY uts ASC LIMIT 1";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT uts, nick, ircuser FROM log WHERE $where_nickonly AND $where_dateonly ORDER BY uts ASC LIMIT 1",
+	'nickstats first use query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$first_join_uts = $qr['uts'];
@@ -198,19 +178,13 @@ if ($q === false) {
 
 # Get big list of words
 
-$ref = 'nickstats word list query';
-$query = "SELECT * FROM (SELECT regexp_split_to_table(lower(message), '\W+') AS word, count(uts) FROM log WHERE $where_privmsg AND $where GROUP BY word ORDER BY count DESC) AS t1 WHERE word !~ '^\x01'";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT * FROM (SELECT regexp_split_to_table(lower(message), '\W+') AS word, count(uts) FROM log WHERE $where_privmsg AND $where GROUP BY word ORDER BY count DESC) AS t1 WHERE word !~ '^\x01'",
+	'nickstats word list query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
-
 	$total_unique_words = pg_num_rows($q);
 
 	$ftuw = number_format($total_unique_words);
@@ -236,7 +210,7 @@ pg_result_seek($q, 0);
 
 #########################
 
-$sayparts[] = 'See also: !nickkarma, !twowords';
+$sayparts[] = 'See also: !nickkarma, !s2words';
 
 log::debug('Finished nickstats queries');
 

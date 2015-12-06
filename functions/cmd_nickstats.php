@@ -32,17 +32,12 @@ log::debug('Starting nickstats queries');
 
 # Total number of lines
 
-$ref = 'nickstats total lines query';
-$query = "SELECT val AS count FROM statcache_misc WHERE channel='$channel' AND stat_name='total lines'";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT val AS count FROM statcache_misc WHERE channel='$channel' AND stat_name='total lines'",
+	'nickstats total lines query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 	$total_lines = $qr['count'];
 	if ($total_lines == 0) {
@@ -57,18 +52,13 @@ if ($q === false) {
 
 # Total number of lines by the given nick(s)
 
-$ref = 'nickstats total nick lines query';
-$query = "SELECT SUM(lines) AS count FROM statcache_lines WHERE $where";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT SUM(lines) AS count FROM statcache_lines WHERE $where",
+	'nickstats total nick lines query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$nick_total_lines = $qr['count'];
@@ -80,17 +70,12 @@ if ($q === false) {
 
 # Find the rank of the line count
 
-$ref = 'nickstats rank query';
-$query = "SELECT nick, sum(lines) AS count FROM statcache_lines WHERE channel='$channel' GROUP BY nick ORDER BY count DESC";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT nick, sum(lines) AS count FROM statcache_lines WHERE channel='$channel' GROUP BY nick ORDER BY count DESC",
+	'nickstats rank query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$_i['handle']->say($_i['reply_to'], 'Query failed');
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$found = false;
 	$rank = 1;
 	while ($row = pg_fetch_assoc($q)) {
@@ -125,18 +110,13 @@ $sayparts[] = "%C$fntl%0 lines / $ftl total ($fpcnt%)";
 
 # Find the first usage of the given nick(s)
 
-$ref = 'nickstats first use query';
-$query = "SELECT uts, nick FROM statcache_firstuse WHERE $where ORDER BY uts ASC LIMIT 1";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT uts, nick FROM statcache_firstuse WHERE $where ORDER BY uts ASC LIMIT 1",
+	'nickstats first use query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$first_join_uts = $qr['uts'];
@@ -168,19 +148,13 @@ if ($q === false) {
 
 # Get big list of words
 
-$ref = 'nickstats word list query';
-$query = "SELECT word, wc AS count FROM statcache_words WHERE $where AND word !~ '^\x01' ORDER BY count DESC";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT word, wc AS count FROM statcache_words WHERE $where AND word !~ '^\x01' ORDER BY count DESC",
+	'nickstats word list query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
-
 	$total_unique_words = pg_num_rows($q);
 
 	$ftuw = number_format($total_unique_words);
@@ -217,18 +191,13 @@ for ($i = 0; $i < 24; $i++) {
 }
 $sums = implode(', ', $sums);
 
-$ref = 'nickstats time profile query';
-$query = "SELECT $sums FROM statcache_timeprofile WHERE $where";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT $sums FROM statcache_timeprofile WHERE $where",
+	'nickstats time profile query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$max_hour = '?';
@@ -282,18 +251,13 @@ if ($q === false) {
 
 # number of caps lines
 
-$ref = 'nickstats caps count query';
-$query = "SELECT count(*) FROM caps_cache WHERE args='$channel' AND $where_nick";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT count(*) FROM caps_cache WHERE args='$channel' AND $where_nick",
+	'nickstats caps count query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$caps_count = $qr['count'];
@@ -306,18 +270,13 @@ if ($q === false) {
 
 # average line length
 
-$ref = 'nickstats avg line length query';
-$query = "SELECT nick, avg(char_length(message)) AS len FROM log WHERE args='$channel' AND command='PRIVMSG' AND $where_nick GROUP BY nick";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT nick, avg(char_length(message)) AS len FROM log WHERE args='$channel' AND command='PRIVMSG' AND $where_nick GROUP BY nick",
+	'nickstats avg line length query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$fal = number_format($qr['len'], 2);

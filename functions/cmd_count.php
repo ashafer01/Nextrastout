@@ -3,12 +3,8 @@
 log::trace('entering f::cmd_count()');
 list($_CMD, $params, $_i) = $_ARGV;
 
-$query = "SELECT count(uts) FROM log WHERE (command='PRIVMSG' and args='{$_i['sent_to']}')" . f::log_where($params);
-log::debug("count query >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT count(uts) FROM log WHERE (command='PRIVMSG' and args='{$_i['sent_to']}')" . f::log_where($params), 'count query');
 if ($q === false) {
-	log::error('Query failed');
-	log::error(pg_last_error());
 	$say = 'Query failed';
 } else {
 	$qr = pg_fetch_assoc($q);

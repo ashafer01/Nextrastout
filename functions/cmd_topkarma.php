@@ -7,13 +7,9 @@ $channel = $_i['sent_to'];
 
 $sayparts = array();
 
-$ref = 'most upvoted thing query';
-$query = "SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' GROUP BY thing ORDER BY net DESC LIMIT 5";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' GROUP BY thing ORDER BY net DESC LIMIT 5",
+	'most upvoted thing query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
@@ -21,7 +17,6 @@ if ($q === false) {
 	log::debug('No matching rows');
 	$sayparts[] = 'no upvotes';
 } else {
-	log::debug("$ref OK");
 	$saypart = array();
 	$i = 0;
 	while ($qr = pg_fetch_assoc($q)) {
@@ -39,13 +34,9 @@ if ($q === false) {
 }
 
 
-$ref = 'most downvoted thing query';
-$query = "SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' GROUP BY thing ORDER BY net LIMIT 5";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' GROUP BY thing ORDER BY net LIMIT 5",
+	'most downvoted thing query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
@@ -53,7 +44,6 @@ if ($q === false) {
 	log::debug('No matching rows');
 	$sayparts[] = 'no downvotes';
 } else {
-	log::debug("$ref OK");
 	$saypart = array();
 	$i = 0;
 	while ($qr = pg_fetch_assoc($q)) {

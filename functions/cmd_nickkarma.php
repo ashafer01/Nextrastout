@@ -36,18 +36,13 @@ $orange = "\x0307";
 
 # Find the first usage of the given nick(s)
 
-$ref = 'nickkarma first use query';
-$query = "SELECT uts, nick FROM statcache_firstuse WHERE $where AND channel='$channel'";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT uts, nick FROM statcache_firstuse WHERE $where AND channel='$channel'",
+	'nickkarma first use query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$first_join_uts = $qr['uts'];
@@ -73,13 +68,9 @@ $where_nicks_karma = '(' . implode(' OR ', array_map(function($nick) {
 }, $nicks));
 $where_nicks_karma .= ')';
 
-$ref = 'karma lookup';
-$query = "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_nicks_karma AND $where_notme";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_nicks_karma AND $where_notme",
+	'karma lookup');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
@@ -87,7 +78,6 @@ if ($q === false) {
 	log::debug('No matching rows');
 	$sayparts[] = 'no votes';
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$up_votes = $qr['up'];
@@ -99,13 +89,9 @@ if ($q === false) {
 
 # Find the karma rank
 
-$ref = 'karma rank';
-$query = "SELECT sum(up)-sum(down) AS net FROM karma_cache WHERE channel='$channel' AND thing IN (SELECT nick FROM karma_cache WHERE channel='$channel' GROUP BY nick) AND thing!=nick AND $where_notme GROUP BY thing ORDER BY net DESC";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT sum(up)-sum(down) AS net FROM karma_cache WHERE channel='$channel' AND thing IN (SELECT nick FROM karma_cache WHERE channel='$channel' GROUP BY nick) AND thing!=nick AND $where_notme GROUP BY thing ORDER BY net DESC",
+	'karma rank');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
@@ -113,7 +99,6 @@ if ($q === false) {
 	log::debug('No matching rows');
 	$sayparts[] = 'no votes';
 } else {
-	log::debug("$ref OK");
 	$rank = 1;
 	while ($qr = pg_fetch_assoc($q)) {
 		if ($net_votes >= $qr['net']) {
@@ -144,13 +129,9 @@ $where_things_karma = '(' . implode(' OR ', array_map(function($nick) {
 }, $nicks));
 $where_things_karma .= ')';
 
-$ref = 'vote totals query';
-$query = "SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_things_karma";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT sum(up) AS up, sum(down) AS down FROM karma_cache WHERE channel='$channel' AND $where_things_karma",
+	'vote totals query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
@@ -158,7 +139,6 @@ if ($q === false) {
 	log::debug('No matching rows');
 	$sayparts[] = 'no votes';
 } else {
-	log::debug("$ref OK");
 	$qr = pg_fetch_assoc($q);
 
 	$total_up_cast = $qr['up'];
@@ -176,13 +156,9 @@ if ($q === false) {
 
 # Find most voted things
 
-$ref = 'most upvoted thing query';
-$query = "SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) > 0 ORDER BY net DESC LIMIT 5";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) > 0 ORDER BY net DESC LIMIT 5",
+	'most upvoted thing query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
@@ -190,7 +166,6 @@ if ($q === false) {
 	log::debug('No matching rows');
 	$sayparts[] = 'no upvotes';
 } else {
-	log::debug("$ref OK");
 	$saypart = array();
 	$i = 0;
 	while ($qr = pg_fetch_assoc($q)) {
@@ -209,13 +184,9 @@ if ($q === false) {
 
 #########################
 
-$ref = 'most downvoted thing query';
-$query = "SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5";
-log::debug("$ref >>> $query");
-$q = pg_query(Nextrastout::$db, $query);
+$q = Nextrastout::$db->pg_query("SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5",
+	'most downvoted thing query');
 if ($q === false) {
-	log::error("$ref failed");
-	log::error(pg_last_error());
 	$sayparts[] = 'Query failed';
 	$_i['handle']->say($_i['reply_to'], $sayprefix . implode(' | ', $sayparts));
 	return f::FALSE;
@@ -223,7 +194,6 @@ if ($q === false) {
 	log::debug('No matching rows');
 	$sayparts[] = 'no downvotes';
 } else {
-	log::debug("$ref OK");
 	$saypart = array();
 	$i = 0;
 	while ($qr = pg_fetch_assoc($q)) {

@@ -14,12 +14,9 @@ if (count($args) == 0) {
 		$where .= f::log_where($args[1], true); # ignoring @ and ^
 	}
 
-	$query = "SELECT max(uts), ircuser FROM log WHERE $where GROUP BY ircuser ORDER BY max DESC LIMIT 5";
-	log::debug("whowas query >>> $query");
-	$q = pg_query(Nextrastout::$db, $query);
+	$q = Nextrastout::$db->pg_query("SELECT max(uts), ircuser FROM log WHERE $where GROUP BY ircuser ORDER BY max DESC LIMIT 5",
+		'whowas query');
 	if ($q === false) {
-		log::error('Query failed');
-		log::error(pg_last_error());
 		$say = 'Query failed';
 	} elseif (pg_num_rows($q) == 0) {
 		log::debug('No results for whowas query');
