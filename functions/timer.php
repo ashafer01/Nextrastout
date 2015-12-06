@@ -4,11 +4,17 @@ Nextrastout::dbconnect();
 f::ALIAS_INIT();
 
 while (true) {
-	# Check for reload
+	# Check for proc reload
 	if (proc::reload_needed()) {
 		log::notice('Reloading timer proc');
 		proc::disable_reload();
 		return proc::PROC_RERUN;
+	}
+
+	# Check for conf reload
+	if (config::reload_needed()) {
+		log::notice('Reloading conf');
+		config::reload_all();
 	}
 
 	# Check for new SMS

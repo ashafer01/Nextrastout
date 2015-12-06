@@ -1,8 +1,10 @@
 <?php
 require_once __DIR__ . '/ini_parser.php';
+require_once __DIR__ . '/Nextrastout.class.php';
 
 class config {
 	private static $base;
+	private static $last_load;
 
 	## singleton stuff
 	private static $instance = null;
@@ -20,6 +22,26 @@ class config {
 		$main = new IniParser(config::$base . 'Nextrastout.ini');
 		$private = new IniParser(config::$base . 'private.ini');
 		$this->conf = new ArrayObject(array_merge($main->parse()->getArrayCopy(), $private->parse()->getArrayCopy()), ArrayObject::ARRAY_AS_PROPS);
+		self::$last_load = time();
+	}
+
+	public static function set_reload() {
+		$ts = time();
+		Nextrastout::$db->pg_query("UPDATE conf_reload SET reload_uts=$ts", 'set conf reload');
+	}
+
+	public static function reload_needed() {
+		$q = Nextrastout::$db->pg_query("SELECT * FROM conf_reload", 'check conf reload', false);
+		if ($q === false) {
+			return false;
+		} else {
+			$qr = pg_fetch_assoc($q);
+			if (self::$last_load < $qr['reload_uts']) {
+				return true;
+			} else {
+				return false;
+			}
+		}
 	}
 
 	private function __construct() {

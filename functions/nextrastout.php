@@ -225,6 +225,7 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							config::reload_all();
 							$_i['handle']->say($_i['reply_to'], 'Reloaded config');
 							f::ALIAS_INIT();
+							config::set_reload();
 							Nextrastout::$bot_handle->update_conf_channels();
 							break;
 						case 'dump-cd':
