@@ -5,7 +5,6 @@ require_once __DIR__ . '/Nextrastout.class.php';
 
 class proc {
 	private static $procs = array();
-	private static $dups = array();
 
 	public static $name = null;
 	public static $func = null;
@@ -27,20 +26,11 @@ class proc {
 		if ($args === null) {
 			$args = array();
 		}
-		if (array_key_exists($name, self::$procs)) {
-			log::notice('Proc name already taken');
-			if (array_key_exists($name, self::$dups)) {
-				$index = self::$dups[$name]++;
-			} else {
-				self::$dups[$name] = 0;
-				$index = 0;
-			}
-			if (strlen("$index") + strlen($name) >= 10) {
-				$name = substr_replace($name, $index, -1);
-			} else {
-				$name .= $index;
-			}
+		if (self::get_proc_func($name) != null) {
+			log::fatal("Proc name '$name' already taken");
+			exit(107);
 		}
+		self::set_proc_func($name, $func);
 		$pid = pcntl_fork();
 		if ($pid === -1) {
 			log::fatal('Fork failed');
@@ -49,11 +39,9 @@ class proc {
 			pcntl_signal(SIGINT, 'child_sigint');
 			file_put_contents("pids/$name.pid", posix_getpid());
 			setproctitle("Nextrastout [$name]");
+
 			self::$name = $name;
-
 			self::$procs = array();
-			self::$dups = array();
-
 			proc::$func = $func;
 
 			while (true) {
@@ -201,9 +189,7 @@ class proc {
 		if (array_key_exists($name, self::$procs)) {
 			unset(self::$procs[$name]);
 		}
-		if (array_key_exists($name, self::$dups)) {
-			unset(self::$dups[$name]);
-		}
+		self::del_proc_func($name);
 		if (file_exists("pids/$name.pid")) {
 			log::debug("Deleting pids/$name.pid");
 			unlink("pids/$name.pid");
@@ -227,6 +213,53 @@ class proc {
 			return (int)trim(file_get_contents("pids/$name.pid"));
 		}
 		return false;
+	}
+
+	## proc func db stuff
+
+	public static function get_proc_func($name) {
+		$name = dbescape($name);
+		$q = Nextrastout::$db->pg_query("SELECT func FROM proc_funcs WHERE proc='$name'",
+			'proc func lookup');
+		$qr = db::fetch_assoc($q);
+		if ($qr === false) {
+			return null;
+		} else {
+			return $qr['func'];
+		}
+	}
+
+	public static function set_proc_func($name, $func) {
+		$name = dbescape($name);
+		$func = dbescape($func);
+		$i = Nextrastout::$db->pg_query("INSERT INTO proc_funcs (proc,func) VALUES ('$name','$func')",
+			'set proc func');
+		if ($i === false) {
+			log::fatal('Set proc func failed');
+			exit(107);
+		}
+		return true;
+	}
+
+	public static function del_proc_func($name) {
+		$name = dbescape($name);
+		$d = Nextrastout::$db->pg_query("DELETE FROM proc_funcs WHERE proc='$name'",
+			'delete proc func');
+		if ($d === false) {
+			log::fatal('Failed to delete proc func');
+			exit(107);
+		}
+		return true;
+	}
+
+	public static function flush_proc_funcs() {
+		$q = Nextrastout::$db->pg_query('TRUNCATE proc_funcs',
+			'flush proc funcs');
+		if ($q === false) {
+			log::fatal('Failed to flush proc funcs');
+			exit(107);
+		}
+		return true;
 	}
 }
 

@@ -29,6 +29,8 @@ while (true) {
 		continue;
 	}
 
+	proc::flush_proc_funcs();
+
 	proc::start('responder', 'nextrastout');
 	proc::start('timer', 'timer');
 	proc::waitloop('responder');
