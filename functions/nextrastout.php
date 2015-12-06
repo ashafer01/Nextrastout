@@ -174,8 +174,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 					f::CALL($cmdfunc, array($ucmd, $uarg, $_i, $cmd_globals));
 				} elseif(is_admin($_i['hostmask']->user)) {
 					switch ($ucmd) {
-						# operational functions
-						case 'esreload':
 						case 'es-reload':
 							log::notice('Got !es-reload, reloading nextrastout()');
 							if ($uarg == '-hup') {
@@ -188,87 +186,9 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 							$_i['handle']->say($_i['reply_to'], 'Reloading nextrastout');
 							f::RELOAD('nextrastout');
 							return proc::PROC_RERUN;
-						case 'timer-reload':
-							log::notice('Got !timer-reload');
-							f::RELOAD('timer');
-							proc::enable_reload('timer');
-							$_i['handle']->say($_i['reply_to'], 'Reloading timer proc');
-							break;
-						case 'reload':
-							log::notice('Got !reload');
-							if (f::EXISTS($uarg)) {
-								if (f::IS_ALIAS($uarg)) {
-									$uarg = f::RESOLVE_ALIAS($uarg);
-								}
-								f::RELOAD($uarg);
-								$_i['handle']->say($_i['reply_to'], "Reloading f::$uarg()");
-							} else {
-								$_i['handle']->say($_i['reply_to'], "Function $uarg does not exist");
-							}
-							break;
-						case 'creload':
-							log::notice('Got !creload');
-							$cmdfunc = "cmd_$uarg";
-							if (f::EXISTS($cmdfunc)) {
-								if (f::IS_ALIAS($cmdfunc)) {
-									$cmdfunc = f::RESOLVE_ALIAS($cmdfunc);
-								}
-								f::RELOAD($cmdfunc);
-								$_i['handle']->say($_i['reply_to'], "Reloading f::$cmdfunc()");
-							} else {
-								$_i['handle']->say($_i['reply_to'], "Function $cmdfunc does not exist");
-							}
-							break;
-						case 'hup':
-							log::notice('Got !hup');
-							config::reload_all();
-							$_i['handle']->say($_i['reply_to'], 'Reloaded config');
-							f::ALIAS_INIT();
-							config::set_reload();
-							Nextrastout::$bot_handle->update_conf_channels();
-							break;
-						case 'dump-cd':
-							print_r(Nextrastout::$cmd_cooldown);
-							break;
-						case 'rm-cd':
-							unset(Nextrastout::$cmd_cooldown[$uarg]);
-							$_i['handle']->say($_i['reply_to'], "Cleared cooldown for $uarg");
-							break;
-						case 'reload-all':
-							log::notice('Got !reload-all');
-							$_i['handle']->say($_i['reply_to'], 'Marking all functions for reloading and reloading conf');
-							f::RELOAD_ALL();
-							config::reload_all();
-							Nextrastout::$bot_handle->update_conf_channels();
-							break;
-						case 'loglevel':
-							log::notice("Got !loglevel $uarg");
-							log::$level = log::string_to_level($uarg);
-							$_i['handle']->say($_i['reply_to'], 'Changed log level');
-							break;
-						case 'set-tz':
-							log::notice('Got !set-tz');
-							Nextrastout::$output_tz = $uarg;
-							$_i['handle']->say($_i['reply_to'], 'Changed output timezone');
-							break;
-						case 'es-join':
-							log::notice('Got !es-join');
-							Nextrastout::$bot_handle->join($uarg);
-							break;
-						case 'es-part':
-							log::notice('Got !es-part');
-							Nextrastout::$bot_handle->part($uarg);
-							break;
-						case 'chanserv':
-							log::notice('Got !chanserv');
-							Nextrastout::$bot_handle->say('ChanServ', $uarg);
-							break;
-						case 'nickserv':
-							log::notice('Got !nickserv');
-							Nextrastout::$bot_handle->say('NickServ', $uarg);
-							break;
 						default:
-							log::trace('Not an admin command');
+							f::admin_commands($ucmd, $uarg, $_i, $cmd_globals);
+							break;
 					}
 				} else {
 					log::debug('Not an admin, and not a known command');

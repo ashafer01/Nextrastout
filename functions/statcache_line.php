@@ -3,7 +3,15 @@
 log::trace('entered f::statcache_line()');
 list($_i) = $_ARGV;
 
-$channel = dbescape($_i['args'][0]);
+if ($_i['cmd'] == 'JOIN') {
+	$channel = $_i['text'];
+} else {
+	if (count($_i['args']) > 0) {
+		$channel = dbescape($_i['args'][0]);
+	} else {
+		$channel = '';
+	}
+}
 $nick = dbescape($_i['hostmask']->nick);
 
 # prepare queries
