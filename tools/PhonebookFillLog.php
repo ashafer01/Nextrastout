@@ -2,7 +2,9 @@
 
 require_once __DIR__ . '/../lib/Nextrastout.class.php';
 require_once __DIR__ . '/../lib/log.php';
+require_once __DIR__ . '/../lib/procs.php';
 
+proc::$name = 'phonefill';
 Nextrastout::dbconnect();
 
 $q = Nextrastout::$db->pg_query("SELECT nick, message FROM log WHERE message ~ '^\.phonebook [0-9]{10}$' ORDER BY uts");
@@ -16,3 +18,5 @@ while ($qr = db::fetch_assoc($q)) {
 		exit(1);
 	}
 }
+
+log::info('Done');
