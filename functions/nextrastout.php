@@ -112,7 +112,6 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 				$_i['reply_to'] = $_i['hostmask']->nick;
 				$in_pm = true;
 				$_i['in_pm'] = true;
-				break;
 			}
 
 			# Normal commands

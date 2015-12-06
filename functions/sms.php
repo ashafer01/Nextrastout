@@ -36,7 +36,7 @@ if (ctype_digit($to) && strlen($to) == 10) {
 } else {
 	# we got a nick
 	log::debug('Got nick, looking up phone number');
-	$to = dbescape($to);
+	$to = dbescape(strtolower($to));
 	$q = Nextrastout::$db->pg_query("SELECT phone_number FROM phonebook WHERE nick='$to'",
 		'phonebook lookup');
 	if ($q === false) {
@@ -157,7 +157,7 @@ switch ($code) {
 					$u = Nextrastout::$db->pg_upsert("UPDATE phone_numbers SET intro_sent=TRUE WHERE phone_number='$to'",
 						"INSERT INTO phone_numbers (phone_number, last_send_uts, last_from_chan, intro_sent) VALUES ('$to', $ts, '$from_chan', TRUE)",
 						'mark intro sms sent');
-					if ($i === false) {
+					if ($u === false) {
 						$reply .= ' Failed to mark intro SMS sent.';
 						$inforeply = f::FALSE;
 					} else {
