@@ -14,6 +14,8 @@ below. You can keep them in private.ini or put them in the main config; the two 
     banned_users = []
     cooldown_users = []
     
+    sms.default_channel =
+    
     twilio.account_sid =
     twilio.auth_token =
     twilio.phone_number =
