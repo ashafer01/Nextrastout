@@ -1,0 +1,32 @@
+body {
+	font-family: sans-serif;
+}
+
+table {
+	margin: 20px;
+}
+
+td {
+	padding: 6px;
+}
+
+td.q {
+	font-family: monospace;
+}
+
+table, th, td {
+	border: 1px solid #000;
+	border-collapse: collapse;
+}
+
+thead {
+	background-color: #ccc;
+}
+
+tbody tr:nth-child(odd) {
+	background-color: #eee;
+}
+
+thead {
+	font-weight: bold;
+}

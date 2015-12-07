@@ -9,40 +9,7 @@ function error_row($error) {
 <html>
 	<head>
 		<title>Quote DB</title>
-		<style>
-			body {
-				font-family: sans-serif;
-			}
-
-			table {
-				margin: 20px;
-			}
-
-			td {
-				padding: 6px;
-			}
-
-			td.q {
-				font-family: monospace;
-			}
-
-			table, th, td {
-				border: 1px solid #000;
-				border-collapse: collapse;
-			}
-
-			thead {
-				background-color: #ccc;
-			}
-
-			tbody tr:nth-child(odd) {
-				background-color: #eee;
-			}
-
-			thead {
-				font-weight: bold;
-			}
-		</style>
+		<link rel="stylesheet" href="/nes/nes.css" type="text/css">
 	</head>
 	<body>
 		<h2>Quote DB</h2>
@@ -61,9 +28,9 @@ function error_row($error) {
 				chdir(dirname(realpath(__FILE__)));
 				date_default_timezone_set('UTC');
 
-				require_once 'lib/functions.php';
-				require_once 'lib/utils.php';
-				require_once 'lib/config.php';
+				require_once __DIR__ . '/../lib/functions.php';
+				require_once __DIR__ . '/../lib/utils.php';
+				require_once __DIR__ . '/../lib/config.php';
 
 				$conf = config::get_instance();
 

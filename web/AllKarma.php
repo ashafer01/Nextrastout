@@ -2,40 +2,7 @@
 <html>
 	<head>
 		<title>All Karma</title>
-		<style>
-			body {
-				font-family: sans-serif;
-			}
-
-			table {
-				margin: 20px;
-			}
-
-			td {
-				padding: 6px;
-			}
-
-			td.q {
-				font-family: monospace;
-			}
-
-			table, th, td {
-				border: 1px solid #000;
-				border-collapse: collapse;
-			}
-
-			thead {
-				background-color: #ccc;
-			}
-
-			tbody tr:nth-child(odd) {
-				background-color: #eee;
-			}
-
-			thead {
-				font-weight: bold;
-			}
-		</style>
+		<link rel="stylesheet" href="/nes/nes.css" type="text/css">
 	</head>
 	<body>
 	<?php if (isset($_GET['nick'])): ?>
@@ -54,10 +21,10 @@
 				function noop($_, $__) {
 					return null;
 				}
-				require_once __DIR__ . '/lib/Nextrastout.class.php';
-				require_once __DIR__ . '/lib/utils.php';
-				require_once __DIR__ . '/lib/log.php';
-				require_once __DIR__ . '/lib/config.php';
+				require_once __DIR__ . '/../lib/Nextrastout.class.php';
+				require_once __DIR__ . '/../lib/utils.php';
+				require_once __DIR__ . '/../lib/log.php';
+				require_once __DIR__ . '/../lib/config.php';
 
 				$conf = config::get_instance();
 				log::set_logger('noop');
