@@ -97,7 +97,7 @@ if ($q === false) {
 }
 
 # top downvoters
-$q = Nextrastout::$db->pg_query("SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5",
+$q = Nextrastout::$db->pg_query("SELECT nick, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma AND $where_notme GROUP BY nick HAVING sum(up) - sum(down) <= 0 ORDER BY net LIMIT 5",
 	'top downvoters query');
 if ($q === false) {
 	$sayparts[] = 'Query Failed';

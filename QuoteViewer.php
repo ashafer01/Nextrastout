@@ -72,7 +72,7 @@ function error_row($error) {
 				if ($db === false) {
 					echo error_row('DB connection failed');
 				} else {
-					$quotes = pg_query($db, "SELECT * FROM quotedb WHERE channel='{$conf->quotes->web_channel}' ORDER BY id");
+					$quotes = pg_query($db, "SELECT * FROM quotedb WHERE channel='{$conf->web_channel}' ORDER BY id");
 					if ($quotes === false) {
 						echo error_row('Query failed');
 					} elseif (pg_num_rows($quotes) == 0) {

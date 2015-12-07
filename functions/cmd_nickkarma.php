@@ -184,7 +184,7 @@ if ($q === false) {
 
 #########################
 
-$q = Nextrastout::$db->pg_query("SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) < 0 ORDER BY net LIMIT 5",
+$q = Nextrastout::$db->pg_query("SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) <= 0 ORDER BY net LIMIT 5",
 	'most downvoted thing query');
 if ($q === false) {
 	$sayparts[] = 'Query failed';
