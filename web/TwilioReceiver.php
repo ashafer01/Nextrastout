@@ -4,12 +4,12 @@ ob_start();
 
 date_default_timezone_set('UTC');
 
-require_once __DIR__ . '/lib/procs.php';
-require_once __DIR__ . '/lib/log.php';
-require_once __DIR__ . '/lib/config.php';
-require_once __DIR__ . '/lib/functions.php';
-require_once __DIR__ . '/lib/utils.php';
-require_once __DIR__ . '/lib/Nextrastout.class.php';
+require_once __DIR__ . '/../lib/procs.php';
+require_once __DIR__ . '/../lib/log.php';
+require_once __DIR__ . '/../lib/config.php';
+require_once __DIR__ . '/../lib/functions.php';
+require_once __DIR__ . '/../lib/utils.php';
+require_once __DIR__ . '/../lib/Nextrastout.class.php';
 
 proc::$name = 'twiliorecv';
 log::$level = log::DEBUG;
