@@ -16,6 +16,9 @@ class Nextrastout {
 	public static $cmd_cooldown = array();
 
 	public static function dbconnect() {
+		if (self::$db !== null) {
+			self::$db->close();
+		}
 		self::$db = new db();
 	}
 

@@ -219,3 +219,25 @@ ALTER TABLE log CLUSTER ON log_uts;
 CREATE INDEX statcache_words_idx ON statcache_words USING btree (channel, nick);
 
 CREATE UNIQUE INDEX topic_tid ON topic USING btree (tid);
+
+CREATE OR REPLACE FUNCTION genl() RETURNS text as $$
+DECLARE
+	chars text[] := '{0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z}';
+	ret text := '';
+	i integer := 0;
+	done bool := FALSE;
+BEGIN
+	WHILE NOT done LOOP
+		FOR i in 1..5 LOOP
+			ret := ret || chars[1+random()*(array_length(chars, 1)-1)];
+		END LOOP;
+		done := NOT exists(SELECT 1 FROM shorten WHERE l=ret);
+	END LOOP;
+	RETURN ret;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TABLE shorten (
+	l char(5) PRIMARY KEY DEFAULT genl(),
+	url text
+);

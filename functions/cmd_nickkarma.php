@@ -156,7 +156,7 @@ if ($q === false) {
 
 # Find most voted things
 
-$q = Nextrastout::$db->pg_query("SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) > 0 ORDER BY net DESC LIMIT 5",
+$q = Nextrastout::$db->pg_query("SELECT thing, sum(up) AS up, sum(down) AS down, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) > 0 ORDER BY net DESC LIMIT 3",
 	'most upvoted thing query');
 if ($q === false) {
 	$sayparts[] = 'Query failed';
@@ -184,7 +184,7 @@ if ($q === false) {
 
 #########################
 
-$q = Nextrastout::$db->pg_query("SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) <= 0 ORDER BY net LIMIT 5",
+$q = Nextrastout::$db->pg_query("SELECT thing, sum(down) AS down, sum(up) AS up, sum(up) - sum(down) AS net FROM karma_cache WHERE channel='$channel' AND $where_things_karma GROUP BY thing HAVING sum(up) - sum(down) <= 0 ORDER BY net LIMIT 3",
 	'most downvoted thing query');
 if ($q === false) {
 	$sayparts[] = 'Query failed';
@@ -211,6 +211,8 @@ if ($q === false) {
 }
 
 #########################
+
+$sayparts[] = 'All votes: ' . f::shorten(Nextrastout::$conf->allkarma_base . $nicks[0]);
 
 $_i['handle']->say($_i['reply_to'], color_formatting::irc($sayprefix . implode(' | ', $sayparts)));
 return f::TRUE;
