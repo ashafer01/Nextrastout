@@ -25,7 +25,6 @@ function error_row($error) {
 			<tbody>
 				<?php
 
-				chdir(dirname(realpath(__FILE__)));
 				date_default_timezone_set('UTC');
 
 				require_once __DIR__ . '/../lib/functions.php';

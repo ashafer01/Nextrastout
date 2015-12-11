@@ -88,7 +88,7 @@ if (!$no_nicks) {
 
 if ($date_limit === null) {
 	if (count($p->before) > 0) {
-		$timestr = pg_escape_string(Nextrastout::$db, implode(' ', $p->before[0]));
+		$timestr = dbescape(implode(' ', $p->before[0]));
 		$uts = strtotime($timestr);
 		if ($uts !== false) {
 			$conds[] = "(uts < $uts)";
@@ -96,7 +96,7 @@ if ($date_limit === null) {
 	}
 
 	if (count($p->after) > 0) {
-		$timestr = pg_escape_string(Nextrastout::$db, implode(' ', $p->after[0]));
+		$timestr =dbescape(implode(' ', $p->after[0]));
 		$uts = strtotime($timestr);
 		if ($uts !== false) {
 			$conds[] = "(uts > $uts)";
