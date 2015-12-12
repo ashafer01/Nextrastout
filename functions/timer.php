@@ -55,7 +55,7 @@ while (true) {
 	if ($imap_check > 0) {
 		$imap_check--;
 	} else {
-		log::info('Checking email...');
+		log::trace('Checking email...');
 		$imap_check = $imap_check_interval;
 
 		$mbox = imap_open(Nextrastout::$conf->imap->mailbox, Nextrastout::$conf->imap->user, get_password('imap'));
@@ -63,7 +63,11 @@ while (true) {
 			log::error('Failed to open IMAP connection');
 		} else {
 			$num_messages = imap_num_msg($mbox);
-			log::debug("$num_messages messages in mailbox");
+			if ($num_messages > 0) {
+				log::debug("$num_messages messages in mailbox");
+			} else {
+				log::trace('Mailbox empty');
+			}
 			$already_posted = 0;
 			for ($i = 1; $i <= $num_messages; $i++) {
 				$attach_links = array();

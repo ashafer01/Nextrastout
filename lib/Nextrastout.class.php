@@ -14,6 +14,7 @@ class Nextrastout {
 	public static $output_tz = null;
 	public static $prepared_queries = array();
 	public static $cmd_cooldown = array();
+	public static $start_time = 0;
 
 	public static function dbconnect() {
 		if (self::$db !== null) {
@@ -33,6 +34,7 @@ class Nextrastout {
 	public static function init() {
 		$conf = config::get_instance();
 		self::$conf = $conf;
+		self::$start_time = time();
 
 		if ($conf->debug) {
 			self::debug_mode();
