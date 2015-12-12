@@ -10,7 +10,7 @@ if ($fc != '#' && $fc != '&') {
 	$channel = Nextrastout::$conf->default_channel;
 }
 
-$inick = Nextrastout::$db->escape(strtolower(rtrim($_ARG, '?')));
+$inick = Nextrastout::$db->escape(strtolower(rtrim($_ARG, ' ?')));
 
 $query = str_replace(array("\n","\t"), array(' ',''), <<<QUERY
 SELECT uts, command, nick, message,
