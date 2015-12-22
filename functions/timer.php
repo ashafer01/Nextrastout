@@ -88,11 +88,19 @@ while (true) {
 				}
 
 				$fromaddr = "{$hdr->from[0]->mailbox}@{$hdr->from[0]->host}";
-				$fromname = $hdr->from[0]->personal;
+				if (isset($hdr->from[0]->personal)) {
+					$fromname = $hdr->from[0]->personal;
+				} else {
+					$fromname = null;
+				}
 
 				$fromaddr = dbescape($fromaddr);
 				$q = Nextrastout::$db->pg_query("SELECT nick FROM nick_email WHERE email='$fromaddr'");
-				$from = "$fromname <$fromaddr>";
+				if ($fromname != null) {
+					$from = "$fromname <$fromaddr>";
+				} else {
+					$from = $fromaddr;
+				}
 				$gallery_dir = 'unregistered';
 				if ($q === false) {
 					log::error('Failed to check for registered email address');

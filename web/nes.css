@@ -6,7 +6,7 @@ table {
 	margin: 20px;
 }
 
-td {
+td, th {
 	padding: 6px;
 }
 
