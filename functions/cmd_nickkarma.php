@@ -212,7 +212,7 @@ if ($q === false) {
 
 #########################
 
-$sayparts[] = 'All votes: ' . f::shorten(Nextrastout::$conf->allkarma_base . $nicks[0]);
+$sayparts[] = 'All votes: ' . f::shorten(Nextrastout::$conf->allkarma_base . $nicks[0] . '&chan=' . urlencode($channel));
 
 $_i['handle']->say($_i['reply_to'], color_formatting::irc($sayprefix . implode(' | ', $sayparts)));
 return f::TRUE;

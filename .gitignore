@@ -4,5 +4,8 @@
 private.ini
 *.log
 channel.list
+voice.list
 nonpublic_stuff.php
 gallery_store.php
+out.*
+Paperclip.php

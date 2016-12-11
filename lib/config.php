@@ -83,15 +83,24 @@ class config {
 		}
 		return self::$lists[$name];
 	}
-	private static function unload_list($name) {
+	public static function unload_list($name) {
 		if (array_key_exists($name, self::$lists)) {
 			unset(self::$lists[$name]);
 		}
 	}
-	private static function append_list_unique($name, $value) {
+	public static function list_add_unique($name, $value) {
 		if (!in_array($value, self::$lists[$name])) {
 			self::$lists[$name][] = $value;
 			file_put_contents(self::$base . "$name.list", "$value\n", FILE_APPEND);
+		}
+	}
+	public static function list_remove($name, $value) {
+		$rem_keys = array_keys(self::$lists[$name], $value);
+		if (count($rem_keys) > 0) {
+			foreach ($rem_keys as $key) {
+				unset(self::$lists[$name][$key]);
+			}
+			file_put_contents(self::$base . "$name.list", implode("\n", self::$lists[$name])."\n");
 		}
 	}
 
@@ -109,6 +118,6 @@ class config {
 		return self::get_list('channel');
 	}
 	public static function store_channel($channel) {
-		self::append_list_unique('channel', $channel);
+		self::list_add_unique('channel', $channel);
 	}
 }

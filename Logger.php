@@ -37,6 +37,14 @@ function safe_feof($fp, &$start = null) {
 	return feof($fp);
 }
 
+log::info('Connecting to database');
+Nextrastout::dbconnect();
+$_sql = Nextrastout::$db->get_conn();
+if ($_sql === false) {
+    log::fatal('Failed to connect to database, exiting');
+    exit(1);
+}
+
 while (true) {
 	log::info('Connecting to IRC socket');
 	$_irc = fsockopen($_host, $_port);
@@ -44,14 +52,6 @@ while (true) {
 		log::error('Failed to open IRC socket, sleeping 30 seconds and retrying');
 		sleep(30);
 		continue;
-	}
-
-	log::info('Connecting to database');
-	Nextrastout::dbconnect();
-	$_sql = Nextrastout::$db->get_conn();
-	if ($_sql === false) {
-		log::fatal('Failed to connect to database, exiting');
-		exit(1);
 	}
 
 	log::info('Doing ident');

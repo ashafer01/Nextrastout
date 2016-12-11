@@ -178,26 +178,27 @@ while (true) {
 							log::debug("gallery_store returned: $ret");
 							$img->clear();
 							$img->destroy();
+
+							# Generate output
+							if ($ret !== false) {
+								$ret = explode('/', $ret);
+								$filename = array_pop($ret);
+								$reallink = "$gallery_http_base/$gallery_dir/$filename";
+								$link = f::shorten($reallink);
+								if ($link === false) {
+									log::error("shorten() failed");
+									$link = $reallink;
+								}
+								$attach_links[] = $link;
+								log::debug("Replying with new link $link => $gallery_http_base/$gallery_dir/$filename");
+							} else {
+								$attach_links[] = "Error uploading ($gallery_dir/$filename)";
+								log::error("Error uploading $gallery_file_base/$gallery_dir/$filename ($ret)");
+							}
+
 						} catch (ImagickException $e) {
 							$attach_links[] = 'Bad image uploaded';
 							log::error("Caught ImagickException");
-						}
-
-						# Generate output
-						if ($ret !== false) {
-							$ret = explode('/', $ret);
-							$filename = array_pop($ret);
-							$reallink = "$gallery_http_base/$gallery_dir/$filename";
-							$link = f::shorten($reallink);
-							if ($link === false) {
-								log::error("shorten() failed");
-								$link = $reallink;
-							}
-							$attach_links[] = $link;
-							log::debug("Replying with new link $link => $gallery_http_base/$gallery_dir/$filename");
-						} else {
-							$attach_links[] = "Error uploading ($gallery_dir/$filename)";
-							log::error("Error uploading $gallery_file_base/$gallery_dir/$filename ($ret)");
 						}
 
 						$fpos++;

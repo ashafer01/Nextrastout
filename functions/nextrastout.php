@@ -214,7 +214,59 @@ while (!uplink::safe_feof($_socket_start) && (microtime(true) - $_socket_start) 
 						if (f::nonpublic_stuff($_i)) {
 							log::trace('Handled by nonpublic_stuff');
 						} else {
-							log::trace('Line unhandled');
+							if (in_array($_i['hostmask']->nick, Nextrastout::$conf->link->ignore)) {
+								log::info("Skipping link handling for {$_i['hostmask']->nick}");
+								break;
+							}
+							$foundUrl = false;
+							$w = explode(' ', $_i['text']);
+							$seenUrls = array();
+							foreach ($w as $word) {
+								$p = explode('://', $word, 2);
+								if (($p[0] == 'http') || ($p[0] == 'https')) {
+									if (filter_var($word, FILTER_VALIDATE_URL)) {
+										$url = $word;
+										if (in_array($url, $seenUrls)) {
+											log::debug('Already posted this URL this message');
+											continue;
+										}
+										log::debug("Found URL, requesting content >> $url");
+										$foundUrl = true;
+
+										$content = file_get_contents($url);
+										$title = '';
+										$t = explode('<title>', $content, 2);
+										if (count($t) == 2) {
+											log::debug('Found <title> tag in URL response');
+											$t = explode('</title>', $t[1], 2);
+											if (count($t) == 2) {
+												log::debug('Found closing </title> tag');
+												$title = ' - ' . html_entity_decode($t[0], ENT_QUOTES);
+											}
+										}
+
+										if (strlen($url) > 20) {
+											$shortUrl = f::shorten($url);
+										} else {
+											$shortUrl = $url;
+										}
+
+										log::debug("url      >> '$url'");
+										log::debug("shortUrl >> '$shortUrl'");
+										log::debug("title    >> '$title'");
+
+										if (($shortUrl == $url) && (($title == '') || ($title == ' - '))) {
+											log::debug('No meaningful output for link');
+										} else {
+											$_i['handle']->say($_i['reply_to'], $shortUrl . $title);
+											$seenUrls[] = $url;
+										}
+									}
+								}
+							}
+							if (!$foundUrl) {
+								log::trace('Line unhandled');
+							}
 						}
 				}
 			}

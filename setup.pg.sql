@@ -239,5 +239,28 @@ $$ LANGUAGE plpgsql;
 
 CREATE TABLE shorten (
 	l char(5) PRIMARY KEY DEFAULT genl(),
-	url text
+	url text,
+	by char(32)
+);
+
+CREATE OR REPLACE FUNCTION gen_shorten_key() RETURNS text AS $$
+DECLARE
+	chars text[] := '{0,1,2,3,4,5,6,7,8,9,a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x,y,z,A,B,C,D,E,F,G,H,I,J,K,L,M,N,O,P,Q,R,S,T,U,V,W,X,Y,Z}';
+	ret text := '';
+	i integer := 0;
+	done bool := FALSE;
+BEGIN
+	WHILE NOT done LOOP
+		FOR i in 1..32 LOOP
+			ret := ret || chars[1+random()*(array_length(chars, 1)-1)];
+		END LOOP;
+		done := NOT exists(SELECT 1 FROM shorten_keys WHERE shorten_key=ret);
+	END LOOP;
+	RETURN ret;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TABLE shorten_keys (
+	nick varchar(32) PRIMARY KEY,
+	shorten_key char(32) UNIQUE DEFAULT gen_shorten_key()
 );

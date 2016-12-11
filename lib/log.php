@@ -55,6 +55,9 @@ class log {
 					call_user_func_array(self::$logger_func, array($level, $line));
 				}
 			} else {
+				if (self::$static === null) {
+					self::$static = fopen('/home/alex/NES.log', 'a');
+				}
 				$ts = utimestamp();
 				$lvl = log::level_to_string($level);
 				$procname = sprintf('%10s', proc::$name);
@@ -64,8 +67,12 @@ class log {
 				$lines = explode("\n", $message);
 				foreach ($lines as $line) {
 					# log to stdout
-					$line = color_formatting::ansi($line);
-					echo "[$ts] [$procname] $lvl: $line\n";
+					$cline = color_formatting::ansi($line);
+					echo "[$ts] [$procname] $lvl: $cline\n";
+
+					# log to file
+					$line = color_formatting::strip($line);
+					fwrite(self::$static, "[$ts] [$procname] $lvl: $line\n");
 				}
 			}
 		}

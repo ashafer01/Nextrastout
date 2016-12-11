@@ -41,17 +41,22 @@ if ($_ARG == '-v') {
 }
 
 if (ctype_digit($_ARG) && (strlen($_ARG) == 10)) {
-	log::debug("Updating phone number for $nick");
-	$u = Nextrastout::$db->pg_upsert("UPDATE phonebook SET phone_number='$_ARG' WHERE nick='$nick'",
-		"INSERT INTO phonebook (nick, phone_number) VALUES ('$nick', '$_ARG')",
-		'update phonebook');
-	if ($u === false) {
-		$say = 'Query failed.';
+	$q = Nextrastout::$db->pg_query("SELECT 1 FROM phonebook WHERE phone_number='$_ARG'", 'check existing number');
+	if (pg_num_rows($q) > 0) {
+		$say = 'That number is already assigned';
 	} else {
-		$say = 'Updated phonebook.';
-	}
-	if (!$inpm) {
-		$say .= $pm_msg;
+		log::debug("Updating phone number for $nick");
+		$u = Nextrastout::$db->pg_upsert("UPDATE phonebook SET phone_number='$_ARG' WHERE nick='$nick'",
+			"INSERT INTO phonebook (nick, phone_number) VALUES ('$nick', '$_ARG')",
+			'update phonebook');
+		if ($u === false) {
+			$say = 'Query failed.';
+		} else {
+			$say = 'Updated phonebook.';
+		}
+		if (!$inpm) {
+			$say .= $pm_msg;
+		}
 	}
 	$_i['handle']->say($_i['reply_to'], $say);
 	return f::TRUE;

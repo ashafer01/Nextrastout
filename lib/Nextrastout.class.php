@@ -31,9 +31,14 @@ class Nextrastout {
 		ini_set('xdebug.var_max_display_depth', 0);
 	}
 
-	public static function init() {
+	public static function load_conf() {
 		$conf = config::get_instance();
 		self::$conf = $conf;
+		return $conf;
+	}
+
+	public static function init() {
+		$conf = self::load_conf();
 		self::$start_time = time();
 
 		if ($conf->debug) {
