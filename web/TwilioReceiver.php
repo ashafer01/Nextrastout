@@ -46,6 +46,7 @@ foreach (array('Body', 'To', 'From', 'MessageSid') as $key) {
 
 $conf = config::get_instance();
 Nextrastout::dbconnect();
+Nextrastout::load_conf();
 
 $cleanpost = array();
 foreach ($_POST as $k => $v) {
@@ -78,7 +79,7 @@ if (array_key_exists('NumMedia', $_POST) && $_POST['NumMedia'] > 0) {
 	$mms = 'TRUE';
 	$media = array();
 	for ($i = 0; $i < $_POST['NumMedia']; $i++) {
-		$url = shortlink($_POST["MediaUrl$i"]);
+		$url = f::shorten($_POST["MediaUrl$i"]);
 		if ($url === false) {
 			$url = $_POST["MediaUrl$i"];
 		}

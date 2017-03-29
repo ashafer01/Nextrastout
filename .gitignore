@@ -1,4 +1,7 @@
 *.swp
+*.swo
+*.swn
+*.swm
 *.password
 *.pid
 private.ini

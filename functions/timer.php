@@ -12,6 +12,8 @@ $gallery_http_base = Nextrastout::$conf->gallery->http_base;
 $gallery_upload_address = strtolower(Nextrastout::$conf->gallery->upload_address);
 $gallery_tmp = Nextrastout::$conf->gallery->tmp;
 
+imap_timeout(IMAP_OPENTIMEOUT, 5);
+
 while (true) {
 	# Check for proc reload
 	if (proc::reload_needed()) {

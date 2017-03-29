@@ -36,9 +36,10 @@ if ($q === false) {
 	$sequences = array();
 	$stopwords = config::get_list('stopwords_extended');
 	while ($row = pg_fetch_assoc($q)) {
+		$msg = str_replace(array(',','.',':','"',"'",'(',')'), '', $row['message']);
 		$words = array_map(function($w) {
 			return str_replace(chr(1), '', $w);
-		}, array_filter(array_map('trim', explode(' ', strtolower($row['message']))), function($w) use ($stopwords) {
+		}, array_filter(array_map('trim', explode(' ', strtolower($msg))), function($w) use ($stopwords) {
 			if ($w == null) {
 				return false;
 			}
