@@ -1,5 +1,7 @@
 # Nextrastout
 
+## This repo is no longer maintained
+
 * `php Nextrastout.php` starts primary functionality
 * `php Logger.php` appends the IRC log
 * Make `web/` web accessible at `/nes`
